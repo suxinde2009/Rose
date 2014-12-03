@@ -6,14 +6,18 @@ Service Module
 Rose是Requrest Online Service中的四个首字母，翻译成中文是“请求在线服务”，词语含义就是要提供各样在线服务，而这正体现了Rose要实现的核心。
 Rose stands for Request Online SErvice.
 Rose发源于《王国战争》，后者则源于《韦诺之战》，它们都是开源战棋游戏。伴随Rose发布，《王国战争》成了基于Rose的一个应用。由于两者历史，Rose中不少代码能看《王国战争》影子，这个会随着时间慢慢消除。《王国战争》是基于Rose一个应用，可毕竟已商业化存在一段时间，它的代码对如何使用Rose有着极好的参考价值。
-Rose is a project derived from Kingdom Wars, which is a module of Battle of Wesnoth. Both Kingdom Wars and Battle of Wesnoth are open source strategy games. With the official release of Rose, Kingdom wars has become an application based on Rose. For now, Rose has a lot of code with "Kingdom Wars" styles, which is being refactored. However, being a mature commercial application of Rose, Kingdom Wars is expected to be a good example in reference to the development with Rose  
+Rose is a project derived from "Kingdom Wars", which is a module of "Battle of Wesnoth". Both "Kingdom Wars" and "Battle of Wesnoth" are open source strategy games. With the official release of Rose, Kingdom wars has become an application based on Rose. For now, Rose still has a lot of "Kingdom Wars"-style code, which is being refactored. However, being a mature commercial application in Rose, Kingdom Wars is expected to be a good demonstration in reference to developing with Rose.  
 一、Rose是什么
 Rose是个跨平台C/C++ SDK，它向C/C++开发者提供应用须要的通用功能，借用这些功能，把开发者从机械的重复性劳动中解放出来，专注于实现自个应用的专门模块。Rose提供的模块按功能大小分为两种级别：基本模块、服务模块。
+Rose is a cross-platform C/C++ SDK (software development kit). By providing general functions for C/C++ application development, Rose helps developers save time and efforts in writing trivial codes and lets them focus on the major functionalities of the application better.
 
 基本模块。它是程序中常用的基本操作。
+Basic Module
 
 窗口系统。各个操作系统以不同方式处理窗口，在这方面差别可说是非常大。Rose自提供了一种窗口系统实现，这个系统一个特点是可支持动态变化/自适应各样分辨率（最低480x320）。窗口系统是Rose极重要组件，它几乎占去一半代码。
+Window UI. UI is adopted differently in different operating system. Managing
 处理配置。应用的配置数据包括发布时自带的资源包和运行时生成的数据，Rose以WML格式统一处理静态配置，动态配置推荐使用Lua。
+Configuration Processing
 处理图像。除了基本读、写图像操作，有些应用可能要处理数千图像，这时为提高效率需用内存换速度，Rose提供了种管理众多图像方法。由于要使用Alpha分量，Rose默认的图像压缩格式是png。
 播放声音。按声音持续时间长短，Rose把声音分为音乐、音效。Rose默认的声音压缩格式是ogg。
 播放动画。开发者只要编写动画配置，然后调用几个函数便可在应用播放动画。
