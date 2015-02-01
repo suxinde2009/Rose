@@ -164,6 +164,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\librose\base_map.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\librose\base_unit.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\librose\builder.cpp"
 				>
 			</File>
@@ -261,6 +269,10 @@
 			</File>
 			<File
 				RelativePath="..\..\librose\hero_i.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\librose\hex_display.cpp"
 				>
 			</File>
 			<File
@@ -1076,6 +1088,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\librose\base_map.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\librose\base_unit.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\librose\builder.hpp"
 				>
 			</File>
@@ -1201,6 +1221,10 @@
 			</File>
 			<File
 				RelativePath="..\..\librose\hero.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\librose\hex_display.hpp"
 				>
 			</File>
 			<File
@@ -3679,6 +3703,30 @@
 				Name="dialogs"
 				>
 				<File
+					RelativePath="..\..\librose\gui\dialogs\browse.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\browse.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\librose\gui\dialogs\chat.cpp"
 					>
 					<FileConfiguration
@@ -3700,6 +3748,30 @@
 				</File>
 				<File
 					RelativePath="..\..\librose\gui\dialogs\chat.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\combo_box.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\combo_box.hpp"
 					>
 				</File>
 				<File
@@ -3904,6 +3976,30 @@
 				</File>
 				<File
 					RelativePath="..\..\librose\gui\dialogs\simple_item_selector.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\system.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\system.hpp"
 					>
 				</File>
 				<File
@@ -5007,318 +5103,6 @@
 					>
 				</File>
 			</Filter>
-		</Filter>
-		<Filter
-			Name="widgets"
-			>
-			<File
-				RelativePath="..\..\librose\widgets\button.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\button.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\drop_target.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\drop_target.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\file_menu.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\file_menu.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\label.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\label.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\menu.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\menu.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\menu_style.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\progressbar.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\progressbar.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\scrollarea.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\scrollarea.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\scrollbar.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\scrollbar.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\scrollpane.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\scrollpane.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\slider.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\slider.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\textbox.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\textbox.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\widget.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						ObjectFile="$(IntDir)\widgets\"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\librose\widgets\widget.hpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="utils"
