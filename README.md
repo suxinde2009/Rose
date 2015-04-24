@@ -1,7 +1,8 @@
-How to Compile<br>
+Rose<br>
 ---
-Chinese: [《Rose: 跨平台C++ SDK》](http://www.freeors.com/download/Cross-Platform C++ SDK.pdf)<br>
-Other Language: [Compile and Run](http://www.freeors.com/bbs/forum.php?mod=viewthread&tid=21237&extra=page%3D1)
+Rose is a corss-platform C++ SDK. It is based on [SDL](http://www.libsdl.org), and provide higher level interface to application. For more information on Rose please browse our [site](http://www.freeors.com).<br> 
+
+Rose is distributed under the [zlib license](http://www.gzip.org/zlib/zlib_license.html). This license allows you to use Rose freely in any software.<br>
 
 V0.0.5<br>
 1. Support IRC protocol. It can use as IRC Client<br>
