@@ -49,10 +49,15 @@ public:
 		{ state_ = active ? ENABLED : DISABLED; }
 
 	/** Inherited from ttext_box. */
-	std::string get_value() const;
+	const std::string& label() const;
+	void set_label(const std::string& text);
 
-	void set_value(const std::string& text);
 	void insert_img(const std::string& str);
+
+	/** Inherited from tscrollbar_container. */
+	tpoint calculate_best_size() const;
+	void set_content_size(const tpoint& origin, const tpoint& size);
+	bool content_empty() const;
 
 	/***** ***** ***** setters / getters for members ***** ****** *****/
 
@@ -64,7 +69,8 @@ public:
 	void mouse_moved_callback(ttext_box* tb);
 private:
 
-	tpoint pre_request_fix_width(const unsigned maximum_content_grid_width);
+	mutable std::string real_label_;
+
 	/**
 	 * Possible states of the widget.
 	 *

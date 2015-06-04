@@ -31,6 +31,40 @@
 
 namespace gui2 {
 
+tbutton* create_button(const config& cfg)
+{
+	implementation::tbuilder_button builder(cfg);
+	return dynamic_cast<tbutton*>(builder.build());
+}
+
+tbutton* create_button(const std::string& id, const std::string& definition, void* cookie)
+{
+	config cfg;
+
+	if (!id.empty()) {
+		cfg["id"] = id;
+	}
+	cfg["definition"] = definition;
+
+	tbutton* widget = create_button(cfg);
+	widget->set_cookie(cookie);
+	return widget;
+}
+
+tbutton* create_surface_button(const std::string& id, void* cookie)
+{
+	config cfg;
+
+	if (!id.empty()) {
+		cfg["id"] = id;
+	}
+	cfg["definition"] = "surface";
+
+	tbutton* widget = create_button(cfg);
+	widget->set_cookie(cookie);
+	return widget;
+}
+
 REGISTER_WIDGET(button)
 
 tbutton::tbutton()
@@ -115,6 +149,35 @@ void tbutton::set_sort(tsort sort)
 int tbutton::get_sort() const
 {
 	return sort_;
+}
+
+void tbutton::set_surface(const surface& surf, int w, int h)
+{
+	surfs_.clear();
+	surfs_.resize(COUNT);
+	if (!surf) {
+		return;
+	}
+
+	// enabled
+	surface& enabled = surfs_[ENABLED];
+	enabled = scale_surface(surf, w, h);
+
+	// disabled
+	surfs_[DISABLED] = greyscale_image(enabled);
+
+	// pressed
+	SDL_Rect src_clip = ::create_rect(0, 0, w - 2, h - 2);
+	SDL_Rect dst_clip = ::create_rect(2, 2, 0, 0);
+	surface& pressed = surfs_[PRESSED];
+	pressed = create_neutral_surface(w, h);
+	sdl_blit(enabled, &src_clip, pressed, &dst_clip);
+	pressed = adjust_surface_color(pressed, 50, 50, 50);
+
+	// focussed
+	surfs_[FOCUSSED] = adjust_surface_color(enabled, 40, 40, 40);
+
+	set_dirty();
 }
 
 const std::string& tbutton::get_control_type() const

@@ -39,11 +39,8 @@ struct tbuilder_listbox
 
 	tbuilder_grid_ptr list_builder;
 
-	/** The width of the widget. */
-	tformula<unsigned> width;
-
-	/** The height of the widget. */
-	tformula<unsigned> height;
+	std::string width;
+	std::string height;
 
 	/**
 	 * Listbox data.
@@ -52,6 +49,8 @@ struct tbuilder_listbox
 	 * serialize the data in the config, so the config is no longer required.
 	 */
 	std::vector<string_map> list_data;
+
+	std::vector<tradio_page::tpage> pages;
 };
 
 } // namespace implementation

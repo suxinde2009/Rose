@@ -27,6 +27,7 @@ class tspacer;
 namespace implementation {
 	struct tbuilder_scroll_label;
 	struct tbuilder_scroll_text_box;
+	struct tbuilder_report;
 	struct tbuilder_scrollbar_panel;
 }
 
@@ -45,6 +46,7 @@ class tscrollbar_container
 
 	friend struct implementation::tbuilder_scroll_label;
 	friend struct implementation::tbuilder_scroll_text_box;
+	friend struct implementation::tbuilder_report;
 	friend struct implementation::tbuilder_scrollbar_panel;
 #ifndef GUI2_EXPERIMENTAL_LISTBOX
 	friend class tlistbox;
@@ -52,9 +54,29 @@ class tscrollbar_container
 	friend class ttree_view;
 	friend class tscroll_label;
 	friend class tscroll_text_box;
+	friend class treport;
+	friend class tscrollbar_panel;
 	friend struct tscrollbar_container_implementation;
 
 public:
+	class tcalculte_reduce_lock
+	{
+	public:
+		tcalculte_reduce_lock(tscrollbar_container& container)
+			: container_(container)
+			, original_(container.calculate_reduce_)
+		{
+			container_.calculate_reduce_ = true;
+		}
+		~tcalculte_reduce_lock()
+		{
+			container_.calculate_reduce_ = original_;
+		}
+
+	private:
+		tscrollbar_container& container_;
+		bool original_;
+	};
 
 	explicit tscrollbar_container(const unsigned canvas_count, bool listbox = false);
 
@@ -62,10 +84,6 @@ public:
 
 	/** The way to handle the showing or hiding of the scrollbar. */
 	enum tscrollbar_mode {
-		always_visible,           /**<
-		                           * The scrollbar is always shown, whether
-		                           * needed or not.
-		                           */
 		always_invisible,         /**<
 		                           * The scrollbar is never shown even not
 		                           * when needed. There's also no space
@@ -78,25 +96,12 @@ public:
 		                           * reserved, just in case it's needed after
 		                           * the initial sizing (due to adding items).
 		                           */
-		auto_visible_first_run    /**<
-		                           * Like auto_visible, but when not needed
-		                           * upon the initial layout phase, the bars
-		                           * are not shown and no space is reserved
-		                           * for them. (The algorithm hides them by
-		                           * default.
-		                           */
 	};
 
 	/***** ***** ***** ***** layout functions ***** ***** ***** *****/
 
 	/** Inherited from tcontainer_. */
 	void layout_init(const bool full_initialization);
-
-	/** Inherited from twidget. */
-	void request_reduce_height(const unsigned maximum_height);
-
-	/** Inherited from tcontrol. */
-	void request_reduce_width(const unsigned maximum_width);
 
 	/** Inherited from tcontainer_. */
 	bool can_wrap() const
@@ -107,14 +112,12 @@ public:
 			: false;
 	}
 
-	const tpoint best_size() const { return best_size_; }
+	void set_best_size(const std::string& width, const std::string& height);
 
 private:
 	/** Inherited from tcontainer_. */
 	tpoint calculate_best_size() const;
 
-	virtual tpoint pre_request_fix_width(const unsigned maximum_content_grid_width);
-	virtual tpoint adjust_content_size(const tpoint& size);
 	virtual void adjust_offset(int& x_offset, int& y_offset) {}
 	virtual void set_content_grid_origin(const tpoint& origin, const tpoint& content_origin);
 	virtual void set_content_grid_visible_area(const SDL_Rect& area);
@@ -199,10 +202,13 @@ public:
 	void horizontal_scrollbar_moved()
 		{ scrollbar_moved(); }
 
-	void set_best_size(const tpoint& best_size);
 	void set_scroll_to_end(bool val) { scroll_to_end_ = val; }
 
 	tpoint scrollbar_size(const tgrid& scrollbar_grid, tscrollbar_mode scrollbar_mode) const;
+
+	virtual bool content_empty() const { return false; }
+	virtual void invalidate_layout(bool calculate_linked_group);
+
 protected:
 
 	/**
@@ -237,78 +243,6 @@ protected:
 	 * will be active or inactive as needed.
 	 */
 	void set_scrollbar_button_status();
-
-	void layout_private(bool first);
-
-	/**
-	 * Notification if the content of a child needs a resize.
-	 *
-	 * When a resize is required the container first can try to handle it
-	 * itself. If it can't honour the request the function will call @ref
-	 * twindow::invalidate_layout().
-	 *
-	 * @note Calling this function on a widget with size == (0, 0) results
-	 * false but doesn't call invalidate_layout, the engine expects to be in
-	 * build up phase with the layout already invalidated.
-	 *
-	 * @param force_sizing        If the contents fit do we want to force a
-	 *                            resize? This is needed in the MP lobby since
-	 *                            items might not be properly placed yet.
-	 *                            (The listboxes with the player info need it.)
-	 *
-	 * @returns                   True if the resize is handled, false
-	 *                            otherwise.
-	 */
-	bool content_resize_request(const bool force_sizing = false);
-
-	/**
-	 * Request from the content to modify the size of the container.
-	 *
-	 * When the wanted resize fails the function will call @ref
-	 * twindow::invalidate_layout().
-	 *
-	 *
-	 * @note Calling this function on a widget with size == (0, 0) results
-	 * false but doesn't call invalidate_layout, the engine expects to be in
-	 * build up phase with the layout already invalidated.
-	 *
-	 * @note If @ref twindow::get_need_layout() is true the function returns
-	 * false and doesn't try to fit the contents since a layout phase will be
-	 * triggered anyway.
-	 *
-	 * @note This function might replace the @ref content_resize_request above.
-	 *
-	 * @param width_modification  The wanted modification to the width:
-	 *                            * negative values reduce width.
-	 *                            * zero leave width as is.
-	 *                            * positive values increase width.
-	 * @param height_modification The wanted modification to the height:
-	 *                            * negative values reduce height.
-	 *                            * zero leave height as is.
-	 *                            * positive values increase height.
-	 *
-	 * @returns                   True is wanted modification is accepted false
-	 *                            otherwise.
-	 */
-	bool content_resize_request(
-			  const int width_modification
-			, const int height_modification);
-
-private:
-
-	/**
-	 * Helper for @ref content_resize_request.
-	 *
-	 * Handle the width modification.
-	 */
-	bool content_resize_width(const int width_modification);
-
-	/**
-	 * Helper for @ref content_resize_request.
-	 *
-	 * Handle the height modification.
-	 */
-	bool content_resize_height(const int height_modification);
 
 protected:
 
@@ -411,12 +345,26 @@ protected:
 	 */
 	virtual void handle_key_right_arrow(SDLMod modifier, bool& handled);
 
+	bool calculate_scrollbar(const tpoint& actual_size, const tpoint& desire_size);
+
 	/** When we're used as a fixed size item, this holds the best size. */
-	tpoint best_size_;
+	tformula<unsigned> best_width_;
+	tformula<unsigned> best_height_;
+
 	// mutable tpoint content_size_;
 	bool listbox_;
 	mutable bool size_calculated_;
 	bool scroll_to_end_;
+
+	/** The grid that holds the content. */
+	tgrid *content_grid_;
+
+	/** Dummy spacer to hold the contents location. */
+	tspacer *content_;
+
+	bool need_layout_;
+	tpoint keep_content_grid_origin_;
+
 private:
 
 	/**
@@ -454,18 +402,14 @@ private:
 		*vertical_scrollbar_,
 		*horizontal_scrollbar_;
 
-	/** The grid that holds the content. */
-	tgrid *content_grid_;
-
-	/** Dummy spacer to hold the contents location. */
-	tspacer *content_;
-
 	/**
 	 * Cache for the visible area for the content.
 	 *
 	 * The visible area for the content needs to be updated when scrolling.
 	 */
 	SDL_Rect content_visible_area_;
+
+	bool calculate_reduce_;
 
 	/** The builder needs to call us so we do our setup. */
 	void finalize_setup(); // FIXME make protected
@@ -481,7 +425,6 @@ private:
 	void layout_children();
 
 	/** Inherited from tcontainer_. */
-	void impl_draw_children(surface& frame_buffer);
 	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 	/** Inherited from tcontainer_. */

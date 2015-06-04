@@ -58,9 +58,12 @@ struct tgrid_implementation
 			const tpoint& coordinate, const bool must_be_active)
 	{
 		typedef typename utils::tconst_clone<tgrid::tchild, W>::type hack;
-		BOOST_FOREACH(hack& child, grid.children_) {
+		
+		// BOOST_FOREACH(hack& child, grid.children_) {
+		for (int n = 0; n < grid.children_vsize_; n ++) {
+			hack& child = grid.children_[n];
 
-			W* widget = child.widget();
+			W* widget = child.widget_;
 			if(!widget) {
 				continue;
 			}
@@ -93,9 +96,11 @@ struct tgrid_implementation
 		}
 
 		typedef typename utils::tconst_clone<tgrid::tchild, W>::type hack;
-		BOOST_FOREACH(hack& child, grid.children_) {
+		// BOOST_FOREACH(hack& child, grid.children_) {
+		for (int n = 0; n < grid.children_vsize_; n ++) {
+			hack& child = grid.children_[n];
 
-			widget = child.widget();
+			widget = child.widget_;
 			if(!widget) {
 				continue;
 			}
@@ -109,50 +114,6 @@ struct tgrid_implementation
 
 		return 0;
 	}
-
-	/**
-	 * Helper function to do the resizing of a row.
-	 *
-	 * @param grid                The grid to operate upon.
-	 * @param row                 The row to resize.
-	 * @param maximum_height      The wanted maximum height.
-	 *
-	 * @returns                   The required row height after resizing.
-	 */
-	static unsigned row_request_reduce_height(tgrid& grid,
-			const unsigned row, const unsigned maximum_height);
-
-	/**
-	 * Helper function to do the resizing of a column.
-	 *
-	 * @param grid                The grid to operate upon.
-	 * @param column              The column to resize.
-	 * @param maximum_width       The wanted maximum width.
-	 *
-	 * @returns                   The required column width after resizing.
-	 */
-	static unsigned column_request_reduce_width(tgrid& grid,
-			const unsigned column, const unsigned maximum_width);
-
-private:
-
-	/**
-	 * Helper function to do the resizing of a widget.
-	 *
-	 * @param child               The cell whose widget needs to be resized.
-	 * @param maximum_height      The wanted maximum height.
-	 */
-	static void cell_request_reduce_height(tgrid::tchild& child,
-			const unsigned maximum_height);
-
-	/**
-	 * Helper function to do the resizing of a widget.
-	 *
-	 * @param child               The cell whose widget needs to be resized.
-	 * @param maximum_width      The wanted maximum width.
-	 */
-	static void cell_request_reduce_width(tgrid::tchild& child,
-			const unsigned maximum_width);
 };
 
 } // namespace gui2

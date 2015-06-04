@@ -67,8 +67,10 @@ tbuilder_listbox::tbuilder_listbox(const config& cfg)
 	VALIDATE(list_builder->rows == 1
 			, _("A 'list_definition' should contain one row."));
 
+	tradio_page::parse_cfg(cfg.child("radio"), pages);
+
 	const config &data = cfg.child("list_data");
-	if(!data) {
+	if (!data) {
 		return;
 	}
 
@@ -133,25 +135,18 @@ twidget* tbuilder_listbox::build() const
 		return grid;
 	}
 
-	tlistbox *widget = new tlistbox(
-			true, true, tgenerator_::vertical_list, true);
+	tlistbox *widget = new tlistbox(pages, true, true, tgenerator_::vertical_list, true);
 
 	init_control(widget);
 
 	const game_logic::map_formula_callable& size =
 			get_screen_size_variables();
 
-	const unsigned w = width(size);
-	const unsigned h = height(size);
-
-	if (w || h) {
-		widget->set_best_size(tpoint(w, h));
-	}
-
 	widget->set_list_builder(list_builder); // FIXME in finalize???
 
 	widget->set_vertical_scrollbar_mode(vertical_scrollbar_mode);
 	widget->set_horizontal_scrollbar_mode(horizontal_scrollbar_mode);
+	widget->set_best_size(width, height);
 
 	DBG_GUI_G << "Window builder: placed listbox '"
 			<< id << "' with definition '"

@@ -3209,6 +3209,9 @@ msgstr ""
 msgid "Save Map"
 msgstr ""
 
+msgid "Save Window"
+msgstr ""
+
 #: src/hotkeys.cpp:73
 msgid "Recruit"
 msgstr ""
@@ -3358,6 +3361,9 @@ msgstr ""
 
 #: src/hotkeys.cpp:124
 msgid "Load Map"
+msgstr ""
+
+msgid "Load Window"
 msgstr ""
 
 #: src/hotkeys.cpp:126
@@ -4877,6 +4883,9 @@ msgstr ""
 msgid "Append"
 msgstr ""
 
+msgid "Modify"
+msgstr ""
+
 msgid "Agreement"
 msgstr ""
 
@@ -5359,4 +5368,155 @@ msgid "Map error. Too short road from $from to $to, at least $shortest!"
 msgstr ""
 
 msgid "Upgrade to $to"
+msgstr ""
+
+#: src/loadscreen.cpp:222
+msgid "Initializing user interface"
+msgstr ""
+
+#: src/loadscreen.cpp:223
+msgid "Loading game configuration"
+msgstr ""
+
+#: src/loadscreen.cpp:224 src/loadscreen.cpp:231
+msgid "Verifying cache"
+msgstr ""
+
+#: src/loadscreen.cpp:225 src/loadscreen.cpp:232
+msgid "Reading files and creating cache"
+msgstr ""
+
+#: src/loadscreen.cpp:226 src/loadscreen.cpp:233
+msgid "Reading unit files"
+msgstr ""
+
+#: src/loadscreen.cpp:227
+msgid "Re-initialize fonts for the current language"
+msgstr ""
+
+#: src/loadscreen.cpp:228
+msgid "Searching for installed add-ons"
+msgstr ""
+
+#: src/loadscreen.cpp:229
+msgid "Loading title screen"
+msgstr ""
+
+#: src/loadscreen.cpp:230
+msgid "Loading data files"
+msgstr ""
+
+#: src/loadscreen.cpp:234
+msgid "Loading level"
+msgstr ""
+
+#: src/loadscreen.cpp:235
+msgid "Initializing teams"
+msgstr ""
+
+#: src/loadscreen.cpp:236
+msgid "Loading units"
+msgstr ""
+
+#: src/loadscreen.cpp:237
+msgid "Building terrain rules"
+msgstr ""
+
+#: src/loadscreen.cpp:238
+msgid "Initializing display"
+msgstr ""
+
+#: src/loadscreen.cpp:239
+msgid "Drawing theme"
+msgstr ""
+
+#: src/loadscreen.cpp:240
+msgid "Starting game"
+msgstr ""
+
+msgid "Cannot find report widget: $id."
+msgstr ""
+
+msgid "Report widget($id) must use fix rect."
+msgstr ""
+
+msgid "Defined $id conext menu, but not define same id report widget!"
+msgstr ""
+
+msgid "file^Size"
+msgstr ""
+
+msgid "Choose a Window to Open"
+msgstr ""
+
+msgid "Open"
+msgstr ""
+
+msgid "My Document"
+msgstr ""
+
+msgid "Sandbox"
+msgstr ""
+
+msgid "File name"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Save As"
+msgstr ""
+
+msgid "Find"
+msgstr ""
+
+msgid "Nick"
+msgstr ""
+
+msgid "Nick when chat"
+msgstr ""
+
+msgid "$username of username is not a valid nick, you require to set a valid nick separately!\n Nick can ony use alpha, number and _."
+msgstr ""
+
+msgid "After $part, you can not receive message from $channel. Do you want to $part?"
+msgstr ""
+
+msgid "You set $nick into $channel successfully!"
+msgstr ""
+
+msgid "Do you want remove $nick from $channel?"
+msgstr ""
+
+msgid "Min users"
+msgstr ""
+
+msgid "Friend"
+msgstr ""
+
+msgid "Part"
+msgstr ""
+
+msgid "%b %d %y"
+msgstr ""
+
+msgid "%H:%M"
+msgstr ""
+
+msgid "%A, %H:%M"
+msgstr ""
+
+msgid "%b %d"
+msgstr ""
+
+msgid "%a %b %d %H:%M %Y"
+msgstr ""
+
+msgid "Transit"
+msgstr ""
+
+msgid "War of Kingdom"
+msgstr ""
+
+msgid "Rose"
 msgstr ""

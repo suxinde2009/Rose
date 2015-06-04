@@ -56,6 +56,7 @@ class twidget
 	friend class twindow; // needed for modifying the layout_size.
 
 public:
+	static const int npos = -1;
 
 	/** @deprecated use the second overload. */
 	twidget();
@@ -71,7 +72,7 @@ public:
 	virtual ~twidget();
 
 	/***** ***** ***** ***** flags ***** ***** ***** *****/
-
+	
 	/** Visibility settings done by the user. */
 	enum tvisible {
 		/**
@@ -150,59 +151,6 @@ public:
 	 *                            widgets this flag is a NOP.
 	 */
 	virtual void layout_init(const bool full_initialization);
-
-	/**
-	 * Tries to reduce the width of a widget.
-	 *
-	 * This function tries to do it 'friendly' and only use scrollbars or
-	 * wrapping of the widget.
-	 *
-	 * @see @ref layout_algorithm for more information.
-	 *
-	 * @param maximum_width       The wanted maximum width.
-	 */
-	virtual void request_reduce_width(const unsigned maximum_width) = 0;
-
-	/**
-	 * Tries to reduce the width of a widget.
-	 *
-	 * This function does it more aggressive and should only be used when
-	 * using scrollbars and wrapping failed.
-	 *
-	 * @todo Make pure virtual.
-	 *
-	 * @see @ref layout_algorithm for more information.
-	 *
-	 * @param maximum_width       The wanted maximum width.
-	 */
-	virtual void demand_reduce_width(const unsigned /*maximum_width*/) {}
-
-	/**
-	 * Tries to reduce the height of a widget.
-	 *
-	 * This function tries to do it 'friendly' and only use scrollbars.
-	 *
-	 * @todo Make pure virtual.
-	 *
-	 * @see @ref layout_algorithm for more information.
-	 *
-	 * @param maximum_height      The wanted maximum height.
-	 */
-	virtual void request_reduce_height(const unsigned /*maximum_height*/) {}
-
-	/**
-	 * Tries to reduce the height of a widget.
-	 *
-	 * This function does it more aggressive and should only be used when
-	 * using scrollbars failed.
-	 *
-	 * @todo Make pure virtual.
-	 *
-	 * @see @ref layout_algorithm for more information.
-	 *
-	 * @param maximum_height      The wanted maximum height.
-	 */
-	virtual void demand_reduce_height(const unsigned /*maximum_height*/) {}
 
 	/**
 	 * Gets the best size for the widget.
@@ -400,6 +348,15 @@ public:
 		y_ = origin.y;
 	}
 
+	void set_fix_rect(const SDL_Rect& area) { fix_rect_ = area; }
+	void set_fix_size(int w, int h) { fix_rect_.w = w; fix_rect_.h = h; }
+	const SDL_Rect& fix_rect() const { return fix_rect_; }
+	int fix_width() const { return fix_rect_.w; }
+	int fix_height() const { return fix_rect_.h; }
+
+	void set_cookie(void* cookie) { cookie_ = cookie; }
+	void* cookie() { return cookie_; }
+
 	/**
 	 * Moves a widget.
 	 *
@@ -442,6 +399,8 @@ public:
 	/** Returns the dirty state for a widget, final function. */
 	bool get_dirty() const { return dirty_; }
 
+	void set_volatile(bool val) { volatile_ = val; }
+
 	void set_debug_border_mode(const unsigned debug_border_mode)
 	{
 		debug_border_mode_ = debug_border_mode;
@@ -479,9 +438,7 @@ public:
 	 *
 	 * @returns                   The clipping rectangle.
 	 */
-	SDL_Rect calculate_clipping_rectangle(
-			  const int x_offset
-			, const int y_offset);
+	SDL_Rect calculate_clipping_rectangle(SDL_Surface* surf, const int x_offset, const int y_offset);
 
 	/**
 	 * Draws the background of a widget.
@@ -493,7 +450,6 @@ public:
 	 * @param x_offset            The x offset in the @p frame_buffer to draw.
 	 * @param y_offset            The y offset in the @p frame_buffer to draw.
 	 */
-	void draw_background(surface& frame_buffer);
 	void draw_background(surface& frame_buffer, int x_offset, int y_offset);
 
 	/**
@@ -508,7 +464,6 @@ public:
 	 * @param x_offset            The x offset in the @p frame_buffer to draw.
 	 * @param y_offset            The y offset in the @p frame_buffer to draw.
 	 */
-	void draw_children(surface& frame_buffer);
 	void draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 	/**
@@ -524,7 +479,6 @@ public:
 	 * @param x_offset            The x offset in the @p frame_buffer to draw.
 	 * @param y_offset            The y offset in the @p frame_buffer to draw.
 	 */
-	void draw_foreground(surface& frame_buffer);
 	void draw_foreground(surface& frame_buffer, int x_offset, int y_offset);
 
 	/**
@@ -553,7 +507,11 @@ public:
 	void populate_dirty_list(twindow& caller,
 			std::vector<twidget*>& call_stack);
 
-	virtual bool exist_anim() const { return false; }
+	virtual bool exist_anim() { return false; }
+
+	/***** ***** ***** setters / getters for members ***** ****** *****/
+	void set_layout_size(const tpoint& size);
+	const tpoint& layout_size() const { return layout_size_; }
 
 private:
 
@@ -570,11 +528,6 @@ private:
 	 */
 	virtual void child_populate_dirty_list(twindow& /*caller*/,
 			const std::vector<twidget*>& /*call_stack*/) {}
-protected:
-	/***** ***** ***** setters / getters for members ***** ****** *****/
-
-	void set_layout_size(const tpoint& size);
-	const tpoint& layout_size() const { return layout_size_; }
 
 public:
 
@@ -583,6 +536,23 @@ public:
 		linked_group_ = linked_group;
 	}
 
+protected:
+	/** The x coordinate of the widget in the screen. */
+	int x_;
+
+	/** The y coordinate of the widget in the screen. */
+	int y_;
+
+	/** The width of the widget. */
+	unsigned w_;
+
+	/** The height of the widget. */
+	unsigned h_;
+
+	/** The fix rect is a widget is fix rectangle. */
+	SDL_Rect fix_rect_;
+
+	void* cookie_;
 private:
 
 	/**
@@ -601,18 +571,6 @@ private:
 	 */
 	twidget* parent_;
 
-	/** The x coordinate of the widget in the screen. */
-	int x_;
-
-	/** The y coordinate of the widget in the screen. */
-	int y_;
-
-	/** The width of the widget. */
-	unsigned w_;
-
-	/** The height of the widget. */
-	unsigned h_;
-
 	/**
 	 * Is the widget dirty? When a widget is dirty it needs to be redrawn at
 	 * the next drawing cycle, setting it to dirty also need to set it's parent
@@ -622,6 +580,11 @@ private:
 	 * optimized later on.
 	 */
 	bool dirty_;
+
+	/**
+	 * always require refresh.
+	 */
+	bool volatile_;
 
 	/** Field for the status of the visibility. */
 	tvisible visible_;
@@ -683,7 +646,6 @@ private:
 #endif
 
 	/** See draw_background(). */
-	virtual void impl_draw_background(surface& /*frame_buffer*/) {}
 	virtual void impl_draw_background(
 			  surface& /*frame_buffer*/
 			, int /*x_offset*/
@@ -692,7 +654,6 @@ private:
 	}
 
 	/** See draw_children. */
-	virtual void impl_draw_children(surface& /*frame_buffer*/) {}
 	virtual void impl_draw_children(
 			surface& /*frame_buffer*/
 			, int /*x_offset*/
@@ -701,7 +662,6 @@ private:
 	}
 
 	/** See draw_foreground. */
-	virtual void impl_draw_foreground(surface& /*frame_buffer*/) {}
 	virtual void impl_draw_foreground(
 			  surface& /*frame_buffer*/
 			, int /*x_offset*/
@@ -729,6 +689,11 @@ private:
 	 * @returns                   Status.
 	 */
 	bool is_at(const tpoint& coordinate, const bool must_be_active) const;
+};
+
+struct tdirty_list {
+	std::vector<twidget*> dirty;
+	std::vector<twidget*> children;
 };
 
 /**

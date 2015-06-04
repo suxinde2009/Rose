@@ -369,7 +369,8 @@ void tvertical_list::place(const tpoint& origin, const tpoint& size)
 		current_origin.y += best_size.y;
 	}
 
-	assert(current_origin.y == origin.y + size.y);
+	int ii = 0;
+	// assert(current_origin.y == origin.y + size.y);
 }
 
 void tvertical_list::set_origin(const tpoint& origin)
@@ -495,24 +496,6 @@ void tvertical_list::handle_key_down_arrow(SDLMod /*modifier*/, bool& handled)
 	}
 }
 
-void tindependent::request_reduce_width(const unsigned maximum_width)
-{
-	for(size_t i = 0; i < get_item_count(); ++i) {
-
-		tgrid& grid = item(i);
-		grid.request_reduce_width(maximum_width);
-	}
-}
-
-void tindependent::request_reduce_height(const unsigned maximum_height)
-{
-	for(size_t i = 0; i < get_item_count(); ++i) {
-
-		tgrid& grid = item(i);
-		grid.request_reduce_height(maximum_height);
-	}
-}
-
 tpoint tindependent::calculate_best_size() const
 {
 	/*
@@ -523,7 +506,6 @@ tpoint tindependent::calculate_best_size() const
 	for(size_t i = 0; i < get_item_count(); ++i) {
 
 		const tgrid& grid = item(i);
-
 		const tpoint best_size = grid.get_best_size();
 
 		if(best_size.x > result.x) {

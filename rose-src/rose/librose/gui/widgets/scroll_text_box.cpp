@@ -25,7 +25,6 @@
 #include "gui/widgets/scrollbar.hpp"
 #include "gui/widgets/spacer.hpp"
 #include "gui/widgets/window.hpp"
-#include "gui/auxiliary/layout_exception.hpp"
 
 #include <boost/bind.hpp>
 
@@ -57,6 +56,47 @@ void tscroll_text_box::finalize_subclass()
 	tb->set_mouse_moved_callback(boost::bind(&tscroll_text_box::mouse_moved_callback, this, _1));
 }
 
+tpoint tscroll_text_box::calculate_best_size() const
+{
+	const twindow* window = get_window();
+	unsigned w = best_width_(window->variables());
+
+	unsigned maximum_width = settings::screen_width;
+	if (w) {
+		const tpoint vertical_scrollbar = scrollbar_size(*vertical_scrollbar_grid_, vertical_scrollbar_mode_);
+		maximum_width = w - vertical_scrollbar.x;
+		if (maximum_width > settings::screen_width) {
+			maximum_width -= settings::screen_width;
+		}
+	}
+
+	ttext_box* tb = dynamic_cast<ttext_box*>(content_grid_->find("_text_box", false));
+
+	ttext_maximum_width_lock lock(*tb, maximum_width);
+	return tscrollbar_container::calculate_best_size();
+}
+
+void tscroll_text_box::set_content_size(const tpoint& origin, const tpoint& desire_size)
+{
+	ttext_box* tb = dynamic_cast<ttext_box*>(content_grid()->find("_text_box", false));
+	tb->set_text_maximum_width(desire_size.x);
+
+	const tpoint actual_size = content_grid_->get_best_size();
+	bool changed = calculate_scrollbar(actual_size, desire_size);
+	if (changed) {
+		tb->clear_label_size_cache();
+	}
+
+	const tpoint size(std::max(actual_size.x, desire_size.x), std::max(actual_size.y, desire_size.y));
+	tscrollbar_container::set_content_size(origin, size);
+}
+
+bool tscroll_text_box::content_empty() const
+{
+	const ttext_box* tb = dynamic_cast<const ttext_box*>(content_grid()->find("_text_box", false));
+	return tb->label().empty();
+}
+
 void tscroll_text_box::set_text_editable(bool editable)
 {
 	if (content_grid()) {
@@ -65,16 +105,12 @@ void tscroll_text_box::set_text_editable(bool editable)
 	}
 }
 
-std::string tscroll_text_box::get_value() const
+const std::string& tscroll_text_box::label() const
 {
-	if (content_grid()) {
-		const ttext_box* widget = find_widget<const ttext_box>(content_grid(), "_text_box", false, true);
-		return widget->get_value();
-	}
-	return null_str;
+	return real_label_;
 }
 
-void tscroll_text_box::set_value(const std::string& text)
+void tscroll_text_box::set_label(const std::string& text)
 {
 	if (content_grid()) {
 		ttext_box* widget = find_widget<ttext_box>(content_grid(), "_text_box", false, true);
@@ -93,7 +129,10 @@ void tscroll_text_box::insert_img(const std::string& str)
 
 void tscroll_text_box::text_changed_callback(ttext_box* widget)
 {
-	content_resize_request();
+	real_label_ = widget->get_value();
+
+	// scroll_label hasn't linked_group widget, to save time, don't calcuate linked_group.
+	invalidate_layout(false);
 }
 
 void tscroll_text_box::mouse_moved_callback(ttext_box* widget)
@@ -117,14 +156,6 @@ void tscroll_text_box::mouse_moved_callback(ttext_box* widget)
 
 	vertical_scrollbar_->set_item_position(item_position);
 	scrollbar_moved();
-}
-
-tpoint tscroll_text_box::pre_request_fix_width(const unsigned maximum_content_grid_width)
-{
-	ttext_box* tb = dynamic_cast<ttext_box*>(content_grid()->find("_text_box", false));
-	tb->set_text_maximum_width(maximum_content_grid_width - tb->config()->text_extra_width);
-
-	return content_grid()->calculate_best_size();
 }
 
 const std::string& tscroll_text_box::get_control_type() const

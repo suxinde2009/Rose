@@ -44,13 +44,13 @@ public:
 	 * @todo Evaluate the best place for these items.
 	 */
 	enum tresult {
-			NEW_CAMPAIGN = 1     /**< Let user select a campaign to play */
+			EDIT_DIALOG = 1     /**< Let user select a campaign to play */
 			, PLAYER
 			, PLAYER_SIDE
 			, MULTIPLAYER         /**<
 			                       * Play single scenario against humans or AI
 			                       */
-			, LOAD_GAME
+			, EDIT_THEME
 			, REPORT
 			, START_MAP_EDITOR
 			, CHANGE_LANGUAGE
@@ -66,7 +66,7 @@ public:
 			                       */
 			};
 
-	bool handle(tlobby::ttype type, const config& data);
+	bool handle(int tag, tsock::ttype type, const config& data);
 private:
 
 	/** Inherited from tdialog, implemented by REGISTER_DIALOG. */

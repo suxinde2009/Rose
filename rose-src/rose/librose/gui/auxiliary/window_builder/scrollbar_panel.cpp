@@ -36,22 +36,28 @@ tbuilder_scrollbar_panel::tbuilder_scrollbar_panel(const config& cfg)
 	, horizontal_scrollbar_mode(
 			get_scrollbar_mode(cfg["horizontal_scrollbar_mode"]))
 	, grid(NULL)
+	, width(cfg["width"])
+	, height(cfg["height"])
+
 {
 	const config &definition = cfg.child("definition");
 
 	VALIDATE(definition, _("No list defined."));
 	grid = new tbuilder_grid(definition);
 	assert(grid);
+
+	tradio_page::parse_cfg(cfg.child("radio"), pages);
 }
 
 twidget* tbuilder_scrollbar_panel::build() const
 {
-	tscrollbar_panel *widget = new tscrollbar_panel();
+	tscrollbar_panel *widget = new tscrollbar_panel(pages);
 
 	init_control(widget);
 
 	widget->set_vertical_scrollbar_mode(vertical_scrollbar_mode);
 	widget->set_horizontal_scrollbar_mode(horizontal_scrollbar_mode);
+	widget->set_best_size(width, height);
 
 	DBG_GUI_G << "Window builder: placed scrollbar_panel '"
 			<< id << "' with definition '"

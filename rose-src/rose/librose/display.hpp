@@ -39,15 +39,17 @@ class terrain_builder;
 struct time_of_day;
 class map_labels;
 class arrow;
+class base_unit;
 
 #include "font.hpp"
 #include "key.hpp"
 #include "reports.hpp"
-#include "theme.hpp"
 #include "video.hpp"
-#include "widgets/button.hpp"
 #include "animation.hpp"
 #include "area_anim.hpp"
+#include "gui/widgets/control.hpp"
+#include "gui/dialogs/theme.hpp"
+#include "generic_event.hpp"
 
 #include <list>
 
@@ -55,8 +57,7 @@ class arrow;
 #include <boost/scoped_ptr.hpp>
 
 class gamemap;
-
-typedef std::pair<const theme::menu*, size_t> button_loc;
+class controller_base;
 
 /**
  * Rectangular area of hexes, allowing to decide how the top and bottom
@@ -98,20 +99,36 @@ struct rect_of_hexes {
 #define point_in_rect_of_hexes(x, y, rect)	\
 	((x) >= (rect).left && (y) >= (rect).top[(x) & 1] && (x) <= (rect).right && (y) <= (rect).bottom[(x) & 1])
 
-class display: public button_hook
+#define draw_area_index(x, y)	((y) + map_border_size_) * draw_area_pitch_ + ((x) + map_border_size_)
+#define draw_area_val(x, y)		draw_area_[((y) + map_border_size_) * draw_area_pitch_ + ((x) + map_border_size_)]
+
+class display
 {
 public:
-	static int last_zoom_;
+	class tcanvas_drawing_buffer_lock
+	{
+	public:
+		tcanvas_drawing_buffer_lock(display& disp);
+		~tcanvas_drawing_buffer_lock();
+
+	private:
+		display& disp_;
+		bool to_canvas_;
+	};
+
+	static int last_zoom;
 	static int default_zoom_;
 
 	enum {ZOOM_72 = 72, ZOOM_64 = 64, ZOOM_56 = 56, ZOOM_48 = 48};
 	static int adjust_zoom(int zoom);
 
-	display(CVideo& video, const gamemap* map, const config& theme_cfg,
-			const config& level);
+	display(const std::string& tile, controller_base* controller, CVideo& video, const gamemap* map, const config& theme_cfg,
+			const config& level, size_t num_reports);
 	virtual ~display();
 	static display* get_singleton() { return singleton_ ;}
 	static void set_singleton(display* s) { singleton_ = s; }
+
+	static display* create_dummy_display(CVideo& video);
 
 	/**
 	 * Updates internals that cache map size. This should be called when the map
@@ -138,8 +155,8 @@ public:
 	/** return the screen surface or the surface used for map_screenshot. */
 	surface get_screen_surface() { return map_screenshot_ ? map_screenshot_surf_ : screen_.getSurface();}
 
-	virtual bool in_game() const { return false; }
-	virtual bool in_editor() const { return false; }
+	// virtual bool in_game() const { return false; }
+	virtual bool in_theme() const { return false; }
 
 	/**
 	 * the dimensions of the display. x and y are width/height.
@@ -148,10 +165,7 @@ public:
 	 */
 	int w() const { return screen_.getx(); }	/**< width */
 	int h() const { return screen_.gety(); }	/**< height */
-	const SDL_Rect& minimap_area() const
-		{ return theme_.mini_map_location(screen_area()); }
-	const SDL_Rect& unit_image_area() const
-		{ return theme_.unit_image_location(screen_area()); }
+	const SDL_Rect& minimap_area() const;
 
 	SDL_Rect screen_area() const
 		{ return create_rect(0, 0, w(), h()); }
@@ -160,7 +174,7 @@ public:
 	 * Returns the maximum area used for the map
 	 * regardless to resolution and view size
 	 */
-	const SDL_Rect& max_map_area() const;
+	virtual const SDL_Rect& max_map_area() const;
 
 	/**
 	 * Returns the area used for the map
@@ -173,7 +187,7 @@ public:
 	 * applied to it.
 	 */
 	const SDL_Rect& map_outside_area() const { return map_screenshot_ ?
-		max_map_area() : theme_.main_map_location(screen_area()); }
+		max_map_area() : main_map_area_; }
 
 	/** Check if the bbox of the hex at x,y has pixels outside the area rectangle. */
 	bool outside_area(const SDL_Rect& area, const int x,const int y) const;
@@ -184,13 +198,13 @@ public:
 	 * (i.e. not entirely from tip to tip -- use hex_size()
 	 * to get the distance from tip to tip)
 	 */
-	int hex_width() const { return (zoom_*3)/4; }
+	virtual int hex_width() const { return zoom_; }
 
 	/**
 	 * Function which returns the size of a hex in pixels
 	 * (from top tip to bottom tip or left edge to right edge).
 	 */
-	int hex_size() const { return zoom_; }
+	virtual int hex_size() const { return zoom_; }
 
 	/** Returns the current zoom factor. */
 	double get_zoom_factor() const;
@@ -202,12 +216,14 @@ public:
 	 */
 	const map_location hex_clicked_on(int x, int y) const;
 
+	void pixel_screen_to_map(int& xclick, int& yclick) const;
+
 	/**
 	 * given x,y co-ordinates of a pixel on the map, will return the
 	 * location of the hex that this pixel corresponds to.
 	 * Returns an invalid location if the mouse isn't over any valid location.
 	 */
-	const map_location pixel_position_to_hex(int x, int y) const;
+	virtual const map_location pixel_position_to_hex(int x, int y) const;
 
 	/**
 	 * given x,y co-ordinates of the mouse, will return the location of the
@@ -216,25 +232,24 @@ public:
 	 */
 	map_location minimap_location_on(int x, int y);
 
-	bool unit_image_location_on(int x, int y);
-
 	const map_location& selected_hex() const { return selectedHex_; }
 	const map_location& mouseover_hex() const { return mouseoverHex_; }
 
 	virtual void select_hex(map_location hex);
 	virtual void highlight_hex(map_location hex);
 
-	virtual void set_hero_indicator(const hero& h) {};
-
 	/** Function to invalidate the game status displayed on the sidebar. */
 	void invalidate_game_status() { invalidateGameStatus_ = true; }
 
 	/** Functions to get the on-screen positions of hexes. */
-	int get_location_x(const map_location& loc) const;
-	int get_location_y(const map_location& loc) const;
+	virtual int get_location_x(const map_location& loc) const;
+	virtual int get_location_y(const map_location& loc) const;
+
+	int get_scroll_pixel_x(int x) const;
+	int get_scroll_pixel_y(int y) const;
 
 	/** Return the rectangular area of hexes overlapped by r (r is in screen coordinates) */
-	const rect_of_hexes hexes_under_rect(const SDL_Rect& r) const;
+	virtual const rect_of_hexes hexes_under_rect(const SDL_Rect& r) const;
 
 	/** Returns the rectangular area of visible hexes */
 	const rect_of_hexes get_visible_hexes() const { return hexes_under_rect(map_area());};
@@ -265,7 +280,14 @@ public:
 	int screenshot(std::string filename, bool map_screenshot = false);
 
 	/** Invalidates entire screen, including all tiles and sidebar. Calls redraw observers. */
-	virtual bool redraw_everything();
+	void redraw_everything();
+	void change_resolution();
+	virtual void pre_change_resolution(std::map<const std::string, bool>& actives) {}
+	virtual void post_change_resolution(const std::map<const std::string, bool>& actives) {}
+
+	void click_context_menu(const std::string& main, const std::string& id, size_t flags);
+	void show_context_menu(const std::string& main = null_str, const std::string& id = null_str);
+	void hide_context_menu(const std::string& main = null_str);
 
 	/** Adds a redraw observer, a function object to be called when redraw_everything is used */
 	void add_redraw_observer(boost::function<void(display&)> f);
@@ -273,22 +295,18 @@ public:
 	/** Clear the redraw observers */
 	void clear_redraw_observers();
 
-	theme& get_theme() { return theme_; }
-	gui::button* find_button(const std::string& id);
-	gui::button::TYPE string_to_button_type(std::string type);
-	virtual void create_buttons();
-	void invalidate_theme() { panelsDrawn_ = false; }
-	void menu_set_pip_image(const std::string& id, const std::string& fg);
-	void menu_set_image(const std::string& id, const std::string& image);
+	void widget_set_pip_image(const std::string& id, const std::string& bg, const std::string& fg);
+	void widget_set_image(const std::string& id, const std::string& image);
+	void widget_set_surface(const std::string& id, const surface& surf);
 
-	void refresh_report(reports::TYPE report_num, reports::report report);
+	void refresh_report(int num, const reports::report& r);
+	virtual surface refresh_surface_report(int num, const reports::report& r, gui2::twidget& widget) { return surface(); }
 
-	gui::button* find_button(const theme::menu* m, int btnidx = 0);
 	// runtime tooltip of mouse-over unit
 	virtual void hide_tip() {}
 
 	// Will be overridden in the display subclass
-	virtual void draw_minimap_units() {};
+	virtual void draw_minimap_units(surface& screen) {};
 
 	/** Function to invalidate all tiles. */
 	void invalidate_all();
@@ -312,6 +330,8 @@ public:
 	 * Function to invalidate animated terrains which may have changed.
 	 */
 	virtual void invalidate_animations();
+
+	virtual void invalidate_theme();
 
 	/**
 	 * Per-location invalidation called by invalidate_animations()
@@ -344,13 +364,6 @@ public:
 	/** Toggle to continuously redraw the screen. */
 	static void toggle_benchmark();
 
-	/**
-	 * Toggle to debug foreground terrain.
-	 * Separate background and foreground layer
-	 * to better spot any error there.
-	 */
-	static void toggle_debug_foreground();
-
 	terrain_builder& get_builder() {return *builder_;};
 
 	void flip();
@@ -361,32 +374,10 @@ public:
 	/** Rebuild all dynamic terrain. */
 	virtual void rebuild_all();
 
-	// const theme::menu* menu_pressed();
-	const button_loc& menu_pressed();
-
-	bool before_press(const void* menu, const size_t btnidx);
-	void pressed(const void* menu, const size_t btnidx);
-	
-	void clear_context_menu_buttons();
-
-	virtual map_location access_list_press(size_t btnidx) { return map_location(); }
-
-	virtual void set_index_in_map(int index, bool troop) {};
-	virtual bool index_in_map(int index) const { return false; }
-	virtual const theme::menu* access_troop_menu() const { return NULL; }
-
-		/**
-	 * Finds the menu which has a given item in it,
-	 * and hides or shows it.
-	 */
-	void hide_menu(const std::string& item, bool hide);
-
 	/**
 	 * Finds the menu which has a given item in it,
 	 * and hides or shows it.
 	 */
-	virtual void hide_context_menu(const theme::menu* m, bool hide, uint32_t flags = 0xffffffff, uint32_t disable = 0xffffffff);
-
 	virtual void goto_main_context_menu();
 
 	/**
@@ -410,8 +401,6 @@ public:
 	 * Finds the menu which has a given item in it,
 	 * and enables or disables it.
 	 */
-	void enable_menu(const std::string& item, bool enable);
-
 	void set_diagnostic(const std::string& msg);
 
 	/** Delay routines: use these not SDL_Delay (for --nogui). */
@@ -530,6 +519,24 @@ public:
 	void draw_float_anim();
 	void undraw_float_anim();
 
+	gui2::ttheme* get_theme() { return theme_; }
+	gui2::twidget* get_theme_object(const std::string& id) const ;
+	void set_theme_object_active(const std::string& id, bool active) const;
+	void set_theme_object_visible(const std::string& id, const gui2::twidget::tvisible visible) const;
+	void set_theme_object_surface(const std::string& id, const surface& surf) const;
+	gui2::twidget* get_theme_report(int num) const;
+	void set_theme_report_label(int num, const std::string& label) const;
+	void set_theme_report_surface(int num, const surface& surf) const;
+
+	virtual std::string get_theme_patch() const { return null_str; }
+	virtual gui2::ttheme* create_theme_dlg(const config& cfg) { return NULL; }
+	const reports::report& cached_report(int num) const { return reports_[num]; }
+
+	int min_zoom() const { return min_zoom_; }
+	int max_zoom() const { return max_zoom_; }
+
+	virtual void shrouded_and_fogged(const map_location& loc, bool& shrouded, bool& fogged) const {}
+
 protected:
 	/** Clear the screen contents */
 	void clear_screen();
@@ -610,10 +617,15 @@ protected:
 
 	const std::string& get_variant(const std::vector<std::string>& variants, const map_location &loc) const;
 
+	virtual double minimap_shift_x(const SDL_Rect& map_rect, const SDL_Rect& map_out_rect) const;
+	virtual double minimap_shift_y(const SDL_Rect& map_rect, const SDL_Rect& map_out_rect) const;
+
+	virtual void post_zoom() {}
+
+protected:
 	CVideo& screen_;
 	const gamemap* map_;
 	int xpos_, ypos_;
-	theme theme_;
 	int zoom_;
 	boost::scoped_ptr<terrain_builder> builder_;
 	surface minimap_;
@@ -623,7 +635,6 @@ protected:
 	bool invalidateAll_;
 	bool grid_;
 	int diagnostic_label_;
-	bool panelsDrawn_;
 	double turbo_speed_;
 	bool turbo_;
 	bool invalidateGameStatus_;
@@ -631,6 +642,8 @@ protected:
 
 	int last_map_w_;
 	int last_map_h_;
+
+	gui2::tpoint zero_;
 
 	/** Event raised when the map is being scrolled */
 	mutable events::generic_event scroll_event_;
@@ -642,10 +655,7 @@ protected:
 	int nextDraw_;
 
 	// Not set by the initializer:
-	SDL_Rect reportRects_[reports::NUM_REPORTS];
-	surface reportSurfaces_[reports::NUM_REPORTS];
-	reports::report reports_[reports::NUM_REPORTS];
-	std::vector<gui::button> buttons_;
+	std::vector<reports::report> reports_;
 	surface mouseover_hex_overlay_;
 	// If we're transitioning from one time of day to the next,
 	// then we will use these two masks on top of all hexes when we blit.
@@ -655,6 +665,8 @@ protected:
 
 	map_location selectedHex_;
 	map_location mouseoverHex_;
+	bool show_hover_over_;
+
 	CKey keys_;
 
 	/** Local cache for preferences::animate_map, since it is constantly queried. */
@@ -663,19 +675,15 @@ protected:
 	/** Local cache for preferences "local_tod_light" */
 	bool local_tod_light_;
 
-	struct menu_button_map {
-		theme::menu *menu;
-		gui::button **buttons;
-		size_t button_count;
-		size_t require_count;
-	};
-	menu_button_map *buttons_ctx_;
-
 	uint8_t* draw_area_;
 	int draw_area_pitch_;
 	int draw_area_size_;
 	bool drawing_;
 	rect_of_hexes draw_area_rect_;
+	int map_border_size_;
+	// for draw
+	base_unit** draw_area_unit_;
+	size_t draw_area_unit_size_;
 
 	// used for runtime tooltip of mouse-over unit
 	int main_tip_handle_;
@@ -847,6 +855,8 @@ protected:
 
 	typedef std::list<tblit> tdrawing_buffer;
 	tdrawing_buffer drawing_buffer_;
+	tdrawing_buffer canvas_drawing_buffer_;
+	bool to_canvas_;
 
 public:
 
@@ -878,14 +888,9 @@ public:
 	void drawing_buffer_commit(surface& screen);
 
 protected:
-
+	void create_theme();
+	void release_theme();
 	virtual SDL_Rect clip_rect_commit() const;
-
-	/** Clears the drawing buffer. */
-	void drawing_buffer_clear();
-
-	/** redraw all panels associated with the map display */
-	void draw_all_panels();
 
 	/**
 	 * Strict weak ordering to sort a STL-set of hexes
@@ -917,6 +922,14 @@ protected:
 	bool map_screenshot_;
 
 protected:
+	config theme_cfg_;
+	SDL_Rect main_map_area_;
+	theme::tborder border_;
+	const config* theme_current_cfg_;
+	gui2::ttheme* theme_;
+	
+	int min_zoom_;
+	int max_zoom_;
 	std::map<int, animation*> area_anims_;
 
 private:
@@ -942,13 +955,27 @@ private:
 	/** Maps the list of arrows for each location */
 	arrows_map_t arrows_map_;
 
-	button_loc button_loc_;
-
+	controller_base* controller_;
 	/**
 	 * the tiles invalidated at last redraw,
 	 * to simplify the cleaning up of tiles left by units
 	 */
 	static display * singleton_;
+};
+
+class display_lock
+{
+public:
+	display_lock(display& disp)
+		: disp_(disp)
+	{}
+	~display_lock()
+	{
+		display::set_singleton(&disp_);
+	}
+
+private:
+	display& disp_;
 };
 
 const SDL_Rect& calculate_energy_bar(surface surf);

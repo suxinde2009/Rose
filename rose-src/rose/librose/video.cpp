@@ -17,6 +17,7 @@
  *  @file
  *  Video-testprogram, standalone
  */
+#define GETTEXT_DOMAIN "wesnoth-lib"
 
 #include "global.hpp"
 
@@ -28,6 +29,7 @@
 #include "sdl_utils.hpp"
 #include "video.hpp"
 #include "display.hpp"
+#include "gettext.hpp"
 
 #include <boost/foreach.hpp>
 #include <vector>
@@ -40,24 +42,6 @@ static lg::log_domain log_display("display");
 
 namespace {
 	bool fullScreen = false;
-	int disallow_resize = 0;
-}
-void resize_monitor::process(events::pump_info &info) 
-{
-	if (info.resize_dimensions.first >= preferences::min_allowed_width() && info.resize_dimensions.second >= preferences::min_allowed_height()
-		&& disallow_resize == 0) {
-		preferences::set_resolution(info.resize_dimensions);
-	}
-}
-
-resize_lock::resize_lock()
-{
-	++disallow_resize;
-}
-
-resize_lock::~resize_lock()
-{
-	--disallow_resize;
 }
 
 static unsigned int get_flags(unsigned int flags)
@@ -163,7 +147,7 @@ void CVideo::blit_surface(int x, int y, surface surf, SDL_Rect* srcrect, SDL_Rec
 	sdl_blit(surf,srcrect,target,&dst);
 }
 
-int CVideo::modePossible(int w, int h, int bits_per_pixel, int flags, bool current_screen_optimal )
+int CVideo::modePossible(int w, int h, int bits_per_pixel, int flags )
 {
 	SDL_Rect screen_rect = bound();
 
@@ -206,7 +190,7 @@ int CVideo::setMode(int x, int y, int bits_per_pixel, int flags)
 		SDL_DestroyRenderer(renderer);
 	}
 	
-	window = SDL_CreateWindow("War of Kingdom",
+	window = SDL_CreateWindow(_(game_config::app_msgid.c_str()),
                           SDL_WINDOWPOS_UNDEFINED,
                           SDL_WINDOWPOS_UNDEFINED,
                           x, y,

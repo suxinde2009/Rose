@@ -27,11 +27,10 @@
 #include "filesystem.hpp"
 #include "gettext.hpp"
 #include "gui/auxiliary/log.hpp"
-#include "gui/auxiliary/tips.hpp"
+// #include "gui/auxiliary/tips.hpp"
 #include "gui/widgets/window.hpp"
 #include "serialization/parser.hpp"
 #include "serialization/preprocessor.hpp"
-// #include "serialization/schema_validator.hpp"
 #include "formula_string_utils.hpp"
 #include "game_config.hpp"
 #include "loadscreen.hpp"
@@ -98,67 +97,8 @@ static tregistered_widget_type& registred_widget_type()
 	return result;
 }
 
-struct tgui_definition
-{
-	tgui_definition()
-		: id()
-		, description()
-		, control_definition()
-		, windows()
-		, window_types()
-		, popup_show_delay_(0)
-		, popup_show_time_(0)
-		, help_show_time_(0)
-		, double_click_time_(0)
-		, repeat_button_repeat_time_(0)
-		, sound_button_click_()
-		, sound_toggle_button_click_()
-		, sound_toggle_panel_click_()
-		, sound_slider_adjust_()
-		, has_helptip_message_()
-		, tips_()
-	{
-	}
-
-	std::string id;
-	t_string description;
-
-	const std::string& read(const config& cfg);
-
-	/** Activates a gui. */
-	void activate() const;
-
-	typedef std::map <std::string /*control type*/,
-		std::map<std::string /*id*/, tcontrol_definition_ptr> >
-		tcontrol_definition_map;
-
-	tcontrol_definition_map control_definition;
-
-	std::map<std::string, twindow_definition> windows;
-
-	std::map<std::string, twindow_builder> window_types;
-
-	void load_widget_definitions(
-			  const std::string& definition_type
-			, const std::vector<tcontrol_definition_ptr>& definitions);
-private:
-
-	unsigned popup_show_delay_;
-	unsigned popup_show_time_;
-	unsigned help_show_time_;
-	unsigned double_click_time_;
-	unsigned repeat_button_repeat_time_;
-
-	std::string sound_button_click_;
-	std::string sound_toggle_button_click_;
-	std::string sound_toggle_panel_click_;
-	std::string sound_slider_adjust_;
-
-	t_string has_helptip_message_;
-
-	std::map<std::string, config> bubbles_;
-	std::vector<ttip> tips_;
-};
+/** theme frame config. */
+config theme_window_cfg;
 
 const std::string& tgui_definition::read(const config& cfg)
 {
@@ -300,7 +240,7 @@ const std::string& tgui_definition::read(const config& cfg)
 		window_types.insert(child);
 	}
 
-	if(id == "default") {
+	if (id == "default") {
 		// The default gui needs to define all window types since we're the
 		// fallback in case another gui doesn't define the window type.
 		for(std::vector<std::string>::const_iterator itor
@@ -315,6 +255,11 @@ const std::string& tgui_definition::read(const config& cfg)
 			VALIDATE(window_types.find(*itor) != window_types.end(), error_msg );
 		}
 	}
+
+	theme_window_cfg = cfg.find_child("window", "id", game_config::theme_window_id);
+	std::stringstream err;
+	err << "must define theme window, id: " << game_config::theme_window_id;
+	VALIDATE(!theme_window_cfg.empty(), err.str());
 
 	/***** settings *****/
 /*WIKI
@@ -456,14 +401,14 @@ void tgui_definition::load_widget_definitions(
 
 }
 
-	/** Map with all known windows, (the builder class builds a window). */
-	std::map<std::string, twindow_builder> windows;
+/** Map with all known windows, (the builder class builds a window). */
+std::map<std::string, twindow_builder> windows;
 
-	/** Map with all known guis. */
-	std::map<std::string, tgui_definition> guis;
+/** Map with all known guis. */
+std::map<std::string, tgui_definition> guis;
 
-	/** Points to the current gui. */
-	std::map<std::string, tgui_definition>::const_iterator current_gui = guis.end();
+/** Points to the current gui. */
+std::map<std::string, tgui_definition>::const_iterator current_gui = guis.end();
 
 void register_window(const std::string& id)
 {
@@ -517,7 +462,7 @@ void load_settings()
 		guis.insert(child);
 	}
 
-	VALIDATE(guis.find("default") != guis.end(), _ ("No default gui defined."));
+	VALIDATE(guis.find("default") != guis.end(), _("No default gui defined."));
 
 	current_gui = guis.find("default");
 	current_gui->second.activate();
@@ -648,6 +593,48 @@ std::vector<twindow_builder::tresolution>::const_iterator get_window_builder(
 	}
 
 	ERROR_LOG(false);
+}
+
+void reload_window_builder(const std::string& type, const config& cfg, const std::set<std::string>& reserve_wml_tag)
+{
+	std::map<std::string, tgui_definition>::iterator current_gui2 = guis.find("default");
+	std::map<std::string, twindow_builder>::iterator window = current_gui2->second.window_types.find(type);
+	if (window == current_gui->second.window_types.end()) {
+		throw twindow_builder_invalid_id();
+	}
+	config& res_cfg = theme_window_cfg.child("resolution");
+	res_cfg.clear_children("linked_group");
+
+	config& grid_cfg = res_cfg.child("grid");
+	grid_cfg.clear_children("row");
+	config& row_cfg = grid_cfg.add_child("row");
+	BOOST_FOREACH (const config::any_child &value, cfg.all_children_range()) {
+		if (reserve_wml_tag.find(value.key) != reserve_wml_tag.end()) {
+			continue;
+		}
+		config* childcfg;
+		if (value.key == "linked_group") {
+			childcfg = &res_cfg;
+		} else {
+			childcfg = &row_cfg.add_child("column");
+		}
+		childcfg->add_child(value.key, value.cfg);
+	}
+
+	twindow::update_screen_size();
+	window->second.read(theme_window_cfg);
+}
+
+void reload_test_window(const std::string& type, const config& cfg)
+{
+	std::map<std::string, tgui_definition>::iterator current_gui2 = guis.find("default");
+	std::map<std::string, twindow_builder>::iterator window = current_gui2->second.window_types.find(type);
+	if (window == current_gui->second.window_types.end()) {
+		throw twindow_builder_invalid_id();
+	}
+	
+	twindow::update_screen_size();
+	window->second.read(cfg);
 }
 
 /*WIKI

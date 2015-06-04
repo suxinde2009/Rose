@@ -121,11 +121,11 @@ void trose::post_build(CVideo& video, twindow& window)
 
 static const char* menu_items[] = {
 	"report",
-	"campaign",
+	"edit_dialog",
 	"player",
 	"side",
 	"multiplayer",
-	"load",
+	"edit_theme",
 	"signin",
 	"design",
 	"shop",
@@ -209,7 +209,13 @@ void trose::pre_show(CVideo& video, twindow& window)
 		}
 		std::string str;
 		if (!strcmp(menu_items[item], "player")) {
-			str = player_hero_.image(true);
+			str = "hero-256/100.png";
+
+		} else if (!strcmp(menu_items[item], "edit_dialog")) {
+			str = std::string("icons/studio/") + menu_items[item] + ".png";
+
+		} else if (!strcmp(menu_items[item], "edit_theme")) {
+			str = std::string("icons/studio/") + menu_items[item] + ".png";
 
 		} else if (!strcmp(menu_items[item], "signin")) {
 			if (group.signin().today) {
@@ -265,16 +271,16 @@ void trose::pre_show(CVideo& video, twindow& window)
 			retval = QUIT_GAME;
 		} else if (id == "help") {
 			retval = HELP;
-		} else if (id == "campaign") {
-			retval = NEW_CAMPAIGN;
+		} else if (id == "edit_dialog") {
+			retval = EDIT_DIALOG;
 		} else if (id == "player") {
 			retval = PLAYER;
 		} else if (id == "side") {
 			retval = PLAYER_SIDE;
 		} else if (id == "multiplayer") {
 			retval = MULTIPLAYER;
-		} else if (id == "load") {
-			retval = LOAD_GAME;
+		} else if (id == "edit_theme") {
+			retval = EDIT_THEME;
 		} else if (id == "report") {
 			retval = REPORT;
 		} else if (id == "language") {
@@ -307,9 +313,13 @@ void trose::post_show(twindow& window)
 {
 }
 
-bool trose::handle(tlobby::ttype type, const config& data)
+bool trose::handle(int tag, tsock::ttype type, const config& data)
 {
-	if (type != tlobby::t_data) {
+	if (tag != tlobby::tag_chat) {
+		return false;
+	}
+
+	if (type != tsock::t_data) {
 		return false;
 	}
 	if (const config& c = data.child("whisper")) {
@@ -324,25 +334,25 @@ bool trose::handle(tlobby::ttype type, const config& data)
 
 void trose::set_retval(twindow& window, int retval)
 {
-	if (retval == NEW_CAMPAIGN) {
+	if (retval == INAPP_PURCHASE) {
 		tbutton* b = find_widget<tbutton>(&window, "player", false, false);
 		config cfg;
-		cfg["id"] = "focus";
+		cfg["id"] = area_anim::rfind(area_anim::OPERATING);
 		int id = b->insert_animation(cfg, false);
 		ids.push_back(id);
 
 		return;
 
-	} else if (retval == MULTIPLAYER) {
+	} else if (retval == REPORT) {
 		tbutton* b = find_widget<tbutton>(&window, "player", false, false);
 		config cfg;
-		cfg["id"] = "focus";
+		cfg["id"] = area_anim::rfind(area_anim::OPERATING);
 		int id = b->insert_animation(cfg, true);
 		ids.push_back(id);
 
 		return;
 
-	} else if (retval == INAPP_PURCHASE) {
+	} else if (retval == PLAYER_SIDE) {
 		if (!ids.empty()) {
 			tbutton* b = find_widget<tbutton>(&window, "player", false, false);
 			b->erase_animation(ids.front());

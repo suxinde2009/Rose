@@ -9,8 +9,8 @@ msgstr ""
 "Project-Id-Version: wesnoth\n"
 "Report-Msgid-Bugs-To: http://bugs.wesnoth.org/\n"
 "POT-Creation-Date: 2010-12-08 18:05+0100\n"
-"PO-Revision-Date: 2014-11-12 17:24+0800\n"
-"Last-Translator: ancientcc <ancientcc@gmail.com>\n"
+"PO-Revision-Date: 2015-04-27 17:19+0800\n"
+"Last-Translator: \n"
 "Language-Team: Chinese/Simplified <i18n-translation@lists.linux.net.cn>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -264,9 +264,8 @@ msgstr "风车"
 
 #. [terrain_type]: id=campfire
 #: data/core/terrain.cfg:409
-#, fuzzy
 msgid "Campfire"
-msgstr "战役"
+msgstr ""
 
 #. [terrain_type]: id=fence
 #: data/core/terrain.cfg:418
@@ -3207,6 +3206,9 @@ msgstr "保存录像"
 msgid "Save Map"
 msgstr "保存地图"
 
+msgid "Save Window"
+msgstr "保存窗口"
+
 #: src/hotkeys.cpp:73
 msgid "Recruit"
 msgstr "征募"
@@ -3358,6 +3360,9 @@ msgstr "部分撤销"
 #: src/hotkeys.cpp:124
 msgid "Load Map"
 msgstr "读取地图"
+
+msgid "Load Window"
+msgstr "加载窗口"
 
 #: src/hotkeys.cpp:126
 msgid "Save Map As"
@@ -4897,6 +4902,9 @@ msgstr "$do成功！"
 msgid "Append"
 msgstr "添加"
 
+msgid "Modify"
+msgstr "修改"
+
 msgid "Agreement"
 msgstr "协议"
 
@@ -5029,8 +5037,8 @@ msgstr "该条交易记录已经被使用过！"
 msgid "payment^course($alipay, $mail, $money, $pay)"
 msgstr ""
 "一、登录$alipay官方网站（www.alipay.com），执行“转账“。\n"
-"二、“收款人”输入$mail（一旦正确会变为“**飞(sales@leagor.com)”），“付款金额”输"
-"入内购项对应的值，“付款说明”中写上游戏中的账号名和内购项名称。\n"
+"二、“收款人”输入$mail（一旦正确会变为“*佐(ancientcc@gmail.com)”），“付款金"
+"额”输入内购项对应的值，“付款说明”中写上游戏中的账号名和内购项名称。\n"
 "三、一旦后台处理完内购，玩家除了在游戏中看到变换，像王国币增加了，还会收到一"
 "条内购成功的消息。"
 
@@ -5486,6 +5494,163 @@ msgstr "地图错误。$from和$to之间道路太短了，至少$shortest！"
 
 msgid "Upgrade to $to"
 msgstr "升级到$to"
+
+#: src/loadscreen.cpp:222
+msgid "Initializing user interface"
+msgstr "正在初始化用户界面......"
+
+#: src/loadscreen.cpp:223
+msgid "Loading game configuration"
+msgstr "正在读取游戏配置……"
+
+#: src/loadscreen.cpp:224 src/loadscreen.cpp:231
+msgid "Verifying cache"
+msgstr "正在验证缓存……"
+
+#: src/loadscreen.cpp:225 src/loadscreen.cpp:232
+msgid "Reading files and creating cache"
+msgstr "正在读取文件并创建缓存……"
+
+#: src/loadscreen.cpp:226 src/loadscreen.cpp:233
+msgid "Reading unit files"
+msgstr "正在读取单位文件……"
+
+#: src/loadscreen.cpp:227
+msgid "Re-initialize fonts for the current language"
+msgstr "为当前语言重新初始化字体……"
+
+#: src/loadscreen.cpp:228
+msgid "Searching for installed add-ons"
+msgstr "正在搜索已经安装的附加组件……"
+
+#: src/loadscreen.cpp:229
+msgid "Loading title screen"
+msgstr "正在读取主屏幕……"
+
+#: src/loadscreen.cpp:230
+msgid "Loading data files"
+msgstr "正在读取数据文件……"
+
+#: src/loadscreen.cpp:234
+msgid "Loading level"
+msgstr "正在读取关卡文件……"
+
+#: src/loadscreen.cpp:235
+msgid "Initializing teams"
+msgstr "正在初始化队伍……"
+
+#: src/loadscreen.cpp:236
+msgid "Loading units"
+msgstr "正在读取单位定义……"
+
+#: src/loadscreen.cpp:237
+msgid "Building terrain rules"
+msgstr "正在建立地形构造规则集……"
+
+#: src/loadscreen.cpp:238
+msgid "Initializing display"
+msgstr "正在初始化显示……"
+
+#: src/loadscreen.cpp:239
+msgid "Drawing theme"
+msgstr "正在绘制主题……"
+
+#: src/loadscreen.cpp:240
+msgid "Starting game"
+msgstr "正在开始游戏……"
+
+msgid "Cannot find report widget: $id."
+msgstr "找不到状态报告：$id。"
+
+msgid "Report widget($id) must use fix rect."
+msgstr "状态报告（$id）必须使用固定坐标。"
+
+msgid "Defined $id conext menu, but not define same id report widget!"
+msgstr "定义了$id上下文菜单，但没有定义同id报表控件！"
+
+msgid "file^Size"
+msgstr "大小"
+
+msgid "Choose a Window to Open"
+msgstr "选择要打开的窗口"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "My Document"
+msgstr "我的文档"
+
+msgid "Sandbox"
+msgstr "沙盒"
+
+msgid "File name"
+msgstr "文件名"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Save As"
+msgstr "另存为"
+
+msgid "Find"
+msgstr "查找"
+
+msgid "Nick"
+msgstr "昵称"
+
+msgid "Nick when chat"
+msgstr "聊天时昵称"
+
+msgid ""
+"$username of username is not a valid nick, you require to set a valid nick "
+"separately!\n"
+" Nick can ony use alpha, number and _."
+msgstr ""
+"账号$username不是有效昵称，你需要单独设置一个昵称！\n"
+"昵称只能使用字母、数字和_"
+
+msgid ""
+"After $part, you can not receive message from $channel. Do you want to $part?"
+msgstr "$part后，将不再接收从$channel发来的消息。确定要$part吗？"
+
+msgid "You set $nick into $channel successfully!"
+msgstr "您已成功把$nick加入$channel！"
+
+msgid "Do you want remove $nick from $channel?"
+msgstr "您真的要把$nick从$channel中移除吗？"
+
+msgid "Min users"
+msgstr "最小成员数"
+
+msgid "Friend"
+msgstr "好友"
+
+msgid "Part"
+msgstr "退出"
+
+msgid "%b %d %y"
+msgstr "%Y年%m月%d日"
+
+msgid "%H:%M"
+msgstr "%H:%M"
+
+msgid "%A, %H:%M"
+msgstr "%m月%d日 %H:%M"
+
+msgid "%b %d"
+msgstr "%m月%d日"
+
+msgid "%a %b %d %H:%M %Y"
+msgstr "%Y年%m月%d日，%H时%M分"
+
+msgid "Transit"
+msgstr "中转"
+
+msgid "War of Kingdom"
+msgstr "王国战争"
+
+msgid "Rose"
+msgstr "Rose"
 
 #~ msgid "Join Official Server"
 #~ msgstr "加入官方服务器"

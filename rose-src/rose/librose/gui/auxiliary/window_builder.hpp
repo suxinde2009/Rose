@@ -156,6 +156,29 @@ public:
 typedef boost::intrusive_ptr<tbuilder_grid> tbuilder_grid_ptr;
 typedef boost::intrusive_ptr<const tbuilder_grid> tbuilder_grid_const_ptr;
 
+struct tlinked_group
+{
+	tlinked_group()
+		: id()
+		, fixed_width(false)
+		, fixed_height(false)
+	{}
+	tlinked_group(const std::string& id, bool width, bool height)
+		: id(id)
+		, fixed_width(width)
+		, fixed_height(height)
+	{}
+	tlinked_group(const config& cfg)
+		: id(cfg["id"])
+		, fixed_width(cfg["fixed_width"].to_bool())
+		, fixed_height(cfg["fixed_height"].to_bool())
+	{}
+
+	std::string id;
+	bool fixed_width;
+	bool fixed_height;
+};
+
 class twindow_builder
 {
 public:
@@ -193,37 +216,9 @@ public:
 		bool click_dismiss;
 
 		std::string definition;
-
-		struct tlinked_group
-		{
-			tlinked_group()
-				: id()
-				, fixed_width(false)
-				, fixed_height(false)
-			{
-			}
-
-			std::string id;
-			bool fixed_width;
-			bool fixed_height;
-		};
+		bool theme;
 
 		std::vector<tlinked_group> linked_groups;
-
-		struct talternate_item 
-		{
-			talternate_item()
-				: linked_groups()
-			{
-			}
-
-			std::vector<tlinked_group> linked_groups;
-
-			tbuilder_grid_ptr header;
-			tbuilder_grid_ptr row;
-		};
-
-		std::vector<talternate_item> alternate_items;
 
 		/** Helper struct to store information about the tips. */
 		struct ttip

@@ -55,7 +55,6 @@ class twindow
 {
 	friend class tdebug_layout_graph;
 	friend twindow *build(CVideo &, const twindow_builder::tresolution *);
-	friend struct twindow_implementation;
 	friend class tinvalidate_layout_blocker;
 	friend class tpane;
 
@@ -72,6 +71,7 @@ public:
 		const unsigned maximum_width,
 		const unsigned maximum_height,
 		const std::string& definition,
+		const bool theme,
 		const twindow_builder::tresolution::ttip& tooltip,
 		const twindow_builder::tresolution::ttip& helptip);
 
@@ -151,6 +151,8 @@ public:
 	int show(const bool restore = true,
 			const unsigned auto_close_timeout = 0);
 
+	int asyn_show();
+
 	/**
 	 * Shows the window as a tooltip.
 	 *
@@ -204,7 +206,8 @@ public:
 	 */
 	void add_to_dirty_list(const std::vector<twidget*>& call_stack)
 	{
-		dirty_list_.push_back(call_stack);
+		dirty_list_.push_back(tdirty_list());
+		dirty_list_.back().dirty = call_stack;
 	}
 
 	/** The status of the window. */
@@ -348,7 +351,7 @@ public:
 	 * @param fixed_height        Does the group have a fixed height?
 	 */
 	void init_linked_size_group(const std::string& id,
-			const bool fixed_width, const bool fixed_height, bool alternate = false);
+			const bool fixed_width, const bool fixed_height, bool radio = false);
 
 	/**
 	 * Is the linked size group defined for this window?
@@ -413,21 +416,36 @@ public:
 		variables_.add(key, value);
 		set_dirty();
 	}
+	const game_logic::map_formula_callable& variables() const { return variables_; }
 
-	int alternate_index() const { return alternate_index_; }
-	void alternate_uh(twidget* holder, int index = 0);
-	void alternate_bh(twidget* holder, int index = 0);
+	void radio_page_swap_uh(const tradio_page::tpage& page, twidget* holder, bool first);
+	void radio_page_swap_bh(const tradio_page::tpage& page, twidget* holder);
 
-	std::vector<std::vector<twidget*> >& dirty_list();
+	std::vector<tdirty_list>& dirty_list();
 	void set_keep_rect(int x, int y = -1, int w = -1, int h = -1);
 	const SDL_Rect& keep_rect() const { return keep_rect_; }
-
+	std::vector<twidget*> set_fix_coordinate(const SDL_Rect& map_area);
+	bool is_theme() const { return fix_coordinate_; }
 	/**
 	 * Layouts the linked widgets.
 	 *
 	 * @see layout_algorithm for more information.
 	 */
-	void layout_linked_widgets();
+	void layout_linked_widgets(const twidget* parent);
+
+	/** Inherited from twidget. */
+	tpoint calculate_best_size() const;
+
+	/**
+	 * Layouts the window.
+	 *
+	 * This part does the pre and post processing for the actual layout
+	 * algorithm.
+	 *
+	 * @see layout_algorithm for more information.
+	 */
+	void layout();
+
 private:
 
 	/** Needed so we can change what's drawn on the screen. */
@@ -561,11 +579,11 @@ private:
 	 */
 	struct tlinked_size
 	{
-		tlinked_size(const bool width = false, const bool height = false, bool alternate = false)
+		tlinked_size(const bool width = false, const bool height = false, bool radio = false)
 			: widgets()
 			, width(width)
 			, height(height)
-			, alternate(alternate)
+			, radio(radio)
 		{
 		}
 
@@ -578,26 +596,15 @@ private:
 		/** Link the widgets in the height? */
 		bool height;
 
-		/** this id is from alternate config*/
-		bool alternate;
+		/** this id is from radio config*/
+		bool radio;
 	};
 
 	/** List of the widgets, whose size are linked together. */
 	std::map<std::string, tlinked_size> linked_size_;
 
-	int alternate_index_;
 	SDL_Rect keep_rect_;
 	const twindow_builder::tresolution* definition_;
-
-	/**
-	 * Layouts the window.
-	 *
-	 * This part does the pre and post processing for the actual layout
-	 * algorithm.
-	 *
-	 * @see layout_algorithm for more information.
-	 */
-	void layout();
 
 	/** Inherited from tevent_handler. */
 	bool click_dismiss();
@@ -619,9 +626,10 @@ private:
 	 * When drawing only the widgets that are dirty are updated. The draw()
 	 * function has more information about the dirty_list_.
 	 */
-	std::vector<std::vector<twidget*> > dirty_list_;
+	std::vector<tdirty_list> dirty_list_;
 
 	tristate bg_opaque_;
+	bool fix_coordinate_;
 	/**
 	 * Finishes the initialization of the grid.
 	 *

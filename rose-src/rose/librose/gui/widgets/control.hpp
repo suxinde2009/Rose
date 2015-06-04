@@ -32,6 +32,24 @@ class tcontrol : public virtual twidget
 {
 	friend class tdebug_layout_graph;
 public:
+	class ttext_maximum_width_lock
+	{
+	public:
+		ttext_maximum_width_lock(tcontrol& widget, int text_maximum_width2)
+			: widget_(widget)
+			, original_(widget.text_maximum_width_)
+		{
+			widget_.text_maximum_width_ = text_maximum_width2 - widget.config_->text_extra_width;
+		}
+		~ttext_maximum_width_lock()
+		{
+			widget_.text_maximum_width_ = original_;
+		}
+
+	private:
+		tcontrol& widget_;
+		int original_;
+	};
 
 	/** @deprecated Used the second overload. */
 	explicit tcontrol(const unsigned canvas_count);
@@ -149,20 +167,26 @@ public:
 	 * use_tooltip_on_label_overflow_. */
 	void layout_init(const bool full_initialization);
 
-	/** Inherited from twidget. */
-	void request_reduce_width(const unsigned maximum_width);
-
 	void refresh_locator_anim(std::vector<tintegrate::tlocator>& locator);
+
+	virtual void set_surface(const surface& surf, int w, int h);
 
 protected:
 	/** Inherited from twidget. */
 	tpoint calculate_best_size() const;
 
-	virtual bool exist_anim() const;
+	virtual bool exist_anim();
 	virtual void calculate_integrate();
 
 	tintegrate* integrate_;
 	std::vector<tintegrate::tlocator> locator_;
+
+	/**
+	 * Surface of all in state.
+	 *
+	 * If it is surface style button, surfs_ will not empty.
+	 */
+	std::vector<surface> surfs_;
 
 public:
 
@@ -274,6 +298,7 @@ public:
 
 	// limit width of text when calculate_best_size.
 	void set_text_maximum_width(int maximum);
+	void clear_label_size_cache();
 
 protected:
 	void set_config(tresolution_definition_ptr config) { config_ = config; }
@@ -401,14 +426,12 @@ public:
 
 protected:
 	/** Inherited from twidget. */
-	void impl_draw_background(surface& frame_buffer);
 	void impl_draw_background(
 			  surface& frame_buffer
 			, int x_offset
 			, int y_offset);
 
 	/** Inherited from twidget. */
-	void impl_draw_foreground(surface& /*frame_buffer*/) { /* do nothing */ }
 	void impl_draw_foreground(
 			  surface& /*frame_buffer*/
 			, int /*x_offset*/

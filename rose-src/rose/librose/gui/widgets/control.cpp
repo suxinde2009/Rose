@@ -28,6 +28,7 @@
 #include "gui/auxiliary/window_builder/control.hpp"
 #include "marked-up_text.hpp"
 #include "display.hpp"
+#include "hotkeys.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -206,13 +207,14 @@ tpoint tcontrol::get_config_maximum_size() const
 	assert(config_);
 
 	tpoint result(config_->max_width, config_->max_height);
+/*
 	if (!result.x) {
 		result.x = settings::screen_width;
 	}
 	if (!result.y) {
 		result.y = settings::screen_height;
 	}
-
+*/
 	DBG_GUI_L << LOG_HEADER << " result " << result << ".\n";
 	return result;
 }
@@ -232,34 +234,6 @@ void tcontrol::layout_init(const bool full_initialization)
 	}
 }
 
-void tcontrol::request_reduce_width(const unsigned maximum_width)
-{
-	assert(config_);
-
-	if(!label_.empty() && can_wrap()) {
-
-		tpoint size = get_best_text_size(
-				tpoint(0,0),
-				tpoint(maximum_width - config_->text_extra_width, 0));
-
-		size.x += config_->text_extra_width;
-		size.y += config_->text_extra_height;
-
-		set_layout_size(size);
-
-		DBG_GUI_L << LOG_HEADER
-				<< " label '" << debug_truncate(label_)
-				<< "' maximum_width " << maximum_width
-				<< " result " << size
-				<< ".\n";
-
-	} else {
-		DBG_GUI_L << LOG_HEADER
-				<< " label '" << debug_truncate(label_)
-				<< "' failed; either no label or wrapping not allowed.\n";
-	}
-}
-
 tpoint tcontrol::calculate_best_size() const
 {
 	assert(config_);
@@ -270,6 +244,13 @@ tpoint tcontrol::calculate_best_size() const
 
 	const tpoint minimum = get_config_default_size();
 	tpoint maximum = get_config_maximum_size();
+	if (!maximum.x) {
+		maximum.x = settings::screen_width;
+	}
+	if (!maximum.y) {
+		maximum.y = settings::screen_height;
+	}
+	maximum.x -= config_->text_extra_width;
 	if (text_maximum_width_ && maximum.x > text_maximum_width_) {
 		maximum.x = text_maximum_width_;
 	}
@@ -294,8 +275,9 @@ void tcontrol::calculate_integrate()
 	if (integrate_) {
 		delete integrate_;
 	}
-	if (get_text_maximum_width() > 0) {
-		// before place, not ready.
+	int max = get_text_maximum_width();
+	if (max > 0) {
+		// before place, w_ = 0. it indicate not ready.
 		integrate_ = new tintegrate(label_, get_text_maximum_width(), -1, config()->text_font_size, font::NORMAL_COLOR, text_editable_);
 		if (!locator_.empty()) {
 			integrate_->fill_locator_rect(locator_, true);
@@ -314,6 +296,24 @@ void tcontrol::refresh_locator_anim(std::vector<tintegrate::tlocator>& locator)
 	} else {
 		locator_ = locator;
 	}
+}
+
+void tcontrol::set_surface(const surface& surf, int w, int h)
+{
+	size_t count = canvas_.size();
+
+	surfs_.clear();
+	surfs_.resize(count);
+	if (!surf || !count) {
+		return;
+	}
+
+	surface normal = scale_surface(surf, w, h);
+	for (size_t n = 0; n < count; n ++) {
+		surfs_[n] = normal;
+	}
+
+	set_dirty();
 }
 
 void tcontrol::place(const tpoint& origin, const tpoint& size)
@@ -353,6 +353,11 @@ void tcontrol::set_definition(const std::string& definition)
 #ifdef GUI2_EXPERIMENTAL_LISTBOX
 	init();
 #endif
+}
+
+void tcontrol::clear_label_size_cache()
+{
+	label_size_.second.x = 0;
 }
 
 void tcontrol::set_label(const std::string& label)
@@ -423,10 +428,10 @@ int tcontrol::get_text_maximum_height() const
 
 void tcontrol::set_text_maximum_width(int maximum)
 {
-	text_maximum_width_ = maximum;
+	text_maximum_width_ = maximum - config_->text_extra_height;
 }
 
-bool tcontrol::exist_anim() const
+bool tcontrol::exist_anim()
 {
 	if (!pre_anims_.empty() || !post_anims_.empty()) {
 		return true;
@@ -486,28 +491,19 @@ private:
 	tintegrate* integrate_;
 };
 
-void tcontrol::impl_draw_background(surface& frame_buffer)
-{
-	DBG_GUI_D << LOG_HEADER
-			<< " label '" << debug_truncate(label_)
-			<< "' size " << get_rect()
-			<< ".\n";
-
-	tshare_canvas_integrate_lock lock(integrate_);
-	canvas(get_state()).blit(frame_buffer, get_rect(), get_dirty(), pre_anims_, post_anims_);
-}
-
 void tcontrol::impl_draw_background(
 		  surface& frame_buffer
 		, int x_offset
 		, int y_offset)
 {
-	DBG_GUI_D << LOG_HEADER
-			<< " label '" << debug_truncate(label_)
-			<< "' size " << get_rect()
-			<< ".\n";
+	const surface* surf = NULL;
+	if (!surfs_.empty()) {
+		surf = &surfs_[get_state()];
+	}
 
-	tshare_canvas_integrate_lock lock(integrate_);
+	tshare_canvas_image_lock lock1(surf);
+	tshare_canvas_integrate_lock lock2(integrate_);
+
 	canvas(get_state()).blit(frame_buffer, calculate_blitting_rectangle(x_offset, y_offset), get_dirty(), pre_anims_, post_anims_);
 }
 
@@ -552,11 +548,21 @@ tpoint tcontrol::get_best_text_size(
 	if (size.y < minimum_size.y) {
 		size.y = minimum_size.y;
 	}
+/*
+	if (size.x > maximum_size.x) {
+		if (label_.find("artifical.cpp:1766 in function") != std::string::npos) {
+			int ii = 0;
+		}
+		size.x = maximum_size.x;
+	}
 
-	DBG_GUI_L << LOG_HEADER
-			<< " label '" << debug_truncate(label_)
-			<< "' result " << size
-			<< ".\n";
+	if (size.y > maximum_size.y) {
+		if (label_.find("artifical.cpp:1766 in function") != std::string::npos) {
+			int ii = 0;
+		}
+		size.y = maximum_size.y;
+	}
+*/
 	return size;
 }
 
@@ -565,14 +571,17 @@ void tcontrol::signal_handler_show_tooltip(
 		, bool& handled
 		, const tpoint& location)
 {
-	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
+#if (defined(__APPLE__) && TARGET_OS_IPHONE) || defined(ANDROID)
+	return;
+#endif
 
-	if(!tooltip_.empty()) {
+	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
+	if (!tooltip_.empty()) {
 		std::string tip = tooltip_;
 		if(!help_message_.empty()) {
 			utils::string_map symbols;
 			symbols["hotkey"] =
-					hotkey::get_hotkey(hotkey::GLOBAL__HELPTIP).get_name();
+					hotkey::get_hotkey(GLOBAL__HELPTIP).get_name();
 
 			tip = tooltip_ + utils::interpolate_variables_into_string(
 					  settings::has_helptip_message

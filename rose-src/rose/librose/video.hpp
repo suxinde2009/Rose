@@ -39,7 +39,7 @@ public:
 	~CVideo();
 
 
-	int modePossible( int x, int y, int bits_per_pixel, int flags ,bool current_screen_optimal=false);
+	int modePossible( int x, int y, int bits_per_pixel, int flags);
 	int setMode( int x, int y, int bits_per_pixel, int flags );
 
 	//did the mode change, since the last call to the modeChanged() method?
@@ -136,17 +136,6 @@ struct update_locker
 private:
 	CVideo& video;
 	bool unlock;
-};
-
-class resize_monitor : public events::pump_monitor {
-	void process(events::pump_info &info);
-};
-
-//an object which prevents resizing of the screen occurring during
-//its lifetime.
-struct resize_lock {
-	resize_lock();
-	~resize_lock();
 };
 
 #endif

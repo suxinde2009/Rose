@@ -31,6 +31,9 @@ class color_range;
 //basic game configuration information is here.
 namespace game_config
 {
+	extern std::string app;
+	extern std::string app_msgid;
+	extern std::string app_channel;
 	extern int base_income;
 	extern int village_income;
 	extern int hero_income;
@@ -97,6 +100,7 @@ namespace game_config
 	extern int ticks_per_turn;
 	extern int feature_increase_spirit;
 	extern bool show_side_report;
+	extern const std::string theme_window_id;
 
 
 	extern int max_bomb_turns;
@@ -206,15 +210,6 @@ namespace game_config
 			flag,
 			flag_icon,
 			big_flag,
-			// hex overlay
-			terrain_mask,
-			grid_top,
-			grid_bottom,
-			mouseover,
-			selected,
-			editor_brush,
-			unreachable,
-			linger,
 			// GUI elements
 			observer,
 			tod_bright,
@@ -226,6 +221,25 @@ namespace game_config
 			ellipsis,
 			missing;
 	} //images
+
+	namespace terrain {
+		// hex overlay
+		extern std::string short_mask,
+		short_grid_top,
+		short_grid_bottom,
+		mouseover,
+		selected,
+		editor_brush,
+		unreachable,
+		disctrict,
+		linger;
+
+		std::string form_img_prefix(const std::string& tile);
+		void modify_according_tile(const std::string& tile);
+	}
+	extern const std::string tile_hex;
+	extern const std::string tile_square;
+
 	extern std::string logo_png;
 
 	extern std::string shroud_prefix, fog_prefix;

@@ -95,7 +95,7 @@ void fill_tags()
 	tags.insert(std::make_pair("text", TEXT));
 	tags.insert(std::make_pair("place", PLACE));
 	tags.insert(std::make_pair("upgrade", UPGRADE));
-	tags.insert(std::make_pair("focus", FOCUS));
+	tags.insert(std::make_pair("operating", OPERATING));
 
 	max_anim = app_fill_anim_tags(tags);
 }
@@ -303,13 +303,13 @@ bool float_animation::invalidate(const surface& screen, frame_parameters& value)
 	value.primary_frame = t_false;
 	for (std::map<std::string, particular>::iterator anim_itor = sub_anims_.begin(); anim_itor != sub_anims_.end() ; ++ anim_itor) {
 		std::vector<SDL_Rect> tmp = anim_itor->second.get_overlaped_rect(value, src_, dst_);
-		// std::copy(tmp.begin(), tmp.end(), std::back_inserter(rects));
 		rects.insert(rects.end(), tmp.begin(), tmp.end());
 	}
 
 	// display* disp = display::get_singleton();
 	const SDL_Surface& fb = *screen;
 	update_rects.clear();
+
 	for (std::vector<SDL_Rect>::const_iterator it = rects.begin(); it != rects.end(); ++ it) {
 		SDL_Rect rect = *it;
 		if (rect.x < 0) {
@@ -474,7 +474,9 @@ int start_cycle_float_anim(display& disp, const config& cfg)
 	}
 
 	new_animation_frame();
-	anim.start_animation(0, map_location::null_location, map_location::null_location, true);
+	// To cycle animation, all particular must start next cycle at same time!
+	// see http://www.freeors.com/bbs/forum.php?mod=viewthread&tid=22099&extra=page%3D1
+	anim.start_animation(0, map_location::null_location, map_location::null_location, false);
 	return id;
 }
 
@@ -489,7 +491,11 @@ void draw_canvas_anim(display& disp, int id, surface& canvas, const SDL_Rect& re
 	}
 
 	new_animation_frame();
-	anim.update_last_draw_time();
+	if (anim.animation_finished_potential()) {
+		anim.start_animation(0, map_location::null_location, map_location::null_location, false);
+	} else {
+		anim.update_last_draw_time();
+	}
 	anim.redraw(canvas, rect);
 
 	disp.drawing_buffer_commit(canvas);

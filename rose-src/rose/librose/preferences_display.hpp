@@ -24,12 +24,9 @@ class display;
 
 namespace preferences {
 
-	struct display_manager
-	{
-		display_manager(display* disp);
-		~display_manager();
-	};
-
+	// this result maybe return by tdialog. twindow::OK is 0, so must large than 0.
+	// reserve by other value, start at 100.
+	enum tresoluton {CHANGE_RESOLUTION = 100, MAKE_FULLSCREEN, MAKE_WINDOWED};
 
 	/**
 	 * Detect a good resolution.
@@ -43,10 +40,8 @@ namespace preferences {
 	 */
 	bool detect_video_settings(CVideo& video, std::pair<int,int>& resolution, int& bpp, int& video_flags);
 
-	void set_fullscreen(CVideo& video, const bool ison);
-	void set_fullscreen(bool ison);
+	void set_fullscreen(display& disp, const bool ison);
 	void set_scroll_to_action(bool ison);
-	void set_resolution(const std::pair<int,int>& res);
 
 	/**
 	 * Set the resolution.
@@ -58,11 +53,10 @@ namespace preferences {
 	 * @returns                   The status true if width and height are the
 	 *                            size of the framebuffer, false otherwise.
 	 */
-	bool set_resolution(CVideo& video
-			, const unsigned width, const unsigned height);
-	void set_turbo(bool ison);
-	void set_grid(bool ison);
-	void set_turbo_speed(double speed);
+	bool set_resolution(display& disp, const unsigned width, const unsigned height);
+	void set_turbo(display& disp, bool ison);
+	void set_grid(display& disp, bool ison);
+	void set_turbo_speed(display& disp, double speed);
 	void set_color_cursors(bool value);
 
 	// Control unit idle animations
@@ -70,6 +64,11 @@ namespace preferences {
 
 	std::string show_wesnothd_server_search(display&);
 	bool show_video_mode_dialog(display& disp);
+	void show_preferences_dialog(display& disp);
 } // end namespace preferences
+
+namespace gui2 {
+int app_show_preferences_dialog(display& disp, bool first);
+}
 
 #endif

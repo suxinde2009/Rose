@@ -29,17 +29,16 @@
 #include "gui/auxiliary/window_builder/vertical_scrollbar.hpp"
 #include "gui/auxiliary/window_builder/label.hpp"
 #include "gui/auxiliary/window_builder/matrix.hpp"
+#include "gui/auxiliary/window_builder/report.hpp"
 #include "gui/auxiliary/window_builder/image.hpp"
 #include "gui/auxiliary/window_builder/toggle_button.hpp"
 #include "gui/auxiliary/window_builder/slider.hpp"
 #include "gui/auxiliary/window_builder/scroll_label.hpp"
-#include "gui/auxiliary/window_builder/theme.hpp"
 #include "gui/auxiliary/window_builder/minimap.hpp"
 #include "gui/auxiliary/window_builder/button.hpp"
 #include "gui/auxiliary/window_builder/drawing.hpp"
 #include "gui/auxiliary/window_builder/pane.hpp"
 #include "gui/auxiliary/window_builder/password_box.hpp"
-#include "gui/auxiliary/window_builder/multi_page.hpp"
 #include "gui/auxiliary/window_builder/progress_bar.hpp"
 #include "gui/auxiliary/window_builder/viewport.hpp"
 #endif
@@ -89,16 +88,16 @@ twindow *build(CVideo &video, const twindow_builder::tresolution *definition)
 			, definition->maximum_width
 			, definition->maximum_height
 			, definition->definition
+			, definition->theme
 			, definition->tooltip
 			, definition->helptip);
 	assert(window);
 
 	window->definition_ = definition;
 
-	BOOST_FOREACH(const twindow_builder::tresolution::tlinked_group& lg,
-			definition->linked_groups) {
+	BOOST_FOREACH(const tlinked_group& lg, definition->linked_groups) {
 
-		if(window->has_linked_size_group(lg.id)) {
+		if (window->has_linked_size_group(lg.id)) {
 			utils::string_map symbols;
 			symbols["id"] = lg.id;
 			t_string msg = vgettext(
@@ -217,17 +216,16 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 	TRY(repeating_button);
 	TRY(vertical_scrollbar);
 	TRY(label);
+	TRY(report);
 	TRY(image);
 	TRY(toggle_button);
 	TRY(slider);
 	TRY(scroll_label);
 	TRY(matrix);
-	TRY(theme);
 	TRY(minimap);
 	TRY(button);
 	TRY(drawing);
 	TRY(password_box);
-	TRY(multi_page);
 	TRY(progress_bar);
 #undef TRY
 #endif
@@ -270,6 +268,7 @@ const std::string& twindow_builder::read(const config& cfg)
 
 	config::const_child_itors cfgs = cfg.child_range("resolution");
 	VALIDATE(cfgs.first != cfgs.second, _("No resolution defined."));
+	resolutions.clear();
 	BOOST_FOREACH(const config &i, cfgs) {
 		resolutions.push_back(tresolution(i));
 	}
@@ -293,6 +292,7 @@ twindow_builder::tresolution::tresolution(const config& cfg) :
 	maximum_height(cfg["maximum_height"]),
 	click_dismiss(cfg["click_dismiss"].to_bool()),
 	definition(cfg["definition"]),
+	theme(cfg["theme"].to_bool()),
 	linked_groups(),
 	tooltip(cfg.child_or_empty("tooltip")),
 	helptip(cfg.child_or_empty("helptip")),
@@ -439,49 +439,6 @@ twindow_builder::tresolution::tresolution(const config& cfg) :
 		}
 
 		linked_groups.push_back(linked_group);
-	}
-
-	//
-	// alternate
-	//
-	const config& alternate_cfg = cfg.child("alternate");
-	if (!alternate_cfg) return;
-
-	BOOST_FOREACH(const config &item, alternate_cfg.child_range("item")) {
-		alternate_items.push_back(talternate_item());
-		talternate_item& alternate = alternate_items.back();
-
-		if (item.child("linked_group")) {
-			BOOST_FOREACH(const config &lg, item.child_range("linked_group")) {
-				tlinked_group linked_group;
-				linked_group.id = lg["id"].str();
-				linked_group.fixed_width = lg["fixed_width"].to_bool();
-				linked_group.fixed_height = lg["fixed_height"].to_bool();
-
-				VALIDATE(!linked_group.id.empty()
-						, missing_mandatory_wml_key("linked_group", "id"));
-
-				if(!(linked_group.fixed_width || linked_group.fixed_height)) {
-					utils::string_map symbols;
-					symbols["id"] = linked_group.id;
-					t_string msg = vgettext(
-							  "Linked '$id' group needs a 'fixed_width' or "
-								"'fixed_height' key."
-							, symbols);
-
-					VALIDATE(false, msg);
-				}
-
-				alternate.linked_groups.push_back(linked_group);
-			}
-		}
-
-		if (item.child("list_definition")) {
-			alternate.header = new tbuilder_grid(item.child("header"));
-			alternate.row = new tbuilder_grid(item.child("list_definition"));
-		} else {
-			alternate.header = new tbuilder_grid(item.child("grid"));
-		}
 	}
 }
 

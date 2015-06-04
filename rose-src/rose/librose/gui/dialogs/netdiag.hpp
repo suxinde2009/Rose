@@ -14,7 +14,7 @@
 */
 
 #ifndef GUI_DIALOGS_NETDIAG_HPP_INCLUDED
-#define GUI_DIALOGS_NETDIAG_INFO_HPP_INCLUDED
+#define GUI_DIALOGS_NETDIAG_HPP_INCLUDED
 
 #include "gui/dialogs/dialog.hpp"
 #include "config.hpp"
@@ -44,7 +44,7 @@ private:
 	void connect_button_callback(twindow& window);
 	void clear_button_callback(twindow& window);
 
-	void handle(tlobby::tstate s, const std::string& msg);
+	void handle(const tsock& sock, const std::string& msg);
 
 private:
 	tscroll_label* log_;

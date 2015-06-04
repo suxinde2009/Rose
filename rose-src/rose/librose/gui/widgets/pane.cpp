@@ -245,10 +245,6 @@ void tpane::filter(const tfilter_functor& filter_functor)
 	set_origin_children();
 }
 
-void tpane::request_reduce_width(const unsigned /*maximum_width*/)
-{
-}
-
 twidget* tpane::find_at(
 		  const tpoint& coordinate
 		, const bool must_be_active)
@@ -381,7 +377,7 @@ void tpane::signal_handler_request_placement(
 					 * polishing and testing.
 					 */
 					item.grid->layout_init(false);
-					get_window()->layout_linked_widgets();
+					get_window()->layout_linked_widgets(NULL);
 
 					/*
 					 * By not calling init layout it uses its previous size

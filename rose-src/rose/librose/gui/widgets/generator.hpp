@@ -243,12 +243,6 @@ public:
 	virtual void layout_init(const bool full_initialization) = 0;
 
 	/** Inherited from twidget. */
-	virtual void request_reduce_width(const unsigned maximum_width) = 0;
-
-	/** Inherited from twidget. */
-	virtual void request_reduce_height(const unsigned maximum_height) = 0;
-
-	/** Inherited from twidget. */
 	virtual tpoint calculate_best_size() const = 0;
 
 	/** Inherited from twidget. */
@@ -261,7 +255,6 @@ public:
 	void set_visible_area(const SDL_Rect& area) = 0;
 
 	/** Inherited from twidget. */
-	virtual void impl_draw_children(surface& frame_buffer) = 0;
 	virtual void impl_draw_children(
 			  surface& frame_buffer
 			, int x_offset

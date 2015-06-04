@@ -121,6 +121,12 @@ public:
 //		void unfold(const texpand_mode mode); // FIXME implement
 #endif
 
+	void fold();
+	void unfold();
+
+	void fold_children();
+	void unfold_children();
+
 	/**
 	 * Inherited from twidget.
 	 *
@@ -181,10 +187,8 @@ public:
 
 	tselectable_* label() { return label_; }
 	const tselectable_* label() const { return label_; }
-private:
 
-	/** Inherited from twidget. */
-	void request_reduce_width(const unsigned /*maximum_width*/) {}
+private:
 
 	/**
 	 * Our parent node.
@@ -261,7 +265,6 @@ private:
 
 	void set_visible_area(const SDL_Rect& area);
 
-	void impl_draw_children(surface& frame_buffer);
 	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 	// FIXME rename to icon

@@ -26,6 +26,9 @@
 #include "log.hpp"
 #include "serialization/string_utils.hpp"
 #include "util.hpp"
+#include "integrate.hpp"
+#include "formula_string_utils.hpp"
+
 #include <boost/array.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -45,6 +48,26 @@ const std::string unicode_em_dash = "-";
 const std::string unicode_figure_dash = "-";
 const std::string unicode_multiplication_sign = "-";
 const std::string unicode_bullet = "-";
+
+bool to_bool(const std::string& str, bool def)
+{
+	if (str.empty()) {
+		return def;
+	}
+
+	if (str == "no" || str == "false") {
+		return false;
+	}
+	return true;
+}
+
+int to_int(const std::string& str, int def)
+{
+	if (str.empty()) {
+		return def;
+	}
+	return atoi(str.c_str());
+}
 
 bool isnewline(const char c)
 {
@@ -546,49 +569,6 @@ std::string si_string(double input, bool base2, std::string unit) {
 	return ss.str();
 }
 
-static bool is_username_char(char c) {
-	return ((c == '_') || (c == '-'));
-}
-
-static bool is_wildcard_char(char c) {
-    return ((c == '?') || (c == '*'));
-}
-
-bool isvalid_username(const std::string& username) 
-{
-	size_t alnum = 0, valid_char = 0, chars = 0;
-	utils::utf8_iterator itor(username);
-	for (; itor != utils::utf8_iterator::end(username); ++ itor) {
-		wchar_t w = *itor;
-		
-		if ((w & 0xff00) || isalnum(w)) {
-			alnum ++;
-		} else if (is_username_char(w)) {
-			valid_char ++;
-		}
-		chars ++;
-	}
-	if ((alnum + valid_char != chars) || valid_char == chars || !chars) {
-		return false;
-	}
-	return true;
-}
-
-bool isvalid_wildcard(const std::string& username) {
-    const size_t alnum = std::count_if(username.begin(), username.end(), isalnum);
-	const size_t valid_char =
-			std::count_if(username.begin(), username.end(), is_username_char);
-    const size_t wild_char =
-            std::count_if(username.begin(), username.end(), is_wildcard_char);
-	if ((alnum + valid_char + wild_char != username.size())
-			|| valid_char == username.size() || username.empty() )
-	{
-		return false;
-	}
-	return true;
-}
-
-
 bool word_completion(std::string& text, std::vector<std::string>& wordlist) {
 	std::vector<std::string> matches;
 	const size_t last_space = text.rfind(" ");
@@ -946,6 +926,19 @@ size_t utf8str_len(const std::string& utf8str)
 	return size;
 }
 
+bool is_utf8str(const std::string& utf8str)
+{
+	try {
+		utf8_iterator ch(utf8str);
+		for (utf8_iterator end = utf8_iterator::end(utf8str); ch != end; ++ ch) {
+		}
+	}
+	catch (utils::invalid_utf8_exception&) {
+		return false;
+	}
+	return true;
+}
+
 utf8_string lowercase(const utf8_string& s)
 {
 	if(!s.empty()) {
@@ -953,7 +946,7 @@ utf8_string lowercase(const utf8_string& s)
 		std::string res;
 
 		for(;itor != utf8_iterator::end(s); ++itor) {
-#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__AMIGAOS4__)
+#if defined(__APPLE__) || defined(__OpenBSD__)
 			/** @todo FIXME: Should we support towupper on recent OSX platforms? */
 			wchar_t uchar = *itor;
 			if(uchar >= 0 && uchar < 0x100)
@@ -1030,6 +1023,159 @@ std::vector<int> to_vector_int(const std::string& value)
 		ret.push_back(lexical_cast_default<int>(*it));
 	}
 	return ret;
+}
+
+void transform_tolower(std::string& str)
+{
+	int s = (int)str.size();
+	const char* c_str = str.c_str();
+
+	int diff = 'a' - 'A';
+	for (int i = 0; i < s; i ++) {
+		if (c_str[i] >= 'A' && c_str[i] <= 'Z') {
+			str[i] = c_str[i] + diff;
+		}
+	}
+}
+
+void transform_tolower(const std::string& src, std::string& dst)
+{
+	int s = (int)src.size();
+	const char* c_str = src.c_str();
+
+	dst.resize(s);
+	int diff = 'a' - 'A';
+	for (int i = 0; i < s; i ++) {
+		if (c_str[i] >= 'A' && c_str[i] <= 'Z') {
+			dst[i] = c_str[i] + diff;
+		} else {
+			dst[i] = c_str[i];
+		}
+	}
+}
+
+// condition id(only ASCII)/variable(only ASCII)/username
+static bool is_id_char(char c)
+{
+	return ((c == '_') || (c == '-') || (c == ' '));
+}
+
+static bool is_variable_char(char c) 
+{
+	return ((c == '_') || (c == '-') || (c == '.'));
+}
+
+typedef bool (*is_xxx_char)(char c);
+
+std::string errstr;
+bool isvalid_id_base(const std::string& id, bool first_must_alpha, is_xxx_char fn, int min, int max)
+{
+	utils::string_map symbols;
+	int s = (int)id.size();
+	if (!s) {
+		if (min > 0) {
+			errstr = dgettext("wesnoth-lib", "Can not empty!");
+ 			return false;
+		}
+		return true;
+	}
+	if (s < min) {
+		symbols["min"] = tintegrate::generate_format(min, "yellow");
+		errstr = vgettext("wesnoth-lib", "At least $min characters!", symbols);
+		return false;
+	}
+	if (s > max) {
+		symbols["max"] = tintegrate::generate_format(max, "yellow");
+		errstr = vgettext("wesnoth-lib", "Can not be larger than $max characters!", symbols);
+		return false;
+	}
+	char c = id.at(0);
+	if (c == ' ') {
+		errstr = dgettext("wesnoth-lib", "First character can not empty!");
+		return false;
+	}
+	if (first_must_alpha && !isalpha(c)) {
+		errstr = dgettext("wesnoth-lib", "First character must be alpha!");
+		return false;
+	}
+	if (id == "null") {
+		symbols["str"] = tintegrate::generate_format(id, "yellow");
+		errstr = vgettext("wesnoth-lib", "$str is reserved string!", symbols);
+		return false;
+	}
+
+	const size_t alnum = std::count_if(id.begin(), id.end(), isalnum);
+	const size_t valid_char = std::count_if(id.begin(), id.end(), fn);
+	if ((alnum + valid_char != s) || valid_char == id.size()) {
+		errstr = dgettext("wesnoth-lib", "Contains invalid characters!");
+		return false;
+	}
+	return true;
+}
+
+bool isvalid_id(const std::string& id, bool first_must_alpha, int min, int max)
+{
+	return isvalid_id_base(id, first_must_alpha, is_id_char, min, max);
+}
+
+bool isvalid_variable(const std::string& id, int min, int max)
+{
+	return isvalid_id_base(id, true, is_variable_char, min, max);
+}
+
+bool isvalid_nick(const std::string& nick)
+{ 
+	static const int max_nick_size = 31;
+	return isvalid_id_base(nick, false, is_id_char, 1, max_nick_size);
+}
+
+static bool is_username_char(char c) {
+	return ((c == '_') || (c == '-'));
+}
+
+static bool is_wildcard_char(char c) {
+    return ((c == '?') || (c == '*'));
+}
+
+bool isvalid_username(const std::string& username) 
+{
+	size_t alnum = 0, valid_char = 0, chars = 0;
+	try {
+		utils::utf8_iterator itor(username);
+		for (; itor != utils::utf8_iterator::end(username); ++ itor) {
+			wchar_t w = *itor;
+			
+			if ((w & 0xff00) || isalnum(w)) {
+				alnum ++;
+			} else if (is_username_char(w)) {
+				valid_char ++;
+			}
+			chars ++;
+		}
+		if ((alnum + valid_char != chars) || valid_char == chars || !chars) {
+			errstr = dgettext("wesnoth-lib", "Contains invalid characters!");
+			return false;
+		}
+	} catch (utils::invalid_utf8_exception&) {
+		errstr = dgettext("wesnoth-lib", "Invalid UTF-8 string!");
+		return false;
+	}
+	return true;
+}
+
+bool isvalid_wildcard(const std::string& username) 
+{
+    const size_t alnum = std::count_if(username.begin(), username.end(), isalnum);
+	const size_t valid_char =
+			std::count_if(username.begin(), username.end(), is_username_char);
+    const size_t wild_char =
+            std::count_if(username.begin(), username.end(), is_wildcard_char);
+	if ((alnum + valid_char + wild_char != username.size())
+			|| valid_char == username.size() || username.empty() )
+	{
+		return false;
+	}
+	return true;
 }
 
 } // end namespace utils

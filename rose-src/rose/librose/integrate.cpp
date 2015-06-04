@@ -72,7 +72,7 @@ std::string tintegrate::generate_format(const std::string& text, const std::stri
 	// text maybe have sapce character.
 	strstr << "<format>text='" << text << "'";
 	if (!color.empty()) {
-		strstr << " color=" << color;
+		strstr << " color='" << color << "'";
 	}
 	if (font_size) {
 		strstr << " font_size=" << font_size;
@@ -95,7 +95,7 @@ std::string tintegrate::generate_format(int val, const std::string& color, int f
 	// text maybe have sapce character.
 	strstr << "<format>text='" << val << "'";
 	if (!color.empty()) {
-		strstr << " color=" << color;
+		strstr << " color='" << color << "'";
 	}
 	if (font_size) {
 		strstr << " font_size=" << font_size;
@@ -238,6 +238,8 @@ tintegrate::tintegrate(const std::string& src, int maximum_width, int maximum_he
 	, default_font_color_(default_font_color)
 	, align_bottom_(true)
 	, exist_anim_(false)
+	, anims_()
+	, bubble_anims_()
 {
 	// Parse and add the text.
 	std::map<int, std::string> parsed_items;
@@ -245,7 +247,7 @@ tintegrate::tintegrate(const std::string& src, int maximum_width, int maximum_he
 	try {
 		parsed_items = help::parse_text(src);
 	} 
-	catch (help::parse_error& e) {
+	catch (help::parse_error&) {
 		// [see remark#30] process character: '<' 
 		add_text_item(0, 0, src, default_font_color_);
 	}
@@ -254,31 +256,30 @@ tintegrate::tintegrate(const std::string& src, int maximum_width, int maximum_he
 	for (it = parsed_items.begin(); it != parsed_items.end(); ++it) {
 		if (it->second != "" && it->second[0] == '[') {
 			// Should be parsed as WML.
+			config cfg;
 			try {
-				config cfg;
+				// for exampl: [OPAL] | Merchants: PexPeppers, Dr. Peck
 				std::istringstream stream(it->second);
 				read(cfg, stream);
 
+			} catch (help::parse_error&) {
+				add_text_item(it->first, it->first, it->second, default_font_color_);
+			}
+
 #define TRY(name) do { \
-				if (config &child = cfg.child(#name)) \
-					handle_##name##_cfg(it->first, child); \
-				} while (0)
+			if (config &child = cfg.child(#name)) \
+				handle_##name##_cfg(it->first, child); \
+			} while (0)
 
-				TRY(ref);
-				TRY(img);
-				TRY(bold);
-				TRY(italic);
-				TRY(header);
-				TRY(jump);
-				TRY(format);
-
+			TRY(ref);
+			TRY(img);
+			TRY(bold);
+			TRY(italic);
+			TRY(header);
+			TRY(jump);
+			TRY(format);
 #undef TRY
 
-			}
-			catch (config::error& e) {
-				throw config::error(e.message);
-
-			}
 		} else {
 			add_text_item(it->first, it->first, it->second, default_font_color_);
 		}
@@ -326,12 +327,12 @@ void tintegrate::handle_ref_cfg(int tag_start, const config &cfg)
 	}
 
 	int start = forward_pos(tag_start, "text");
-	if (!help::find_topic2(dst) && !force) {
-		// detect the broken link but quietly silence the hyperlink for normal user
-		add_text_item(tag_start, start, text, default_font_color_, "", true);
+	if (force || (!help::book_toplevel || help::find_topic(*help::book_toplevel, dst))) {
+		add_text_item(tag_start, start, text, default_font_color_, dst);
 
 	} else {
-		add_text_item(tag_start, start, text, default_font_color_, dst);
+		// detect the broken link but quietly silence the hyperlink for normal user
+		add_text_item(tag_start, start, text, default_font_color_, "", true);
 	}
 
 }
@@ -736,6 +737,7 @@ void tintegrate::down_one_line()
 	if (curr_loc_.first > maximum_width_) {
 		maximum_width_ = curr_loc_.first;
 	}
+
 	curr_row_height_ = min_row_height_;
 	contents_height_ = std::max<int>(curr_loc_.second + curr_row_height_, contents_height_);
 	curr_loc_.first = get_min_x(curr_loc_.second, curr_row_height_);
@@ -806,10 +808,8 @@ surface tintegrate::get_surface()
 				anims_.insert(std::make_pair(index, id));
 			}
 
-		} else if (dst.w != 8 || dst.h != 12) {
-			sdl_blit(it->surf, NULL, screen, &dst);
 		} else {
-			blit_surface(it->surf, NULL, screen, &dst);
+			sdl_blit(it->surf, NULL, screen, &dst);
 		}
 	}
 

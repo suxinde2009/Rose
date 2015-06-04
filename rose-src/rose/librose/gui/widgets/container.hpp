@@ -22,6 +22,38 @@
 
 namespace gui2 {
 
+class tradio_page
+{
+public:
+	enum {NO_PAGE = -1};
+	struct tpage 
+	{
+		tpage()
+			: linked_groups()
+		{}
+
+		std::vector<tlinked_group> linked_groups;
+
+		tbuilder_grid_ptr header;
+		tbuilder_grid_ptr row;
+	};
+
+	static void parse_cfg(const config& cfg, std::vector<tradio_page::tpage>& result);
+
+	explicit tradio_page(const std::vector<tpage>& pages, twidget* widget);
+
+	int current_page() const { return current_page_; }
+	bool swap_uh(twindow& window, int page);
+	void swap_bh(twindow& window);
+
+private:
+	const std::vector<tpage>& pages_;
+
+	twidget* widget_;
+	int current_page_;
+	int swaping_page_;
+};
+
 /**
  * A generic container base class.
  *
@@ -52,36 +84,6 @@ public:
 	/** Inherited from tcontrol. */
 	void layout_init(const bool full_initialization);
 
-	/**
-	 * Tries to reduce the width of a container.
-	 *
-	 * @see @ref layout_algorithm for more information.
-	 *
-	 * @param maximum_width       The wanted maximum width.
-	 */
-	void reduce_width(const unsigned maximum_width);
-
-	/** Inherited from tcontrol. */
-	void request_reduce_width(const unsigned maximum_width);
-
-	/** Inherited from twidget. */
-	void demand_reduce_width(const unsigned maximum_width);
-
-	/**
-	 * Tries to reduce the height of a container.
-	 *
-	 * @see @ref layout_algorithm for more information.
-	 *
-	 * @param maximum_height      The wanted maximum height.
-	 */
-	void reduce_height(const unsigned maximum_height);
-
-	/** Inherited from twidget. */
-	void request_reduce_height(const unsigned maximum_height);
-
-	/** Inherited from twidget. */
-	void demand_reduce_height(const unsigned maximum_height);
-
 protected:
 	/** Inherited from twidget. */
 	tpoint calculate_best_size() const;
@@ -106,7 +108,6 @@ public:
 	void set_visible_area(const SDL_Rect& area);
 
 	/** Inherited from twidget. */
-	void impl_draw_children(surface& frame_buffer);
 	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 protected:
@@ -201,11 +202,12 @@ public:
 	const tgrid& grid() const { return grid_; }
 	tgrid& grid() { return grid_; }
 
-private:
 
+protected:
 	/** The grid which holds the child objects. */
 	tgrid grid_;
 
+private:
 	/**
 	 * Returns the grid to initialize while building.
 	 *
