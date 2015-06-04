@@ -17,23 +17,34 @@ Basic Module
 窗口系统。各个操作系统以不同方式处理窗口，在这方面差别可说是非常大。Rose自提供了一种窗口系统实现，这个系统一个特点是可支持动态变化/自适应各样分辨率（最低480x320）。窗口系统是Rose极重要组件，它几乎占去一半代码。
 Window UI. UI is adopted differently in different operating system. Managing
 处理配置。应用的配置数据包括发布时自带的资源包和运行时生成的数据，Rose以WML格式统一处理静态配置，动态配置推荐使用Lua。
-Configuration Processing
+Configuration Processing. Configurations such as Resource package and runtime data are processed by Rose. Rose processes static configurations with WML format, and it is recommended to use Lua to deal with dynamic configurations.
 处理图像。除了基本读、写图像操作，有些应用可能要处理数千图像，这时为提高效率需用内存换速度，Rose提供了种管理众多图像方法。由于要使用Alpha分量，Rose默认的图像压缩格式是png。
+Graphic Processing. Basic features include reading and writing images. In case of that more than thousands of images being processed, Rose provides many tools for optimization. As alpha compositing is needed, Rose's default image format is png.
 播放声音。按声音持续时间长短，Rose把声音分为音乐、音效。Rose默认的声音压缩格式是ogg。
+Audio Output. Typically, Longer audios are soundtracks and shorter are sound effects. Rose's default audio format is ogg.
 播放动画。开发者只要编写动画配置，然后调用几个函数便可在应用播放动画。
+Video. Functions and cinfigurations are available for video play.
 字符串及图文混排。Rose内部基本是以UTF-8格式处理字符，有须要才转换为UNICODE去处理。
+String and formatting. Rose's default encoding is UTF-8. It may convert to UNICODE in case of needed.
 多国语言。Rose内置了gettext去支持多国语言。
+Locale. Gettext provides supports multiple languages.
 网络传输。应用提供数据处理函数，它们以“钩子”形式融入进Rose提供的机制。
-
+Networking. Rose provides hook functions for network packets handling.
 
 服务模块。它针对于一般程序都须要、其功能又大同小异的应用。（基本模块都已有初步实现，服务模块则待实现，写在此处是为全面。）
+Service Module. It provides general features as listed below.
 
 平台特性。提供和平台相关的功能，像统一ID、统一计算积分。
+Platform. It provide management for player id, player scores, and etc.
 聊天。网上有一个聊天服务器，Rose去连这个服务器实现聊天。为支持聊天，开发者要做的就是在界面中给出一可弹出聊天窗口的“按钮”，接下Rose就会去处理所有细节。
 访问WEB。应用一般有WEB网站、论坛。Rose会去连应用指定的网站、论坛，得到应用信息显示到用户，有论坛的话，Rose可做到读写论坛，让应用和论坛互访数据。
+Chat. Rose acts as a chat client if there is a chat server. For enabling chatting, in the GUI, developers can just make a "button", which invokes chat window. Rose can also synchronizing user data with online forum( Discuz! X).
 帮助。WEB服务已属于帮助，除去WEB访问，Rose提供统一的书籍格式。
+Help Text. Rose supports web browsing and local help text formatting. Both ways are choices for help text.
 在线搜索。像针对应用问题在相关网站、论坛搜索。
+Online Search. Searching application problems in the associated site/forum.
 内购。提供对常见支付平台的支持。
+In-App purchase. Supports common payment methods.
 
 
 二、Rose特点
