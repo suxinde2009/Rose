@@ -56,8 +56,18 @@ class twidget
 	friend class twindow; // needed for modifying the layout_size.
 
 public:
-	static const int npos = -1;
+	static const int npos;
 
+	static bool reduce_width;
+	static std::set<twidget*> reduce_widgets;
+	static void insert_reduce_widget(twidget* widget, const tpoint& size);
+	class treduce_width_lock
+	{
+	public:
+		treduce_width_lock();
+		~treduce_width_lock();
+	};
+	
 	/** @deprecated use the second overload. */
 	twidget();
 
@@ -176,6 +186,7 @@ private:
 	 * @retval 0,0                   The best size is 0,0.
 	 */
 	virtual tpoint calculate_best_size() const = 0;
+
 public:
 
 	/**
@@ -306,7 +317,7 @@ public:
 
 	/***** ***** ***** setters / getters for members ***** ****** *****/
 
-	twidget* parent() { return parent_; }
+	twidget* parent() const { return parent_; }
 	void set_parent(twidget* parent) { parent_ = parent; }
 
 	const std::string& id() const { return id_; }
@@ -513,6 +524,10 @@ public:
 	void set_layout_size(const tpoint& size);
 	const tpoint& layout_size() const { return layout_size_; }
 
+	virtual std::string generate_layout_str(const int level) const;
+
+	virtual tpoint request_reduce_width(const unsigned maximum_width) { return tpoint(0, 0); }
+
 private:
 
 	/**
@@ -526,8 +541,7 @@ private:
 	 * @param call_stack          The callstack of widgets traversed to reach
 	 *                            this function.
 	 */
-	virtual void child_populate_dirty_list(twindow& /*caller*/,
-			const std::vector<twidget*>& /*call_stack*/) {}
+	virtual void child_populate_dirty_list(twindow& caller, const std::vector<twidget*>& call_stack) {}
 
 public:
 
@@ -552,6 +566,12 @@ protected:
 	/** The fix rect is a widget is fix rectangle. */
 	SDL_Rect fix_rect_;
 
+	/**
+	 * The parent widget, if the widget has a parent it contains a pointer to
+	 * the parent, else it's set to NULL.
+	 */
+	twidget* parent_;
+
 	void* cookie_;
 private:
 
@@ -564,12 +584,6 @@ private:
 	 * window, eg a listbox can have the same id for every row.
 	 */
 	std::string id_;
-
-	/**
-	 * The parent widget, if the widget has a parent it contains a pointer to
-	 * the parent, else it's set to NULL.
-	 */
-	twidget* parent_;
 
 	/**
 	 * Is the widget dirty? When a widget is dirty it needs to be redrawn at

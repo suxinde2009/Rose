@@ -1987,54 +1987,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\librose\gui\auxiliary\old_markup.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\auxiliary\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\auxiliary\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\auxiliary\old_markup.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\auxiliary\placer.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\auxiliary\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\auxiliary\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\auxiliary\placer.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\librose\gui\auxiliary\timer.cpp"
 					>
 					<FileConfiguration
@@ -2307,58 +2259,6 @@
 					</File>
 				</Filter>
 				<Filter
-					Name="placer"
-					>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\placer\horizontal_list.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\placer\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\placer\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\placer\horizontal_list.hpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\placer\vertical_list.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\placer\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\placer\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\placer\vertical_list.hpp"
-						>
-					</File>
-				</Filter>
-				<Filter
 					Name="window_builder"
 					>
 					<File
@@ -2458,30 +2358,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\horizontal_listbox.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\horizontal_listbox.hpp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\librose\gui\auxiliary\window_builder\horizontal_scrollbar.cpp"
 						>
 						<FileConfiguration
@@ -2527,30 +2403,6 @@
 					</File>
 					<File
 						RelativePath="..\..\librose\gui\auxiliary\window_builder\image.hpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\instance.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\instance.hpp"
 						>
 					</File>
 					<File
@@ -2602,30 +2454,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\matrix.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\matrix.hpp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\librose\gui\auxiliary\window_builder\minimap.cpp"
 						>
 						<FileConfiguration
@@ -2647,30 +2475,6 @@
 					</File>
 					<File
 						RelativePath="..\..\librose\gui\auxiliary\window_builder\minimap.hpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\pane.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\pane.hpp"
 						>
 					</File>
 					<File
@@ -2743,30 +2547,6 @@
 					</File>
 					<File
 						RelativePath="..\..\librose\gui\auxiliary\window_builder\progress_bar.hpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\repeating_button.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\repeating_button.hpp"
 						>
 					</File>
 					<File
@@ -3057,30 +2837,6 @@
 						RelativePath="..\..\librose\gui\auxiliary\window_builder\vertical_scrollbar.hpp"
 						>
 					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\viewport.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\window_builder\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\window_builder\viewport.hpp"
-						>
-					</File>
 				</Filter>
 				<Filter
 					Name="widget_definition"
@@ -3230,30 +2986,6 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\librose\gui\auxiliary\widget_definition\matrix.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\widget_definition\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\widget_definition\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\widget_definition\matrix.hpp"
-						>
-					</File>
-					<File
 						RelativePath="..\..\librose\gui\auxiliary\widget_definition\minimap.cpp"
 						>
 						<FileConfiguration
@@ -3323,30 +3055,6 @@
 					</File>
 					<File
 						RelativePath="..\..\librose\gui\auxiliary\widget_definition\progress_bar.hpp"
-						>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\widget_definition\repeating_button.cpp"
-						>
-						<FileConfiguration
-							Name="Debug|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\widget_definition\"
-							/>
-						</FileConfiguration>
-						<FileConfiguration
-							Name="Release|Win32"
-							>
-							<Tool
-								Name="VCCLCompilerTool"
-								ObjectFile="$(IntDir)\gui\auxiliary\widget_definition\"
-							/>
-						</FileConfiguration>
-					</File>
-					<File
-						RelativePath="..\..\librose\gui\auxiliary\widget_definition\repeating_button.hpp"
 						>
 					</File>
 					<File
@@ -3943,30 +3651,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\librose\gui\dialogs\rose.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\dialogs\rose.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\librose\gui\dialogs\simple_item_selector.cpp"
 					>
 					<FileConfiguration
@@ -4251,34 +3935,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\librose\gui\widgets\generator.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\generator.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\generator_private.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\librose\gui\widgets\grid.cpp"
 					>
 					<FileConfiguration
@@ -4407,30 +4063,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\librose\gui\widgets\list.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\list.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\librose\gui\widgets\listbox.cpp"
 					>
 					<FileConfiguration
@@ -4455,30 +4087,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\librose\gui\widgets\matrix.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\matrix.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\librose\gui\widgets\minimap.cpp"
 					>
 					<FileConfiguration
@@ -4500,30 +4108,6 @@
 				</File>
 				<File
 					RelativePath="..\..\librose\gui\widgets\minimap.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\pane.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\pane.hpp"
 					>
 				</File>
 				<File
@@ -4596,30 +4180,6 @@
 				</File>
 				<File
 					RelativePath="..\..\librose\gui\widgets\progress_bar.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\repeating_button.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\repeating_button.hpp"
 					>
 				</File>
 				<File
@@ -5012,30 +4572,6 @@
 				</File>
 				<File
 					RelativePath="..\..\librose\gui\widgets\vertical_scrollbar.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\viewport.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\widgets\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\widgets\viewport.hpp"
 					>
 				</File>
 				<File

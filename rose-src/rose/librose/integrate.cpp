@@ -50,8 +50,9 @@ std::string tintegrate::generate_img(const std::string& src, tintegrate::ALIGNME
 	if (floating) {
 		strstr << " float=yes";
 	}
+/*
 	strstr << " box=no";
-
+*/
 	strstr << "</img>";
 /*
 	if (floating) {

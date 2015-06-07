@@ -24,6 +24,7 @@ namespace gui2 {
 class tspacer;
 class tbutton;
 class ttabbar;
+class tpanel;
 
 namespace implementation {
 	struct tbuilder_report;
@@ -69,7 +70,7 @@ public:
 
 	void layout_init(const bool full_initialization);
 	tpoint calculate_best_size() const;
-	void set_content_size(const tpoint& origin, const tpoint& size);
+	void place_content_grid(const tpoint& content_origin, const tpoint& content_size, const tpoint& desire_origin);
 
 private:
 	/** Inherited from tcontrol. */
@@ -144,9 +145,13 @@ public:
 	tcontrol* get_widget(int at) const;
 	void select(int index);
 	void select(twidget* widget);
+	tcontrol* cursel() const;
 	void set_callback_show(boost::function<void (ttabbar*, const tgrid::tchild& child)> callback) { callback_show_ = callback; }
 
+	void set_boddy(twidget* boddy);
+
 private:
+	bool pre_toggle(twidget* widget);
 	void click(bool previous);
 	void validate_start();
 	int calculate_requrie_back_widgets() const;
@@ -167,6 +172,8 @@ private:
 	tbutton* next_;
 	boost::function<void (ttabbar*, const tgrid::tchild& child)> callback_show_;
 	int max_height_;
+
+	tpanel* boddy_;
 };
 
 } // namespace gui2

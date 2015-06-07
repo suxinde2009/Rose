@@ -23,6 +23,7 @@
 #include "global.hpp"
 #include "preferences_display.hpp"
 
+#include "base_instance.hpp"
 #include "display.hpp"
 #include "preferences.hpp"
 #include "gettext.hpp"
@@ -33,8 +34,6 @@
 #include "wml_separators.hpp"
 
 #include <boost/foreach.hpp>
-
-bool require_change_resolution = false;
 
 namespace preferences {
 
@@ -59,7 +58,7 @@ void set_fullscreen(display& disp, const bool ison)
 		VALIDATE(bpp > 0, "bpp must be large than 0!");
 
 		video.setMode(res.first, res.second,bpp, flags);
-		require_change_resolution = true;
+		display::require_change_resolution = true;
 	}
 }
 
@@ -94,7 +93,7 @@ bool set_resolution(display& disp, const unsigned width, const unsigned height)
 	VALIDATE(bpp > 0, "bpp must be large than 0!");
 
 	video.setMode(width, height, bpp, flags);
-	require_change_resolution = true;
+	display::require_change_resolution = true;
 
 	const std::string postfix = fullscreen() ? "resolution" : "windowsize";
 	preferences::set('x' + postfix, lexical_cast<std::string>(width));
@@ -213,31 +212,36 @@ bool show_video_mode_dialog(display& disp)
 	return true;
 }
 
-void show_preferences_dialog(display& disp)
+// true: resolution modified result to return. false: other reason return.
+int show_preferences_dialog(display& disp, bool first)
 {
-	bool first = true;
 	while (true) {
-		int res = gui2::app_show_preferences_dialog(disp, first);
+		int res = instance->show_preferences_dialog(disp, first);
 		if (first) {
 			first = false;
 		}
 		if (res == preferences::CHANGE_RESOLUTION) {
 			if (preferences::show_video_mode_dialog(disp)) {
-				return;
+				return res;
 			}
 
 		} else if (res == preferences::MAKE_FULLSCREEN) {
 			preferences::set_fullscreen(disp, true);
-			return;
+			return res;
 
 		} else if (res == preferences::MAKE_WINDOWED) {
 			preferences::set_fullscreen(disp, false);
-			return;
+			return res;
 
 		} else {
-			return;
+			return res;
 		}
 	}
+}
+
+bool is_resolution_retval(int res) 
+{ 
+	return res >= MIN_RESOLUTION && res <= MAX_RESOLUTION; 
 }
 
 } // end namespace preferences

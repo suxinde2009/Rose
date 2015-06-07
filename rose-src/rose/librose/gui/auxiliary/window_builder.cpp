@@ -24,11 +24,9 @@
 #if 1 // See the #if in create_builder_widget.
 #include "gui/auxiliary/window_builder/scrollbar_panel.hpp"
 #include "gui/auxiliary/window_builder/horizontal_scrollbar.hpp"
-#include "gui/auxiliary/window_builder/repeating_button.hpp"
 #include "gui/auxiliary/window_builder/stacked_widget.hpp"
 #include "gui/auxiliary/window_builder/vertical_scrollbar.hpp"
 #include "gui/auxiliary/window_builder/label.hpp"
-#include "gui/auxiliary/window_builder/matrix.hpp"
 #include "gui/auxiliary/window_builder/report.hpp"
 #include "gui/auxiliary/window_builder/image.hpp"
 #include "gui/auxiliary/window_builder/toggle_button.hpp"
@@ -37,12 +35,9 @@
 #include "gui/auxiliary/window_builder/minimap.hpp"
 #include "gui/auxiliary/window_builder/button.hpp"
 #include "gui/auxiliary/window_builder/drawing.hpp"
-#include "gui/auxiliary/window_builder/pane.hpp"
 #include "gui/auxiliary/window_builder/password_box.hpp"
 #include "gui/auxiliary/window_builder/progress_bar.hpp"
-#include "gui/auxiliary/window_builder/viewport.hpp"
 #endif
-#include "gui/auxiliary/window_builder/instance.hpp"
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/window.hpp"
 #include "formula_string_utils.hpp"
@@ -179,18 +174,6 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 		return new tbuilder_grid(c);
 	}
 
-	if(const config &instance = cfg.child("instance")) {
-		return new implementation::tbuilder_instance(instance);
-	}
-
-	if(const config& pane = cfg.child("pane")) {
-		return new implementation::tbuilder_pane(pane);
-	}
-
-	if(const config& viewport = cfg.child("viewport")) {
-		return new implementation::tbuilder_viewport(viewport);
-	}
-
 /*
  * This is rather odd, when commented out the classes no longer seem to be in
  * the executable, no real idea why, except maybe of an overzealous optimizer
@@ -213,7 +196,6 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 	TRY(stacked_widget);
 	TRY(scrollbar_panel);
 	TRY(horizontal_scrollbar);
-	TRY(repeating_button);
 	TRY(vertical_scrollbar);
 	TRY(label);
 	TRY(report);
@@ -221,7 +203,6 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 	TRY(toggle_button);
 	TRY(slider);
 	TRY(scroll_label);
-	TRY(matrix);
 	TRY(minimap);
 	TRY(button);
 	TRY(drawing);

@@ -87,6 +87,9 @@ public:
 protected:
 	/** Inherited from twidget. */
 	tpoint calculate_best_size() const;
+
+	tpoint request_reduce_width(const unsigned maximum_width);
+
 public:
 
 	/** Inherited from twidget. */
@@ -194,6 +197,7 @@ public:
 	void set_column_grow_factor(const unsigned column, const unsigned factor)
 		{ grid_.set_column_grow_factor(column, factor); }
 
+	std::string generate_layout_str(const int level) const;
 public:
 	/***** ***** ***** setters / getters for members ***** ****** *****/
 

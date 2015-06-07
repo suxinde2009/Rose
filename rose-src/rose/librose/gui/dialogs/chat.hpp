@@ -19,6 +19,7 @@
 #include "gui/dialogs/dialog.hpp"
 #include "lobby.hpp"
 #include <integrate.hpp>
+#include "gui/widgets/widget.hpp"
 
 class config;
 class display;
@@ -34,15 +35,18 @@ class ttoggle_button;
 class tscroll_label;
 class ttext_box;
 class tscroll_text_box;
-class tscrollbar_panel;
+class tstacked_widget;
 class ttabbar;
 class ttree_view;
 class tlistbox;
+class tstacked_widget;
 
 class tchat_: public tdialog, public tlobby::thandler
 {
 public:
 	static std::string err_encode_str;
+
+	enum {CHAT_LAYER, FIND_LAYER, CHANNEL_LAYER};
 
 	struct tcookie 
 	{
@@ -69,7 +73,7 @@ public:
 		bool away;
 	};
 
-	enum {f_none, f_min, f_netdiag = f_min, f_previous_page, f_next_page, f_face, f_part, 
+	enum {f_none, f_min, f_netdiag = f_min, f_copy, f_replay, f_face, f_part, 
 		f_part_friend, f_explore, f_max = f_explore};
 	enum {ft_none = 0x1, ft_person = 0x2, ft_channel = 0x4, ft_chan_person = 0x8};
 	struct tfunc 
@@ -87,17 +91,18 @@ public:
 		static int logs_per_page;
 		tsession(chat_logs::treceiver& receiver);
 
-		void current_logs(std::vector<chat_logs::tlog>& logs) const;
+		int current_logs(std::vector<chat_logs::tlog>& logs) const;
 		int pages() const;
 		bool can_previous() const;
 		bool can_next() const;
+		const chat_logs::tlog& log(int at) const;
 
 		chat_logs::treceiver* receiver;
 		std::vector<chat_logs::tlog> history;
 		int current_page;
 	};
 
-	tchat_(display& disp, int min_page, int chat_page, int chating_page);
+	tchat_(display& disp, int chat_page);
 	virtual ~tchat_();
 
 	virtual void handle_status(int at, tsock::ttype type);
@@ -157,8 +162,10 @@ protected:
 	std::pair<std::vector<tcookie>*, tcookie* > contact_find(bool person, int cid, int id, bool channel);
 	std::pair<const std::vector<tcookie>*, const tcookie* > contact_find(bool person, int cid, int id, bool channel) const;
 
-	std::string format_log_str(const tsession& sess, std::vector<tintegrate::tlocator>& locator) const;
-	void chat_2_scroll_label(tscroll_label& label, const tsession& sess);
+	// std::string format_log_str(const tsession& sess, std::vector<tintegrate::tlocator>& locator) const;
+	void format_log_2_listbox(tlistbox& list, const tsession& sess, int cursel) const;
+
+	void chat_2_scroll_label(tlistbox& list, const tsession& sess, int cursel = twidget::npos);
 	void ready_face(twindow& window);
 
 	void swap_page(twindow& window, int page, bool swap);
@@ -189,6 +196,8 @@ private:
 	void clear_branch(bool person, int type);
 	void remove_branch(bool person, int type);
 	void handle_multiline(const char* nick, const char* chan, const char* text);
+	void previous_page(twindow& window);
+	void next_page(twindow& window);
 
 	void enter_inputing(bool enter);
 
@@ -201,7 +210,7 @@ protected:
 	std::vector<std::string> users_;
 
 	int current_page_;
-	tscrollbar_panel* page_panel_;
+	tstacked_widget* page_panel_;
 	std::vector<std::string> chans_;
 	ttabbar* catalog_;
 	ttabbar* toolbar_;
@@ -213,10 +222,14 @@ protected:
 private:
 	display& disp_;
 	twindow* window_;
+	tstacked_widget* panel_;
 	ttree_view* person_tree_;
 	ttree_view* channel_tree_;
 	ttree_view* channel2_tree_;
-	tscroll_label* history_;
+	tbutton* previous_page_;
+	tbutton* next_page_;
+	tlabel* pagenum_;
+	tlistbox* history_;
 	tscroll_text_box* input_;
 	ttext_box* input_tb_;
 	tspacer* input_scale_;
@@ -225,8 +238,6 @@ private:
 	tbutton* switch_to_chat_find_;
 	tbutton* switch_to_chat_channel_;
 	tbutton* join_channel_;
-	tbutton* previous_page_;
-	tbutton* next_page_;
 	tlistbox* chanlist_;
 	tbutton* chat_to_;
 	tbutton* join_friend_;
@@ -237,7 +248,6 @@ private:
 	std::vector<std::string> list_chans_;
 
 	int src_pos_;
-	int min_page_;
 	int chat_page_;
 };
 
@@ -253,16 +263,12 @@ private:
 	/** Inherited from tdialog. */
 	void pre_show(CVideo& video, twindow& window);
 
-	enum {NONE_PAGE, MIN_PAGE, CHAT_PAGE = MIN_PAGE, CHATING_PAGE, MAX_PAGE = CHATING_PAGE};
-	void sheet_toggled(twidget* widget);
+	enum {CHAT_PAGE, CHATING_PAGE, NONE_PAGE};
 	
 	void handle_status(int at, tsock::ttype type);
 
-	void update_network_status(twindow& window, bool connected);
-
 private:
 	display& disp_;
-	std::map<int, ttoggle_button*> sheet_;
 };
 
 

@@ -116,6 +116,7 @@ public:
 		bool to_canvas_;
 	};
 
+	static bool require_change_resolution;
 	static int last_zoom;
 	static int default_zoom_;
 
@@ -464,6 +465,8 @@ public:
 	                     bool only_if_possible=false,
 			     double add_spacing=0.0, bool force = true);
 
+	void scroll_to_xy(int screenxpos, int screenypos, SCROLL_TYPE scroll_type, bool force = true);
+
 	/** Expose the event, so observers can be notified about map scrolling. */
 	events::generic_event &scroll_event() const { return scroll_event_; }
 
@@ -610,8 +613,6 @@ protected:
 	std::vector<surface> get_fog_shroud_images(const map_location& loc, image::TYPE image_type);
 
 	void draw_image_for_report(surface& img, SDL_Rect& rect);
-
-	void scroll_to_xy(int screenxpos, int screenypos, SCROLL_TYPE scroll_type,bool force = true);
 
 	void fill_images_list(const std::string& prefix, std::vector<std::string>& images);
 

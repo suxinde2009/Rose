@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: wesnoth\n"
 "Report-Msgid-Bugs-To: http://bugs.wesnoth.org/\n"
 "POT-Creation-Date: 2010-12-08 18:05+0100\n"
-"PO-Revision-Date: 2015-04-27 17:19+0800\n"
+"PO-Revision-Date: 2015-06-03 23:14+0800\n"
 "Last-Translator: \n"
 "Language-Team: Chinese/Simplified <i18n-translation@lists.linux.net.cn>\n"
 "Language: zh_CN\n"
@@ -2566,7 +2566,10 @@ msgstr "改变分辨率"
 
 #: src/game_preferences_display.cpp:190
 msgid "Theme"
-msgstr "主题"
+msgstr "场景"
+
+msgid "Dialog"
+msgstr "对话框"
 
 #: src/game_preferences_display.cpp:191
 msgid "Hotkeys"
@@ -5651,6 +5654,197 @@ msgstr "王国战争"
 
 msgid "Rose"
 msgstr "Rose"
+
+msgid "Align left. Maybe stretch"
+msgstr "左对齐。可能放大"
+
+msgid "Align left"
+msgstr "左对齐。不放大"
+
+msgid "Align center"
+msgstr "中央对齐。不放大"
+
+msgid "Align right"
+msgstr "右对齐。不放大"
+
+msgid "Align top. Maybe stretch"
+msgstr "上对齐。可能放大"
+
+msgid "Align top"
+msgstr "上对齐。不放大"
+
+msgid "Align bottom"
+msgstr "下对齐。不放大"
+
+msgid "Always invisible"
+msgstr "一直不显示"
+
+msgid "Auto visible"
+msgstr "自动显示"
+
+msgid "Horizontal mode"
+msgstr "水平滚动条模式"
+
+msgid "Vertical mode"
+msgstr "垂直滚动条模式"
+
+msgid "Unit width"
+msgstr "单元宽度"
+
+msgid "Unit height"
+msgstr "单元高度"
+
+msgid "Gap"
+msgstr "间隔"
+
+msgid "widget^definition"
+msgstr "风格"
+
+msgid "Horizontal layout"
+msgstr "水平布局"
+
+msgid "Vertical layout"
+msgstr "垂直布局"
+
+msgid "Border"
+msgstr "边界"
+
+msgid "Pixel"
+msgstr "像素"
+
+msgid "ID"
+msgstr "标识"
+
+msgid "Width"
+msgstr "宽度"
+
+msgid "Height"
+msgstr "高度"
+
+msgid "Linked group"
+msgstr "等尺寸组"
+
+msgid "Label"
+msgstr "文本"
+
+msgid "Tooltip"
+msgstr "提示"
+
+msgid "Enter fullscreen"
+msgstr "进入全屏"
+
+msgid "Exit fullscreen"
+msgstr "退出全屏"
+
+msgid "Once unpake, can not be back to template. Do you want to unpake $id?"
+msgstr "一旦拆散，就不能恢复回模板。您真的要拆散$id吗？"
+
+msgid "$id holds grid that not all spacer. Do you want to delete?"
+msgstr "$id包含不是空的网格，真要地删除吗？"
+
+msgid "Changes in the $window since the last save will be lost."
+msgstr "之前在$window所做的修改将丢失。"
+
+msgid "Rectangle"
+msgstr "矩形"
+
+msgid "Advanced"
+msgstr "高级"
+
+msgid "Absolute"
+msgstr "绝对值"
+
+msgid "ref's $field"
+msgstr "参考矩形的$field"
+
+msgid "My $field"
+msgstr "自个矩形的$field"
+
+msgid "$id is absolute type, must not be contain '+' or '-'!"
+msgstr "$id是绝对值类型，不能含有‘+’或‘-’！"
+
+msgid "$id must be integer!"
+msgstr "$id必须是整数值！"
+
+msgid "(top-left)"
+msgstr "（左上角）"
+
+msgid "(bottom-right)"
+msgstr "（右下角）"
+
+msgid "rect^ref"
+msgstr "参考矩形"
+
+msgid "xanchor"
+msgstr "水平方向行为"
+
+msgid "yanchor"
+msgstr "垂直方向行为"
+
+msgid "$field1 fixed, $field2 fixed"
+msgstr "$field1固定，$field2固定"
+
+msgid "$field1 fixed, $field2 scalable"
+msgstr "$field1固定，$field2可能变化"
+
+msgid "$field1 scalable, $field2 fixed"
+msgstr "$field1可能变化，$field2固定"
+
+msgid "Erase"
+msgstr "删除"
+
+msgid "Unpack"
+msgstr "拆散"
+
+msgid "Check for errors in the $window"
+msgstr "检查$window中的错误"
+
+msgid "dialog"
+msgstr "对话框"
+
+msgid "theme"
+msgstr "场景"
+
+msgid "Use rect layout"
+msgstr "使用矩形进行布局"
+
+msgid "Change"
+msgstr "修改"
+
+msgid "Patch"
+msgstr "补丁"
+
+msgid ""
+"Place grid fail! It's parent widget: $parent\n"
+"\n"
+"Layout size that calcualted base best size and grow_factor: $layout_size\n"
+"Now recalculated best size: $best_size"
+msgstr ""
+"放置网格失败！该网格的父控件：$parent\n"
+"\n"
+"根据标称尺寸和放大系数计算出的渲染尺寸：$layout_size\n"
+"实时计算出的标称尺寸：$best_size"
+
+msgid "Content is copied to clipboard"
+msgstr "内容已复到剪贴板"
+
+msgid "Context menu"
+msgstr "上下文菜单"
+
+msgid "New patch"
+msgstr "新补丁"
+
+msgid "Rename patch"
+msgstr "重命名补丁"
+
+msgid "Original ID"
+msgstr "原标识"
+
+#~ msgid "Setting"
+#~ msgstr "设置"
+
+#~ msgid "(right-bottom)"
+#~ msgstr "（右下角）"
 
 #~ msgid "Join Official Server"
 #~ msgstr "加入官方服务器"

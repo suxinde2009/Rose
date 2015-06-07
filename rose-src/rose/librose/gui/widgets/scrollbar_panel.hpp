@@ -53,7 +53,7 @@ public:
 	unsigned get_state() const { return 0; }
 
 	/** Inherited from tscrollbar_container. */
-	void set_content_size(const tpoint& origin, const tpoint& size);
+	void place_content_grid(const tpoint& content_origin, const tpoint& content_size, const tpoint& desire_origin);
 private:
 
 	/** Inherited from tcontrol. */

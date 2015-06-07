@@ -778,6 +778,7 @@ void twindow::draw()
 				widget->draw_background(frame_buffer, 0, 0);
 				bg_opaque_ = surface_is_opaque.retval()? t_true: t_false;
 			}
+
 			if (widget == terminal || (!children.empty() && std::count(children.begin(), children.end(), widget))) {
 				widget->draw_children(frame_buffer, 0, 0);
 			}
@@ -945,7 +946,7 @@ void twindow::layout()
 	tpoint size = get_best_size();
 
 	if (size.x > static_cast<int>(maximum_width) || size.y > static_cast<int>(maximum_height)) {
-		// @todo implement the scrollbars on the window.
+		// @todo implement the scrollbars on777777 the window.
 
 		std::stringstream sstr;
 		sstr << __FILE__ << ":" << __LINE__ << " in function '" << __func__
@@ -956,6 +957,9 @@ void twindow::layout()
 				<< " screen size "
 				<< settings::screen_width << ',' << settings::screen_height
 				<< '.';
+
+		// std::string user_msg = generate_layout_str(0);
+		// throw twml_exception(user_msg, sstr.str());
 
 		throw twml_exception(tintegrate::generate_format(id(), "yellow") + _("Failed to show a dialog, "
 				"which doesn't fit on the screen."), sstr.str());
@@ -1055,7 +1059,7 @@ tpoint twindow::calculate_best_size() const
 void twindow::layout_linked_widgets(const twidget* parent)
 {
 	// evaluate the group sizes
-	std::map<const twidget*, tpoint> cache;
+	std::map<twidget*, tpoint> cache;
 	typedef std::pair<const std::string, tlinked_size> hack;
 	BOOST_FOREACH(hack& linked_size, linked_size_) {
 
@@ -1067,34 +1071,6 @@ void twindow::layout_linked_widgets(const twidget* parent)
 
 			if (widget->get_visible() == twidget::INVISIBLE) {
 				continue;
-			}
-
-			const tpoint size = widget->get_best_size();
-			cache.insert(std::make_pair(widget, size));
-
-			if (size.x > max_size.x) {
-				max_size.x = size.x;
-			}
-			if (size.y > max_size.y) {
-				max_size.y = size.y;
-			}
-		}
-
-		// Set the maximum size.
-		BOOST_FOREACH(twidget* widget, linked_size.second.widgets) {
-
-			if (widget->get_visible() == twidget::INVISIBLE) {
-				continue;
-			}
-
-			// tpoint size = widget->get_best_size();
-			tpoint size = cache.find(widget)->second;
-
-			if (linked_size.second.width) {
-				size.x = max_size.x;
-			}
-			if (linked_size.second.height) {
-				size.y = max_size.y;
 			}
 
 			if (parent) {
@@ -1109,6 +1085,30 @@ void twindow::layout_linked_widgets(const twidget* parent)
 					continue;
 				}
 			}
+
+			const tpoint size = widget->get_best_size();
+			cache.insert(std::make_pair(widget, size));
+
+			if (size.x > max_size.x) {
+				max_size.x = size.x;
+			}
+			if (size.y > max_size.y) {
+				max_size.y = size.y;
+			}
+		}
+
+		// Set the maximum size.
+		for (std::map<twidget*, tpoint>::const_iterator it = cache.begin(); it != cache.end(); ++ it) {
+			twidget* widget = it->first;
+			tpoint size = it->second;
+
+			if (linked_size.second.width) {
+				size.x = max_size.x;
+			}
+			if (linked_size.second.height) {
+				size.y = max_size.y;
+			}
+
 			widget->set_layout_size(size);
 		}
 	}

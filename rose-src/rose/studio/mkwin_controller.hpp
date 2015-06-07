@@ -30,15 +30,40 @@ enum EXIT_STATUS {
 	EXIT_ERROR
 };
 
-struct tsheet_node 
+struct tmenu2
 {
-	tsheet_node(unit* parent = NULL, int number = 0) 
-		: parent(parent)
-		, number(number)
-	{}
+	struct titem
+	{
+		titem(const std::string& id, tmenu2* submenu, bool hide, bool param)
+			: id(id)
+			, submenu(submenu)
+			, hide(hide)
+			, param(param)
+		{}
 
-	unit* parent;
-	int number;
+		std::string id;
+		tmenu2* submenu;
+		bool hide;
+		bool param;
+	};
+
+	tmenu2(const std::string& report, const std::string& id, tmenu2* parent)
+		: report(report)
+		, id(id)
+		, items()
+		, parent(parent)
+	{}
+	~tmenu2();
+	
+	tmenu2* top_menu();
+	bool id_existed(const std::string& id) const;
+	void submenus(std::vector<tmenu2*>& result) const;
+	void generate(config& cfg) const;
+
+	std::string report;
+	std::string id;
+	std::vector<titem> items;
+	tmenu2* parent;
 };
 
 /**
@@ -49,8 +74,29 @@ struct tsheet_node
 class mkwin_controller : public controller_base, public events::mouse_handler_base
 {
 public:
-	static const int default_width = 5;
-	static const int default_height = 4;
+	static const int default_child_width;
+	static const int default_child_height;
+	static const int default_dialog_width;
+	static const int default_dialog_height;
+
+	static std::string widget_template_cfg();
+
+	class tused_widget_tpl_lock
+	{
+	public:
+		tused_widget_tpl_lock(mkwin_controller& controller)
+			: controller_(controller)
+		{
+			controller_.used_widget_tpl_.clear();
+		}
+		~tused_widget_tpl_lock()
+		{
+			controller_.used_widget_tpl_.clear();
+		}
+
+	private:
+		mkwin_controller& controller_;
+	};
 
 	class tfind_rect_cfg_lock
 	{
@@ -90,49 +136,15 @@ public:
 		boost::function<bool (const unit*, bool)> original_;
 	};
 
-	class tswitch_units_lock
+	class ttheme_top_lock
 	{
 	public:
-		tswitch_units_lock(mkwin_controller& controller)
-			: controller_(controller)
-		{
-			if (controller_.parent_nodes_.size() == 1) {
-				return;
-			}
-
-			const tsheet_node& node = controller_.parent_nodes_.back();
-
-			unit::tchild child;
-			controller_.units_.save_map_to(child, true);
-			node.parent->set_child(node.number, child);
-
-			controller_.current_unit_ = NULL;
-			controller_.units_.set_consistent(false);
-
-			controller_.reload_map(controller_.top_.cols.size() + 1, controller_.top_.rows.size() + 1, false);
-			controller_.units_.restore_map_from(controller_.top_);
-		}
-
-		~tswitch_units_lock()
-		{
-			if (controller_.parent_nodes_.size() == 1) {
-				return;
-			}
-
-			const tsheet_node& node = controller_.parent_nodes_.back();
-
-			controller_.units_.save_map_to(controller_.top_, true);
-
-			controller_.current_unit_ = node.parent;
-			controller_.units_.set_consistent(true);
-
-			const unit::tchild& child = node.parent->child(node.number);
-			controller_.reload_map(child.cols.size() + 1, child.rows.size() + 1, false);
-			controller_.units_.restore_map_from(child);
-		}
+		ttheme_top_lock(mkwin_controller& controller);
+		~ttheme_top_lock();
 
 	private:
 		mkwin_controller& controller_;
+		bool require_clear_;
 	};
 
 	/**
@@ -165,8 +177,6 @@ public:
 	bool right_click(int x, int y, const bool browse);
 
 	void click_widget(const std::string& type, const std::string& definition);
-	void sheet_toggled(gui2::twidget* widget, int index, bool save);
-	void simulate_toggle_sheet(int index, bool save);
 	const std::vector<gui2::tlinked_group>& linked_groups() const { return linked_groups_; }
 	void set_status();
 	const unit* copied_unit() const { return copied_unit_; }
@@ -178,16 +188,12 @@ public:
 
 	bool toggle_tabbar(gui2::twidget* widget);
 
-	const std::vector<tsheet_node>& parent_nodes() const { return parent_nodes_; }
-	std::vector<tsheet_node>& unit_nodes() { return unit_nodes_; }
-
 	bool in_context_menu(const std::string& id) const;
 	bool actived_context_menu(const std::string& id) const;
 
 	void do_right_click();
 	void select_unit(unit* u);
 
-	void pre_change_resolution();
 	void post_change_resolution();
 
 	/* controller_base overrides */
@@ -197,6 +203,8 @@ public:
 
 	bool verify_new_mode(const std::string& str);
 	void insert_mode(const std::string& id);
+	void erase_patch(const std::string id);
+	void rename_patch(const std::string from, const std::string& id);
 	const std::vector<tmode>& modes() const { return modes_; }
 	const tmode& mode(int at) const { return modes_[at]; }
 
@@ -209,35 +217,57 @@ public:
 	unit_map& get_units() { return units_; }
 	const unit_map& get_units() const { return units_; }
 
+	void layout_dirty(bool force_change_map = false);
+
+	void insert_used_widget_tpl(const config& tpl_cfg);
+
+	void form_linked_groups(const config& res_cfg);
+	void generate_linked_groups(config& res_cfg) const;
+
+	std::vector<tmenu2>& context_menus() { return context_menus_; }
+	const std::vector<tmenu2>& context_menus() const { return context_menus_; }
+
+	void form_context_menus(const config& res_cfg);
+	void generate_context_menus(config& res_cfg);
+
 private:
+	void reset_modes();
+
 	/** command_executor override */
 	void execute_command2(int command, const std::string& sparam);
 
 	void reload_map(int w, int h, bool redraw);
 
 	void widget_setting(bool special);
-	void rect_setting();
+	void rect_changed(unit* u);
 	void linked_group_setting();
-	void mode_setting();
 	void erase_widget();
-	void copy_widget();
+	void copy_widget(unit* u, bool cut);
 	void paste_widget();
-	void change_map(int dir, bool extend, int index);
-	void move_line(bool horizontal, int index);
-	void swap_line(bool horizontal, int index);
 	void run();
 	void system();
 	void load_window();
 	void save_window(bool as);
-	void quit_confirm(EXIT_STATUS mode);
+	void quit_confirm(EXIT_STATUS mode, bool dirty);
+	void insert_row(unit* u, bool top);
+	void erase_row(unit* u);
+	void insert_column(unit* u, bool left);
+	void erase_column(unit* u);
+
+	void theme_into_widget(unit* u);
+	void theme_goto_top(bool auto_select);
 
 	void derive_create(unit* u);
+	bool can_copy(const unit* u, bool cut) const;
 	bool can_paste(const unit* u) const;
 
-	void switch_sheet_to(int index, bool save);
-	void fill_spacer();
+	bool can_adjust_row(const unit* u) const;
+	bool can_adjust_column(const unit* u) const;
+	bool can_erase(const unit* u) const;
+
+	void fill_spacer(unit* parent, int number);
 	config generate_window_cfg() const;
-	config generate_theme_cfg(const std::vector<unit*>& units) const;
+	config generate_theme_cfg(const std::vector<unit*>& units);
 
 	const config& find_rect_cfg2(const config& cfg, const std::string& widget, const std::string& id) const;
 
@@ -245,6 +275,17 @@ private:
 	bool enumerate_child2(const unit::tchild& child, bool show_error) const;
 
 	void replace_child_unit(unit* u);
+	void unpack_widget_tpl(unit* u);
+	void refresh_title();
+
+	void theme_load_patches(const unit::tchild& top, const config& theme_cfg);
+	void load_patch_res(const unit::tchild& top, const tmode& patch, const config& cfg);
+	void generate_theme_adjust(const tmode& mode, config& cfg) const;
+
+	void form_context_menu(tmenu2& menu, const config& cfg, const std::string& menu_id);
+
+	void fill_object_list();
+	bool paste_widget2(const unit& from, const map_location to_loc);
 
 private:
 	/** The display object used and owned by the editor. */
@@ -253,17 +294,21 @@ private:
 	gamemap map_;
 	unit_map units_;
 
+
 	map_location selected_hex_;
 	unit* current_unit_;
 	unit::tchild top_;
-	std::vector<tsheet_node> parent_nodes_;
-	std::vector<tsheet_node> unit_nodes_;
+	unit::tchild theme_top_;
+	SDL_Rect theme_top_unit_rect_;
 	std::vector<std::string> textdomains_;
 	std::vector<gui2::tlinked_group> linked_groups_;
-
+	std::vector<tmenu2> context_menus_;
+	
 	std::pair<std::string, config> original_;
 	unit* copied_unit_;
+	bool cut_;
 	base_unit* last_unit_;
+	std::string file_;
 	
 	bool theme_;
 	int theme_widget_start_;
@@ -273,6 +318,8 @@ private:
 
 	boost::function<bool (const unit*, bool)> fcallback_;
 	std::set<std::string> callback_sstr_;
+
+	std::set<const config*> used_widget_tpl_;
 
 	/** Quit main loop flag */
 	bool do_quit_;

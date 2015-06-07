@@ -32,6 +32,8 @@ class tcontrol : public virtual twidget
 {
 	friend class tdebug_layout_graph;
 public:
+	static bool force_add_to_dirty_list;
+
 	class ttext_maximum_width_lock
 	{
 	public:
@@ -49,6 +51,23 @@ public:
 	private:
 		tcontrol& widget_;
 		int original_;
+	};
+
+	class tadd_to_dirty_list_lock
+	{
+	public:
+		tadd_to_dirty_list_lock()
+			: force_add_to_dirty_list_(force_add_to_dirty_list)
+		{
+			force_add_to_dirty_list = true;
+		}
+		~tadd_to_dirty_list_lock()
+		{
+			force_add_to_dirty_list = force_add_to_dirty_list_;
+		}
+
+	private:
+		bool force_add_to_dirty_list_;
 	};
 
 	/** @deprecated Used the second overload. */
@@ -99,6 +118,8 @@ public:
 
 	int insert_animation(const ::config& cfg, bool pre);
 	void erase_animation(int id);
+
+	void set_canvas_variable(const std::string& name, const variant& value);
 
 protected:
 	/** Returns the id of the state.
@@ -171,10 +192,12 @@ public:
 
 	virtual void set_surface(const surface& surf, int w, int h);
 
-protected:
 	/** Inherited from twidget. */
 	tpoint calculate_best_size() const;
 
+	tpoint request_reduce_width(const unsigned maximum_width);
+
+protected:
 	virtual bool exist_anim();
 	virtual void calculate_integrate();
 
@@ -437,6 +460,8 @@ protected:
 			, int /*x_offset*/
 			, int /*y_offset*/)
 	{ /* do nothing */ }
+
+	void child_populate_dirty_list(twindow& caller, const std::vector<twidget*>& call_stack);
 
 private:
 

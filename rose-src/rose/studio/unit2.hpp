@@ -30,6 +30,7 @@ private:
 	bool sort_compare(const base_unit& that) const;
 
 	void generate_window(config& cfg) const;
+	void generate_main_map_border(config& cfg) const;
 	void redraw_unit();
 
 	void from_window(const config& cfg);

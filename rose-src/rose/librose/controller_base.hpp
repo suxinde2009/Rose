@@ -34,6 +34,9 @@ class mouse_handler_base;
 class controller_base : public events::handler
 {
 public:
+	static std::set<std::string> theme_reserved_wml;
+	static bool is_theme_reserved(const std::string& key);
+
 	enum DIRECTION {UP, DOWN, LEFT, RIGHT, NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
 
 	controller_base(int ticks, const config& game_config, CVideo& video);
@@ -68,6 +71,7 @@ public:
 	virtual display& get_display() = 0;
 	virtual const display& get_display() const = 0;
 
+	const config& core_config() const { return game_config_; }
 protected:
 	/**
 	 * Called by play_slice after events:: calls, but before processing scroll

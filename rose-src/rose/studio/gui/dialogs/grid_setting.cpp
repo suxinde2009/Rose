@@ -72,22 +72,28 @@ namespace gui2 {
 
 REGISTER_DIALOG(grid_setting)
 
-const std::string tgrid_setting::default_ref = "<default>";
-
 tgrid_setting::tgrid_setting(mkwin_controller& controller, display& disp, unit_map& units, unit& u, const std::string& control)
 	: tsetting_dialog(u.cell())
-	, tmode_navigate(controller, disp, *this, true)
+	, tmode_navigate(controller, disp)
 	, disp_(disp)
 	, units_(units)
 	, u_(u)
 	, control_(control)
 	, current_cfg_()
+	, navigate_(true, false, "tab")
+	, current_tab_(0)
 {
 }
 
 void tgrid_setting::pre_show(CVideo& /*video*/, twindow& window)
 {
-	tmode_navigate::pre_show(window);
+	tmode_navigate::pre_show(navigate_, window, "navigate");
+	navigate_.set_boddy(find_widget<twidget>(&window, "bar_panel", false, true));
+
+	navigate_.set_visible(0, false);
+	navigate_.select(1);
+	navigate_.replacement_children();
+	current_tab_ = 1;
 	
 	std::stringstream ss;
 	const std::pair<std::string, gui2::tcontrol_definition_ptr>& widget = u_.widget();
@@ -95,7 +101,7 @@ void tgrid_setting::pre_show(CVideo& /*video*/, twindow& window)
 	ss.str("");
 	ss << "grid setting";
 	ss << "(";
-	ss << tintegrate::generate_format(control_, "yellow");
+	ss << tintegrate::generate_format(control_, "blue");
 	ss << ")";
 	tlabel* label = find_widget<tlabel>(&window, "title", false, true);
 	label->set_label(ss.str());
@@ -118,15 +124,29 @@ void tgrid_setting::pre_show(CVideo& /*video*/, twindow& window)
 void tgrid_setting::switch_cfg(twindow& window)
 {
 	const tmode& mode = controller_.mode(current_tab_);
-	tadjust adjust = u_.adjust(mode, tadjust::ADD);
-	ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "add", false, true);
-	toggle->set_value(adjust.valid());
-	toggle->set_active(current_tab_ && !(current_tab_ % tmode::res_count));
+	const unit::tparent& parent = u_.parent();
 
-	adjust = u_.adjust(mode, tadjust::REMOVE);
-	toggle = find_widget<ttoggle_button>(&window, "remove", false, true);
-	toggle->set_value(adjust.valid());
-	toggle->set_active(current_tab_ != 0);
+	bool active = true;
+	bool remove = false;
+	config base_remove2_cfg;
+	if (current_tab_) {
+		base_remove2_cfg = parent.u->get_base_remove2_cfg(mode);
+	}
+	if (!base_remove2_cfg.has_attribute(str_cast(parent.number))) {
+		tadjust adjust = parent.u->adjust(mode, tadjust::REMOVE2);
+		if (adjust.valid()) {
+			std::set<int> ret = adjust.newed_remove2_cfg(base_remove2_cfg);
+			if (ret.find(parent.number) != ret.end()) {
+				remove = true;	
+			}
+		}
+	} else {
+		remove = true;
+		active = false;
+	}
+	ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "remove", false, true);
+	toggle->set_value(remove);
+	toggle->set_active(current_tab_ && active);
 }
 
 void tgrid_setting::save(twindow& window, bool exit)
@@ -140,28 +160,22 @@ void tgrid_setting::save(twindow& window, bool exit)
 	}
 	utils::transform_tolower(cell_.id);
 
+	const unit::tparent& parent = u_.parent();
 	const tmode& mode = controller_.mode(current_tab_);
 
-	ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "add", false, true);
-	tadjust adjust = u_.adjust(mode, tadjust::ADD);
-	if (toggle->get_value() && !adjust.valid()) {
-		u_.insert_adjust(mode, tadjust(tadjust::ADD, mode.res, null_cfg));
-	} else if (!toggle->get_value() && adjust.valid()) {
-		u_.erase_adjust(mode, tadjust::ADD);
-	}
-
-	toggle = find_widget<ttoggle_button>(&window, "remove", false, true);
-	adjust = u_.adjust(mode, tadjust::REMOVE);
-	if (toggle->get_value() && !adjust.valid()) {
-		u_.insert_adjust(mode, tadjust(tadjust::REMOVE, mode.res, null_cfg));
-	} else if (!toggle->get_value() && adjust.valid()) {
-		u_.erase_adjust(mode, tadjust::REMOVE);
+	if (current_tab_) {
+		ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "remove", false, true);
+		if (toggle->get_active()) {
+			config adjust_cfg;
+			adjust_cfg[str_cast(parent.number)] = toggle->get_value();
+			parent.u->insert_adjust(tadjust(tadjust::REMOVE2, mode, adjust_cfg));
+		}
 	}
 
 	if (exit) {
 		window.set_retval(twindow::OK);
 	} else {
-		reload_tab_label();
+		reload_tab_label(navigate_);
 	}
 }
 
@@ -169,26 +183,29 @@ void tgrid_setting::toggle_tabbar(twidget* widget)
 {
 	twindow* window = widget->get_window();
 	save(*window, false);
-	tmode_navigate::toggle_tabbar(widget);
+
+	current_tab_ = (int)reinterpret_cast<long>(widget->cookie());
+	tdialog::toggle_tabbar(widget);
 
 	switch_cfg(*window);
 }
 
-std::string tgrid_setting::form_tab_label(int at) const
+std::string tgrid_setting::form_tab_label(ttabbar& navigate, int at) const
 {
 	const tmode& mode = controller_.mode(at);
+	const unit::tparent& parent = u_.parent();
 
 	std::stringstream ss;
 	ss << mode.id << "\n";
 	ss << mode.res.width << "x" << mode.res.height;
 
-	tadjust adjust = u_.adjust(mode, tadjust::ADD);
+	tadjust adjust = parent.u->adjust(mode, tadjust::REMOVE2);
 	if (adjust.valid()) {
-		ss << tintegrate::generate_img("misc/plus.png~SCALE(12,12)");
-	}
-	adjust = u_.adjust(mode, tadjust::REMOVE);
-	if (adjust.valid()) {
-		ss << tintegrate::generate_img("misc/delete.png~SCALE(12,12)");
+		config cfg = parent.u->get_base_remove2_cfg(mode);
+		std::set<int> ret = adjust.newed_remove2_cfg(cfg);
+		if (ret.find(parent.number) != ret.end()) {
+			ss << tintegrate::generate_img("misc/delete.png~SCALE(12,12)");
+		}
 	}
 	
 	return ss.str();

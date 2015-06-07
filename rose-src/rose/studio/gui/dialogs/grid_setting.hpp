@@ -45,7 +45,7 @@ private:
 
 	void switch_cfg(twindow& window);
 
-	std::string form_tab_label(int at) const;
+	std::string form_tab_label(ttabbar& navigate, int at) const;
 
 private:
 	display& disp_;
@@ -53,6 +53,8 @@ private:
 	unit& u_;
 	std::string control_;
 	config current_cfg_;
+	ttabbar navigate_;
+	int current_tab_;
 };
 
 

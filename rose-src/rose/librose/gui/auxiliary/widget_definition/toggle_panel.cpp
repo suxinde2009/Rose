@@ -35,6 +35,7 @@ ttoggle_panel_definition::tresolution::tresolution(const config& cfg)
 	, bottom_border(cfg["bottom_border"])
 	, left_border(cfg["left_border"])
 	, right_border(cfg["right_border"])
+	, frame(cfg["frame"])
 {
 /*WIKI
  * @page = GUIWidgetDefinitionWML

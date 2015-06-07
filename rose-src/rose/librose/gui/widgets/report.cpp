@@ -161,7 +161,7 @@ tpoint treport::calculate_best_size() const
 	return result;
 }
 
-void treport::set_content_size(const tpoint& origin, const tpoint& desire_size)
+void treport::place_content_grid(const tpoint& content_origin, const tpoint& desire_size, const tpoint& origin)
 {
 	const SDL_Rect& rect = content_grid_->fix_rect();
 	// multi-line report are both unit_size != 0 and fix_rect.
@@ -230,6 +230,7 @@ ttabbar::ttabbar(bool toggle, bool segment, const std::string& definition)
 	, previous_(NULL)
 	, stuff_widget_(NULL)
 	, next_(NULL)
+	, boddy_(NULL)
 {}
 
 ttabbar::~ttabbar()
@@ -382,7 +383,7 @@ void ttabbar::set_report(treport* report, int width, int height)
 		// previous arrow
 		previous_ = create_surface_button("previous", NULL);
 		previous_->set_fix_size(width, height);
-		previous_->set_surface(image::get_image("buttons/arrow_left.png"), width, height);
+		previous_->set_surface(image::get_image("misc/arrow-left.png"), width, height);
 		connect_signal_mouse_left_click(
 			*previous_
 			, boost::bind(
@@ -398,7 +399,7 @@ void ttabbar::set_report(treport* report, int width, int height)
 		// next arrow
 		next_ = create_surface_button("next", NULL);
 		next_->set_fix_size(width, height);
-		next_->set_surface(image::get_image("buttons/arrow_right.png"), width, height);
+		next_->set_surface(image::get_image("misc/arrow-right.png"), width, height);
 		connect_signal_mouse_left_click(
 			*next_
 			, boost::bind(
@@ -415,6 +416,15 @@ void ttabbar::set_report(treport* report, int width, int height)
 	report_->tabbar_ = this;
 }
 
+bool ttabbar::pre_toggle(twidget* widget)
+{
+	tdialog* dialog = report_->dialog();
+	tcontrol* previous = cursel();
+
+	VALIDATE(previous, "previous must not be NULL!");
+	return dialog->pre_toggle_tabbar(widget, previous);
+}
+
 tcontrol* ttabbar::create_child(const std::string& id, const std::string& tooltip, void* cookie, const std::string& sparam)
 {
 	VALIDATE(report_, "Must valid report_!");
@@ -424,6 +434,7 @@ tcontrol* ttabbar::create_child(const std::string& id, const std::string& toolti
 		ttoggle_button* widget2 = create_toggle_button(id, definition_, cookie);
 		widget2->set_tooltip(tooltip);
 		widget2->set_radio(true);
+		widget2->set_callback_state_pre_change(boost::bind(&ttabbar::pre_toggle, this, _1));
 		widget2->set_callback_state_change(boost::bind(&tdialog::toggle_tabbar, report_->dialog(), _1));
 		widget = widget2;
 
@@ -609,6 +620,15 @@ void ttabbar::replacement_children()
 	next_->set_visible(require_next? twidget::VISIBLE: twidget::INVISIBLE);
 
 	report_->replacement_children();
+
+	if (boddy_) {
+		twidget* widget = cursel();
+		if (widget && widget->get_visible() == twidget::VISIBLE) {
+			boddy_->set_hole_variable(widget->get_x(), widget->get_x() + widget->get_width());
+		} else {
+			boddy_->set_hole_variable(0, 0);
+		}
+	}
 }
 
 int ttabbar::childs() const
@@ -617,6 +637,11 @@ int ttabbar::childs() const
 		return 0;
 	}
 	return report_->content_grid_->children_vsize() - front_childs - back_childs;
+}
+
+void ttabbar::set_boddy(twidget* boddy) 
+{ 
+	boddy_ = dynamic_cast<tpanel*>(boddy);
 }
 
 void ttabbar::set_visible(int at, bool visible)
@@ -701,6 +726,9 @@ void ttabbar::select(twidget* widget)
 	int childs = report_->content_grid()->children_vsize();
 	for (int i = front_childs; i < childs - back_childs; i ++) {
 		ttoggle_button* that = dynamic_cast<ttoggle_button*>(children[i].widget_);
+		if (!get_visible2(children, i)) {
+			continue;
+		}
 		if (that != widget && that->get_value()) {
 			that->set_value(false);
 		}
@@ -710,7 +738,31 @@ void ttabbar::select(twidget* widget)
 		if (!widget2->get_value()) {
 			widget2->set_value(true);
 		}
+
+		if (boddy_) {
+			boddy_->set_hole_variable(widget2->get_x(), widget2->get_x() + widget->get_width());
+		}
 	}
+}
+
+tcontrol* ttabbar::cursel() const
+{
+	if (!toggle_) {
+		return NULL;
+	}
+
+	const gui2::tgrid::tchild* children = report_->content_grid()->children();
+	int childs = report_->content_grid()->children_vsize();
+	for (int i = front_childs; i < childs - back_childs; i ++) {
+		ttoggle_button* that = dynamic_cast<ttoggle_button*>(children[i].widget_);
+		if (!get_visible2(children, i)) {
+			continue;
+		}
+		if (that->get_value()) {
+			return that;
+		}
+	}
+	return NULL;
 }
 
 } // namespace gui2

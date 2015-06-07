@@ -18,6 +18,7 @@
 
 #include "gui/dialogs/dialog.hpp"
 #include "gui/auxiliary/window_builder/helper.hpp"
+#include "game_config.hpp"
 #include <vector>
 
 namespace gui2 {
@@ -31,7 +32,7 @@ struct tlayout
 		: val(val)
 		, description(description)
 	{
-		std::string prefix = "studio/layout/";
+		std::string prefix = "layout/";
 		if (val == tgrid::HORIZONTAL_GROW_SEND_TO_CLIENT) {
 			icon = prefix + "align-left-grow.png";
 			id = null_str; // set horizontal_grow.
@@ -113,9 +114,14 @@ struct tcell_setting {
 		widget.tree_view.indention_step_size = 0;
 		widget.tree_view.node_id = "node";
 
+		widget.report.unit_width = 0;
+		widget.report.unit_height = 0;
+		widget.report.gap = 0;
+
 		window.textdomain = "wesnoth-lib";
 		window.click_dismiss = false;
 		window.definition = "default";
+		window.tile_shape = game_config::tile_square;
 		window.automatic_placement = true;
 		window.horizontal_placement = gui2::tgrid::HORIZONTAL_ALIGN_CENTER;
 		window.vertical_placement = gui2::tgrid::VERTICAL_ALIGN_CENTER;
@@ -123,13 +129,16 @@ struct tcell_setting {
 		window.y = "(screen_height - height) / 2";
 		window.width = "if(screen_width < 800, screen_width, 800)";
 		window.height = "if(screen_height < 600, screen_height, 600)";
+		window.cover_width = 0;
+		window.cover_height = 0;
+		window.color = 0xffffffff;
 
 		row.grow_factor = 0;
 		column.grow_factor = 0;
 	}
 
 	std::string id;
-	config cfg;
+	config rect_cfg;
 	struct {
 		gui2::tgrid::tchild cell;
 		std::string linked_group;
@@ -155,6 +164,12 @@ struct tcell_setting {
 			int indention_step_size;
 			std::string node_id;
 		} tree_view;
+
+		struct {
+			int unit_width;
+			int unit_height;
+			int gap;
+		} report;
 	} widget;
 
 	struct {
@@ -167,8 +182,12 @@ struct tcell_setting {
 		std::string y;
 		std::string width;
 		std::string height;
+		std::string tile_shape;
 		int horizontal_placement;
 		int vertical_placement;
+		int cover_width;
+		int cover_height;
+		Uint32 color;
 	} window;
 
 	struct {

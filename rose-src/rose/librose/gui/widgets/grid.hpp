@@ -194,9 +194,13 @@ public:
 
 	tpoint calculate_best_size_fix() const;
 
+	tpoint request_reduce_width(const unsigned maximum_width);
+	int column_request_reduce_width(const unsigned column, const unsigned maximum_width);
+
 	/** Inherited from twidget. */
 	bool can_wrap() const;
 
+	std::string generate_layout_str(const int level) const;
 public:
 	/** Inherited from twidget. */
 	void place(const tpoint& origin, const tpoint& size);
@@ -266,6 +270,16 @@ public:
 
 	void resize_children(int size);
 
+	// listbox help
+	void listbox_init();
+	int listbox_insert_child(twidget& widget, int at);
+	void listbox_erase_child(int at);
+	int listbox_cursel() const;
+
+	// stacked widget help
+	void stacked_init();
+	void stacked_insert_child(twidget& widget, int at);
+
 	/** Child item of the grid. */
 	struct tchild {
 		/** The flags for the border and cell setup. */
@@ -290,6 +304,16 @@ public:
 	tchild* children() { return children_; }
 	const tchild* children() const { return children_; }
 	int children_vsize() const;
+
+	const tchild& child(const unsigned row, const unsigned col) const
+		{ return children_[row * cols_ + col]; }
+	tchild& child(const unsigned row, const unsigned col)
+		{ return children_[row * cols_ + col]; }
+
+	const tchild& child(const unsigned at) const
+	{ 
+		return children_[at]; 
+	}
 
 public:
 	/** Iterator for the tchild items. */
@@ -324,6 +348,13 @@ public:
 	void update_last_draw_end();
 
 private:
+	/** Layouts the children in the grid. */
+	void layout(const tpoint& origin);
+
+	/** Inherited from twidget. */
+	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
+
+protected:
 	/** The number of grid rows. */
 	unsigned rows_;
 
@@ -357,18 +388,6 @@ private:
 	std::vector<tspacer*> stuff_widget_;
 	int stuff_size_;
 	tpoint last_draw_end_;
-
-	const tchild& child(const unsigned row, const unsigned col) const
-		{ return children_[row * cols_ + col]; }
-	tchild& child(const unsigned row, const unsigned col)
-		{ return children_[row * cols_ + col]; }
-
-	/** Layouts the children in the grid. */
-	void layout(const tpoint& origin);
-
-	/** Inherited from twidget. */
-	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
-
 };
 
 /** Returns the best size for the cell. */

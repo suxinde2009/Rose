@@ -39,7 +39,6 @@
 extern void handle_app_event(Uint32 type);
 
 int cached_draw_events = 0;
-extern bool require_change_resolution;
 
 int revise_screen_width(int width)
 {
@@ -452,8 +451,7 @@ void pump()
 			//so we must use indexes instead of iterators here.
 			for (size_t i1 = 0, i2 = event_handlers.size(); i1 != i2 && i1 < event_handlers.size(); ++i1) {
 				event_handlers[i1]->handle_event(event);
-				if (require_change_resolution) {
-					require_change_resolution = false;
+				if (display::require_change_resolution) {
 					display* disp = display::get_singleton();
 					disp->change_resolution();
 				}

@@ -209,8 +209,9 @@ public:
 	virtual bool content_empty() const { return false; }
 	virtual void invalidate_layout(bool calculate_linked_group);
 
-protected:
+	std::string generate_layout_str(const int level) const;
 
+protected:
 	/**
 	 * Shows a certain part of the content.
 	 *
@@ -347,6 +348,9 @@ protected:
 
 	bool calculate_scrollbar(const tpoint& actual_size, const tpoint& desire_size);
 
+	tpoint validate_content_grid_origin(const tpoint& content_origin, const tpoint& content_size, const tpoint& origin, const tpoint& size) const;
+
+protected:
 	/** When we're used as a fixed size item, this holds the best size. */
 	tformula<unsigned> best_width_;
 	tformula<unsigned> best_height_;
@@ -440,7 +444,7 @@ private:
 	 * @param origin              The origin for the content.
 	 * @param size                The size of the content.
 	 */
-	virtual void set_content_size(const tpoint& origin, const tpoint& size);
+	virtual void place_content_grid(const tpoint& content_origin, const tpoint& content_size, const tpoint& desire_origin) = 0;
 
 	/** Helper function which needs to be called after the scollbar moved. */
 	void scrollbar_moved();

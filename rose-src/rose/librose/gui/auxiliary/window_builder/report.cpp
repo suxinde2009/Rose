@@ -23,8 +23,6 @@
 #include "gui/auxiliary/window_builder/helper.hpp"
 #include "gui/widgets/grid.hpp"
 #include "gui/widgets/report.hpp"
-// #include "gui/widgets/pane.hpp"
-// #include "gui/widgets/viewport.hpp"
 #include "gui/widgets/settings.hpp"
 #include "wml_exception.hpp"
 

@@ -26,55 +26,243 @@
 
 #include <boost/bind.hpp>
 
-extern const std::string widget_prefix = "studio/widget/";
+extern std::string noise_config_key(const std::string& key);
 
-std::string form_widget_png(const std::string& type, const std::string& definition)
+const std::string unit::widget_prefix = "widget/";
+const std::string unit::tpl_type = "tpl";
+const std::string unit::tpl_widget_prefix = "tpl-";
+const std::string unit::tpl_id_prefix = "_tpl_";
+
+std::string unit::form_widget_png(const std::string& type, const std::string& definition)
 {
-	if (type != "grid") {
+	if (type == tpl_type) {
+		return widget_prefix + definition + ".png";
+	} else if (type != "grid") {
 		return widget_prefix + type + ".png";
 	} else {
-		return "buttons/studio/grid.png";
+		return "buttons/grid.png";
 	}
 }
 
-const std::string tmode::def_id = "default";
+std::string unit::form_widget_tpl(const std::string& id)
+{
+	std::stringstream ss;
+	ss << tpl_widget_prefix << id;
+	return ss.str();
+}
 
-std::vector<std::string> tadjust::change_fields;
-std::vector<std::string> tadjust::rect_fields;
-const tadjust null_adjust(tadjust::NONE, tres(1024, 768), config());
+std::string unit::form_tpl_widget_id(const std::string& tpl_id)
+{
+	std::stringstream ss;
+	ss << tpl_id_prefix << tpl_id;
+	return ss.str();
+}
+
+bool unit::is_widget_tpl(const std::string& tpl)
+{
+	return tpl.find(tpl_widget_prefix) == 0;
+}
+
+std::string unit::extract_from_widget_tpl(const std::string& tpl)
+{
+	return tpl.substr(tpl_widget_prefix.size());
+}
+
+bool unit::is_tpl_id(const std::string& id)
+{
+	return id.find(tpl_id_prefix) == 0;
+}
+
+std::string unit::extract_from_tpl_widget_id(const std::string& id)
+{
+	return id.substr(tpl_id_prefix.size());
+}
+
+const std::string tmode::def_id = "__def__";
+
+int tmode::base_index() const
+{
+	if (res.width == 1024 && res.height == 768) {
+		return 0;
+	} else if (res.width == 640 && res.height == 480) {
+		return 1;
+	}
+
+	VALIDATE(res.width == 480 && res.height == 320, "Invalid res!");
+	return 2;
+}
+
+std::set<std::string> tadjust::change_fields;
+std::set<std::string> tadjust::rect_fields;
+std::set<std::string> tadjust::change2_fields;
+const tadjust null_adjust(tadjust::NONE, tmode(null_str, 1024, 768), config());
 
 void tadjust::init_fields()
 {
 	if (!rect_fields.empty()) {
 		return;
 	}
-	rect_fields.push_back("rect");
-	rect_fields.push_back("ref");
-	rect_fields.push_back("xanchor");
-	rect_fields.push_back("yanchor");
+	rect_fields.insert("rect");
+	rect_fields.insert("ref");
+	rect_fields.insert("xanchor");
+	rect_fields.insert("yanchor");
+
+	change2_fields.insert("definition");
+	change2_fields.insert("unit_width");
+	change2_fields.insert("unit_height");
+	change2_fields.insert("gap");
+
 	change_fields = rect_fields;
+	for (std::set<std::string>::const_iterator it = change2_fields.begin(); it != change2_fields.end(); ++ it) {
+		change_fields.insert(*it);
+	}
 }
 
-unit::unit(mkwin_controller& controller, mkwin_display& disp, unit_map& units, const std::pair<std::string, gui2::tcontrol_definition_ptr>& widget, unit* parent)
+void tadjust::full_change_cfg(config& cfg, bool rect)
+{
+	const std::set<std::string>& fields = rect? rect_fields: change2_fields;
+	for (std::set<std::string>::const_iterator it = fields.begin(); it != fields.end(); ++ it) {
+		const std::string& key = *it;
+		if (!cfg.has_attribute(key)) {
+			cfg[key] = null_str;
+		}
+	}
+}
+
+bool tadjust::cfg_is_rect_fields(const config& cfg)
+{
+	for (std::set<std::string>::const_iterator it = rect_fields.begin(); it != rect_fields.end(); ++ it) {
+		const std::string& key = *it;
+		if (!cfg.has_attribute(key)) {
+			return false;
+		}
+	}
+	BOOST_FOREACH (const config::attribute& attri, cfg.attribute_range()) {
+		if (rect_fields.find(attri.first) == rect_fields.end()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+config tadjust::generate_empty_rect_cfg()
+{
+	config cfg;
+	for (std::set<std::string>::const_iterator it = rect_fields.begin(); it != rect_fields.end(); ++ it) {
+		cfg[*it] = "";
+	}
+	return cfg;
+}
+
+bool tadjust::different_change_cfg(const config& that, tristate rect) const
+{
+	// that' fields may more this's fields.
+	const std::set<std::string>& fields = (rect == t_unset)? change_fields: ((rect == t_true)? rect_fields: change2_fields);
+	for (std::set<std::string>::const_iterator it = fields.begin(); it != fields.end(); ++ it) {
+		const std::string& k = *it;
+		if (!cfg.has_attribute(k)) {
+			continue;
+		}
+		if (cfg[k] != that[k]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool tadjust::different_change_cfg2(const config& that, bool rect) const
+{
+	// that' fields may more this's fields.
+	const std::set<std::string>& fields = rect? rect_fields: change2_fields;
+	for (std::set<std::string>::const_iterator it = fields.begin(); it != fields.end(); ++ it) {
+		const std::string& k = *it;
+		if (!cfg.has_attribute(k)) {
+			continue;
+		}
+		if (cfg[k] != that[k]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void tadjust::pure_change_fields(bool rect)
+{
+	const std::set<std::string>& require_remove = rect? change2_fields: rect_fields;
+	for (std::set<std::string>::const_iterator it = require_remove.begin(); it != require_remove.end(); ++ it) {
+		cfg.remove_attribute(*it);
+	}
+
+	const std::set<std::string>& require_keep = rect? rect_fields: change2_fields;
+	for (std::set<std::string>::const_iterator it = require_keep.begin(); it != require_keep.end(); ++ it) {
+		const std::string& key = *it;
+		if (cfg.has_attribute(key) && cfg[key].str().empty()) {
+			cfg.remove_attribute(*it);
+		}
+	}
+}
+
+void tadjust::pure_remove2_fields(const unit& u)
+{
+	VALIDATE(u.is_stacked_widget(), "Only stacked_widget's layer can remove!");
+
+	bool remove;
+	do {
+		remove = false;
+		BOOST_FOREACH (const config::attribute &i, cfg.attribute_range()) {
+			if (!cfg[i.first].to_bool()) {
+				cfg.remove_attribute(i.first);
+				remove = true;
+				break;
+			}
+		}
+	} while (remove);
+}
+
+bool tadjust::is_empty_remove2_fields() const
+{
+	BOOST_FOREACH (const config::attribute &i, cfg.attribute_range()) {
+		if (cfg[i.first].to_bool()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+std::set<int> tadjust::newed_remove2_cfg(const config& that) const
+{
+	std::set<int> ret;
+	BOOST_FOREACH (const config::attribute &i, cfg.attribute_range()) {
+		if (!that.has_attribute(i.first)) {
+			ret.insert(lexical_cast_default<int>(i.first));
+		}
+	}
+	return ret;
+}
+
+unit::unit(mkwin_controller& controller, mkwin_display& disp, unit_map& units, const std::pair<std::string, gui2::tcontrol_definition_ptr>& widget, unit* parent, int number)
 	: base_unit(units)
 	, controller_(controller)
 	, disp_(disp)
 	, units_(units)
 	, widget_(widget)
 	, type_(WIDGET)
-	, parent_(parent)
+	, parent_(tparent(parent, number))
 	, adjusts_()
 {
+	if (is_report()) {
+		cell_.widget.horizontal_mode = gui2::tscrollbar_container::always_invisible; 
+	}
 }
 
-unit::unit(mkwin_controller& controller, mkwin_display& disp, unit_map& units, int type, unit* parent)
+unit::unit(mkwin_controller& controller, mkwin_display& disp, unit_map& units, int type, unit* parent, int number)
 	: base_unit(units)
 	, controller_(controller)
 	, disp_(disp)
 	, units_(units)
 	, widget_()
 	, type_(type)
-	, parent_(parent)
+	, parent_(tparent(parent, number))
 	, adjusts_()
 {
 	if (type == WINDOW && !parent) {
@@ -95,29 +283,31 @@ unit::unit(const unit& that)
 {
 	// caller require call set_parent to set self-parent.
 
-	for (std::vector<tchild>::const_iterator it = that.children_.begin(); it != that.children_.end(); ++ it) {
+	int number = 0;
+	for (std::vector<tchild>::const_iterator it = that.children_.begin(); it != that.children_.end(); ++ it, number ++) {
 		const tchild& child = *it;
 		children_.push_back(tchild());
 		tchild& child2 = children_.back();
 		child2.window = new unit(*child.window);
-		child2.window->parent_ = this;
+		child2.window->parent_ = tparent(this, number);
 
 		for (std::vector<unit*>::const_iterator it2 = child.rows.begin(); it2 != child.rows.end(); ++ it2) {
 			const unit& that2 = **it2;
 			unit* u = new unit(that2);
-			u->parent_ = this;
+			u->parent_ = tparent(this, number);
+
 			child2.rows.push_back(u);
 		}
 		for (std::vector<unit*>::const_iterator it2 = child.cols.begin(); it2 != child.cols.end(); ++ it2) {
 			const unit& that2 = **it2;
 			unit* u = new unit(that2);
-			u->parent_ = this;
+			u->parent_ = tparent(this, number);
 			child2.cols.push_back(u);
 		}
 		for (std::vector<unit*>::const_iterator it2 = child.units.begin(); it2 != child.units.end(); ++ it2) {
 			const unit& that2 = **it2;
 			unit* u = new unit(that2);
-			u->parent_ = this;
+			u->parent_ = tparent(this, number);
 			child2.units.push_back(u);
 		}
 	}
@@ -133,12 +323,22 @@ unit::~unit()
 	}
 }
 
-void unit::redraw_widget(int xsrc, int ysrc, int width, int height)
+bool unit::is_tpl() const
+{
+	return type_ == WIDGET && is_widget_tpl(widget_.first);
+}
+
+void unit::redraw_widget(int xsrc, int ysrc, int width, int height) const
 {
 	disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT, 
 		loc_, xsrc, ysrc, image::get_image(image(), image::SCALED_TO_ZOOM));
 
-	if (cell_.cfg["rect"].empty()) {
+	if (widget_.second.get() && widget_.second->id == "default") {
+		disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT, 
+			loc_, xsrc, ysrc, image::get_image(widget_prefix + "default.png", image::SCALED_TO_ZOOM));
+	}
+
+	if (!fix_rect()) {
 		unsigned h_flag = cell_.widget.cell.flags_ & gui2::tgrid::HORIZONTAL_MASK;
 		disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT,
 			loc_, xsrc + width - 32, ysrc, image::get_image(gui2::horizontal_layout.find(h_flag)->second.icon));
@@ -170,7 +370,25 @@ void unit::redraw_widget(int xsrc, int ysrc, int width, int height)
 			text_surf = cut_surface(text_surf, r); 
 		}
 		disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT,
-			loc_, xsrc, ysrc + height / 2 + 10, text_surf);
+			loc_, xsrc, ysrc + height - text_surf->h, text_surf);
+	}
+
+	if (is_spacer() && (!cell_.widget.width.empty() || !cell_.widget.height.empty())) {
+		if (!cell_.widget.width.empty()) {
+			text_surf = font::get_rendered_text2(cell_.widget.width, -1, 10, font::BAD_COLOR);
+		} else {
+			text_surf = font::get_rendered_text2("--", -1, 10, font::BAD_COLOR);
+		}
+		disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT,
+			loc_, xsrc, ysrc + height - 2 * text_surf->h, text_surf);
+
+		if (!cell_.widget.height.empty()) {
+			text_surf = font::get_rendered_text2(cell_.widget.height, -1, 10, font::BAD_COLOR);
+		} else {
+			text_surf = font::get_rendered_text2("--", -1, 10, font::BAD_COLOR);
+		}
+		disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT,
+			loc_, xsrc, ysrc + height - text_surf->h, text_surf);
 	}
 }
 
@@ -184,33 +402,72 @@ void unit::redraw_unit()
 		return;
 	}
 	trefreshing_lock lock(*this);
+	redraw_counter_ ++;
 
 	const int xsrc = disp_.get_location_x(loc_);
 	const int ysrc = disp_.get_location_y(loc_);
 
-	surface surf;
+	SDL_Rect dst_rect;
 	int zoom = disp_.hex_width();
+	surface surf = create_neutral_surface(zoom, zoom);
+
+	const unit::tchild& child = parent_.u? parent_.u->child(parent_.number): controller_.top();
+	Uint32 color = child.window->cell().window.color;
 
 	if (this == controller_.copied_unit()) {
-		disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT, 
-			loc_, xsrc, ysrc, image::get_image("misc/square72.png", image::SCALED_TO_ZOOM));
+		SDL_Color col = font::BAD_COLOR;
+		if (redraw_counter_ % 30 < 15) {
+			col = font::GOOD_COLOR;
+		}
+		color = SDL_MapRGB(disp_.get_screen_surface()->format, col.r, col.g, col.b);
 	}
 
 	if (type_ == WIDGET) {
-		if (is_spacer()) {
-
-		} else {
-			redraw_widget(xsrc, ysrc, zoom, zoom);
+		{
+			surface_lock locker(surf);
+			draw_line(surf, color, 0, 0, zoom - 1, 0, false);
+			draw_line(surf, color, 0, 0, 0, zoom - 1, false);
+			if (!units_.find_unit(map_location(loc_.x + 1, loc_.y))) {
+				draw_line(surf, color, zoom - 1, 0, zoom - 1, zoom - 1, false);
+			}
+			if (!units_.find_unit(map_location(loc_.x, loc_.y + 1))) {
+				draw_line(surf, color, 0, zoom - 1, zoom - 1, zoom - 1, false);
+			}
 		}
+		redraw_widget(xsrc, ysrc, zoom, zoom);
 
 		if (has_child()) {
-			surf = create_neutral_surface(disp_.default_zoom_, disp_.default_zoom_);
 			blit_integer_surface(children_.size(), surf, 0, 0);
 		}
 
 	} else if (type_ == WINDOW) {
-		disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT, 
-			loc_, xsrc, ysrc, image::get_image(image(), image::SCALED_TO_ZOOM));
+		{
+			surface_lock locker(surf);
+			draw_line(surf, color, 0, 0, zoom - 1, 0, false);
+			draw_line(surf, color, 0, 0, 0, zoom - 1, false);
+		}
+		
+		if (!parent_.u) {
+			disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT, 
+				loc_, xsrc, ysrc, image::get_image(image(), image::SCALED_TO_ZOOM));
+		} else {
+			disp_.drawing_buffer_add(display::LAYER_UNIT_DEFAULT, 
+				loc_, xsrc, ysrc, image::get_image(parent_.u->image(), image::SCALED_TO_ZOOM));
+			if (parent_.u->is_stacked_widget()) {
+				blit_integer_surface(parent_.number + 1, surf, 0, 0);
+			} else if (parent_.u->is_listbox()) {
+				surface text_surf = font::get_rendered_text2(parent_.number? "Body": "Header", -1, 12, font::BAD_COLOR);
+				dst_rect = create_rect(0, 0, 0, 0);
+				sdl_blit(text_surf, NULL, surf, &dst_rect);
+			} else if (parent_.u->is_panel()) {
+				if (!parent_.u->cell().id.empty()) {
+					surface text_surf = font::get_rendered_text2(parent_.u->cell().id, -1, 10, font::BLACK_COLOR);
+					dst_rect = create_rect(0, 0, 0, 0);
+					sdl_blit(text_surf, NULL, surf, &dst_rect);
+				}
+			}
+		}
+
 
 		if (!cell_.id.empty()) {
 			surface text_surf = font::get_rendered_text2(cell_.id, -1, 10, font::BLACK_COLOR);
@@ -219,13 +476,29 @@ void unit::redraw_unit()
 		}
 
 	} else if (type_ == COLUMN) {
-		surf = create_neutral_surface(disp_.default_zoom_, disp_.default_zoom_);
-		blit_integer_surface(loc_.x, surf, 0, 0);
+		{
+			surface_lock locker(surf);
+			draw_line(surf, color, 0, 0, zoom - 1, 0, false);
+			draw_line(surf, color, 0, 0, 0, zoom - 1, false);
+			if (!units_.find_unit(map_location(loc_.x + 1, loc_.y))) {
+				draw_line(surf, color, zoom - 1, 0, zoom - 1, zoom - 1, false);
+			}
+		}
+
+		blit_integer_surface(loc_.x - child.window->get_location().x, surf, 0, 0);
 		blit_integer_surface(cell_.column.grow_factor, surf, 0, 12);
 
 	} else if (type_ == ROW) {
-		surf = create_neutral_surface(disp_.default_zoom_, disp_.default_zoom_);
-		blit_integer_surface(loc_.y, surf, 0, 0);
+		{
+			surface_lock locker(surf);
+			draw_line(surf, color, 0, 0, zoom - 1, 0, false);
+			draw_line(surf, color, 0, 0, 0, zoom - 1, false);
+			if (!units_.find_unit(map_location(loc_.x, loc_.y + 1))) {
+				draw_line(surf, color, 0, zoom - 1, zoom - 1, zoom - 1, false);
+			}
+		}
+
+		blit_integer_surface(loc_.y - child.window->get_location().y, surf, 0, 0);
 		blit_integer_surface(cell_.row.grow_factor, surf, 0, 12);
 
 	}
@@ -247,20 +520,36 @@ std::string unit::image() const
 {
 	if (type_ == COLUMN) {
 		return widget_prefix + "column.png";
+
 	} else if (type_ == ROW) {
 		return widget_prefix + "row.png";
+
 	} else if (type_ == WINDOW) {
 		if (!controller_.current_unit()) {
 			return widget_prefix + "window.png";
 		} else {
 			return widget_prefix + "grid.png";
 		}
+
+	} else if (is_widget_tpl(widget_.first)) {
+		return form_widget_png(unit::tpl_type, extract_from_widget_tpl(widget_.first));
+
 	} else if (widget_.first == "grid") {
 		return widget_prefix + "grid.png";
+
 	} else if (widget_.second.get()) {
 		return form_widget_png(widget_.first, widget_.second->id);
+
 	} else {
-		return widget_prefix + "default.png";
+		return widget_prefix + "bg.png";
+	}
+}
+
+void unit::set_cell(const gui2::tcell_setting& cell) 
+{ 
+	cell_ = cell;
+	if (is_grid()) {
+		children_[0].window->cell().id = cell_.id;
 	}
 }
 
@@ -297,8 +586,8 @@ bool unit::is_main_map() const
 const unit* unit::parent_at_top() const
 {
 	const unit* result = this;
-	while (result->parent_) {
-		result = result->parent_;
+	while (result->parent_.u) {
+		result = result->parent_.u;
 	}
 	return result;
 }
@@ -309,21 +598,21 @@ void unit::insert_child(int w, int h)
 
 	tchild child;
 
-	child.window = new unit(controller_, disp_, units_, WINDOW, this);
-	child.window->set_location(map_location(0, 0));
+	child.window = new unit(controller_, disp_, units_, WINDOW, this, children_.size());
+	// child.window->set_location(map_location(0, 0));
 	for (int x = 1; x < w; x ++) {
-		child.cols.push_back(new unit(controller_, disp_, units_, COLUMN, this));
-		child.cols.back()->set_location(map_location(x, 0));
+		child.cols.push_back(new unit(controller_, disp_, units_, COLUMN, this, children_.size()));
+		// child.cols.back()->set_location(map_location(x, 0));
 	}
 	for (int y = 1; y < h; y ++) {
 		int pitch = y * w;
 		for (int x = 0; x < w; x ++) {
 			if (x) {
-				child.units.push_back(new unit(controller_, disp_, units_, disp_.spacer, this));
-				child.cols.back()->set_location(map_location(x, y));
+				child.units.push_back(new unit(controller_, disp_, units_, disp_.spacer, this, children_.size()));
+				// child.cols.back()->set_location(map_location(x, y));
 			} else {
-				child.rows.push_back(new unit(controller_, disp_, units_, ROW, this));
-				child.rows.back()->set_location(map_location(0, y));
+				child.rows.push_back(new unit(controller_, disp_, units_, ROW, this, children_.size()));
+				// child.rows.back()->set_location(map_location(0, y));
 			}
 		}
 	}
@@ -334,7 +623,50 @@ void unit::erase_child(int index)
 {
 	std::vector<tchild>::iterator it = children_.begin();
 	std::advance(it, index);
+	it->erase(units_);
 	children_.erase(it);
+	for (int n = index; n < (int)children_.size(); n ++) {
+		const unit::tchild& child = children_[n];
+		child.window->set_parent_number(n);
+		for (std::vector<unit*>::const_iterator it = child.rows.begin(); it != child.rows.end(); ++ it) {
+			unit* u = *it;
+			u->set_parent_number(n);
+		}
+		for (std::vector<unit*>::const_iterator it = child.cols.begin(); it != child.cols.end(); ++ it) {
+			unit* u = *it;
+			u->set_parent_number(n);
+		}
+		for (std::vector<unit*>::const_iterator it = child.units.begin(); it != child.units.end(); ++ it) {
+			unit* u = *it;
+			u->set_parent_number(n);
+		}
+	}
+}
+
+void unit::insert_listbox_child(int w, int h)
+{
+	// header
+	insert_child(w, h);
+
+	// body must is toggle_panel
+	unit_map::tconsistent_lock lock(units_);
+
+	tchild child;
+	child.window = new unit(controller_, disp_, units_, WINDOW, this, children_.size());
+	for (int x = 1; x < 2; x ++) {
+		child.cols.push_back(new unit(controller_, disp_, units_, COLUMN, this, children_.size()));
+	}
+	for (int y = 1; y < 2; y ++) {
+		int pitch = y * w;
+		for (int x = 0; x < w; x ++) {
+			if (x) {
+				child.units.push_back(new unit(controller_, disp_, units_, disp_.toggle_panel, this, children_.size()));
+			} else {
+				child.rows.push_back(new unit(controller_, disp_, units_, ROW, this, children_.size()));
+			}
+		}
+	}
+	children_.push_back(child);
 }
 
 std::string unit::child_tag(int index) const
@@ -423,23 +755,10 @@ void unit::generate_window(config& cfg) const
 		}
 	}
 
+	controller_.generate_linked_groups(res_cfg);
+	controller_.generate_context_menus(res_cfg);
+
 	config tmp;
-	const std::vector<gui2::tlinked_group>& linked_groups = controller_.linked_groups();
-	for (std::vector<gui2::tlinked_group>::const_iterator it = linked_groups.begin(); it != linked_groups.end(); ++ it) {
-		const gui2::tlinked_group& linked = *it;
-
-		tmp.clear();
-		tmp["id"] = linked.id;
-		if (linked.fixed_width) {
-			tmp["fixed_width"] = true;
-		}
-		if (linked.fixed_height) {
-			tmp["fixed_height"] = true;
-		}
-		res_cfg.add_child("linked_group", tmp);
-	}
-
-	tmp.clear();
 	tmp["id"] = "tooltip_large";
 	res_cfg.add_child("tooltip", tmp);
 
@@ -517,6 +836,16 @@ void unit::generate_widget(config& cfg) const
 		cfg["vertical_alignment"] = gui2::vertical_layout.find(v_flag)->second.id;
 	}
 
+	if (parent_.u && !cell_.id.empty() && has_remove_adjust()) {
+		// top unit hasn't [column].
+		cfg["id"] = noise_config_key(cell_.id);
+	}
+
+	if (is_widget_tpl(widget_.first)) {
+		generate_widget_tpl(cfg);
+		return;
+	}
+
 	config& sub = cfg.add_child(widget_.first);
 	if (!cell_.id.empty()) {
 		sub["id"] = cell_.id;
@@ -527,14 +856,24 @@ void unit::generate_widget(config& cfg) const
 		if (!cell_.widget.linked_group.empty()) {
 			sub["linked_group"] = cell_.widget.linked_group;
 		}
-		if (!cell_.widget.width.empty()) {
-			sub["width"] = formual_fill_str(cell_.widget.width);
-		}
-		if (!cell_.widget.height.empty()) {
-			sub["height"] = formual_fill_str(cell_.widget.height);
+		if (has_size()) {
+			if (!cell_.widget.width.empty()) {
+				sub["width"] = formual_fill_str(cell_.widget.width);
+			}
+			if (!cell_.widget.height.empty()) {
+				sub["height"] = formual_fill_str(cell_.widget.height);
+			}
 		}
 	}
-	sub.merge_attributes(cell_.cfg);
+
+	if (fix_rect()) {
+		// make sure other attribute not exist.
+		BOOST_FOREACH (const config::attribute &i, cell_.rect_cfg.attribute_range()) {
+			if (!i.second.empty()) {
+				sub[i.first] = i.second;
+			}
+		}
+	}
 
 	if (is_scroll()) {
 		if (cell_.widget.horizontal_mode != gui2::tscrollbar_container::auto_visible) {
@@ -544,6 +883,7 @@ void unit::generate_widget(config& cfg) const
 			sub["vertical_scrollbar_mode"] = gui2::vertical_mode.find(cell_.widget.vertical_mode)->second.id;
 		}
 	}
+
 	if (is_grid()) {
 		generate_grid(sub);
 
@@ -561,6 +901,9 @@ void unit::generate_widget(config& cfg) const
 
 	} else if (is_tree_view()) {
 		generate_tree_view(sub);
+
+	} else if (is_report()) {
+		generate_report(sub);
 
 	} else if (is_drawing()) {
 		generate_drawing(sub);
@@ -583,6 +926,18 @@ void unit::generate_widget(config& cfg) const
 	}
 }
 
+void unit::generate_widget_tpl(config& cfg) const
+{
+	// [column]
+	//		{GUI__CHAT_WIDGET}
+	// [/column]
+	std::string id = unit::extract_from_widget_tpl(widget_.first);
+	const config& tpl_cfg = controller_.core_config().find_child("widget_template", "id", id);
+	cfg[noise_config_key("widget")] = tpl_cfg["widget"].str();
+
+	controller_.insert_used_widget_tpl(tpl_cfg);
+}
+
 void unit::generate_grid(config& cfg) const
 {
 	// [grid]
@@ -598,13 +953,12 @@ void unit::generate_stacked_widget(config& cfg) const
 	//		[..cfg..]
 	// [/stacked_widget]
 
-	config& stack_cfg = cfg.add_child("stack");
 	for (std::vector<tchild>::const_iterator it = children_.begin(); it != children_.end(); ++ it) {
 		const tchild& child = *it;
 		if (child.is_all_spacer()) {
 			continue;
 		}
-		config& layer_cfg = stack_cfg.add_child("layer");
+		config& layer_cfg = cfg.add_child("layer");
 		child.generate(layer_cfg);
 	}
 }
@@ -619,9 +973,13 @@ void unit::generate_listbox(config& cfg) const
 		children_[0].generate(cfg.add_child("header"));
 	}
 	children_[1].generate(cfg.add_child("list_definition"));
+
+	// now not support footer
+/*
 	if (!children_[2].is_all_spacer()) {
 		children_[2].generate(cfg.add_child("footer"));
 	}
+*/
 }
 
 void unit::generate_toggle_panel(config& cfg) const
@@ -658,6 +1016,22 @@ void unit::generate_tree_view(config& cfg) const
 	config& node_grid = node_cfg.add_child("node_definition");
 	const tchild& child = children_[0];
 	child.generate(node_grid);
+}
+
+void unit::generate_report(config& cfg) const
+{
+	// [report]
+	//		[..cfg..]
+	// [/report]
+	if (cell_.widget.report.unit_width) {
+		cfg["unit_width"] = cell_.widget.report.unit_width;
+	}
+	if (cell_.widget.report.unit_height) {
+		cfg["unit_height"] = cell_.widget.report.unit_height;
+	}
+	if (cell_.widget.report.gap) {
+		cfg["gap"] = cell_.widget.report.gap;
+	}
 }
 
 void unit::generate_drawing(config& cfg) const
@@ -720,7 +1094,7 @@ void unit::tchild::generate(config& cfg) const
 void unit::from(const config& cfg)
 {
 	if (type_ == WIDGET) {
-		from_widget(cfg);
+		from_widget(cfg, false);
 	} else if (type_ == WINDOW) {
 		from_window(cfg);
 	} else if (type_ == ROW) {
@@ -766,7 +1140,7 @@ void unit::from_column(const config& cfg)
 	cell_.column.grow_factor = cfg["grow_factor"].to_int();
 }
 
-void unit::from_widget(const config& cfg)
+void unit::from_widget(const config& cfg, bool unpack)
 {
 	if (units_.consistent()) {
 		cell_.widget.cell.flags_ = gui2::implementation::read_flags(cfg);
@@ -775,19 +1149,27 @@ void unit::from_widget(const config& cfg)
 
 	const config& sub_cfg = units_.consistent()? cfg.child(widget_.first): cfg;
 	cell_.id = sub_cfg["id"].str();
+
+	if (!unpack && is_tpl_id(cell_.id)) {
+		if (from_widget_tpl(sub_cfg)) {
+			return;
+		}
+	}
+
 	cell_.widget.linked_group = sub_cfg["linked_group"].str();
-	cell_.widget.width = formual_extract_str(sub_cfg["width"].str());
-	cell_.widget.height = formual_extract_str(sub_cfg["height"].str());
+	if (has_size()) {
+		cell_.widget.width = formual_extract_str(sub_cfg["width"].str());
+		cell_.widget.height = formual_extract_str(sub_cfg["height"].str());
+	}
 	split_t_string(sub_cfg["label"].t_str(), cell_.widget.label_textdomain, cell_.widget.label);
 	split_t_string(sub_cfg["tooltip"].t_str(), cell_.widget.tooltip_textdomain, cell_.widget.tooltip);
 
 	if (!sub_cfg["rect"].empty()) {
 		const config& rect_cfg = controller_.find_rect_cfg(widget_.first, cell_.id);
-		for (std::vector<std::string>::const_iterator it = tadjust::rect_fields.begin(); it != tadjust::rect_fields.end(); ++ it) {
+		for (std::set<std::string>::const_iterator it = tadjust::rect_fields.begin(); it != tadjust::rect_fields.end(); ++ it) {
 			const std::string& k = *it;
-			if (!rect_cfg[k].empty()) {
-				cell_.cfg[k] = rect_cfg[k];
-			}
+			// make sure cell_.rect_cfg include all rect field!
+			cell_.rect_cfg[k] = rect_cfg[k];
 		}
 	}
 
@@ -813,17 +1195,20 @@ void unit::from_widget(const config& cfg)
 	} else if (is_tree_view()) {
 		from_tree_view(sub_cfg);
 
+	} else if (is_report()) {
+		from_report(sub_cfg);
+
 	} else if (is_drawing()) {
 		from_drawing(sub_cfg);
 	}
 }
 
-void unit::tchild::from(mkwin_controller& controller, mkwin_display& disp, unit_map& units2, unit* parent, const config& cfg)
+void unit::tchild::from(mkwin_controller& controller, mkwin_display& disp, unit_map& units2, unit* parent, int number, const config& cfg)
 {
 	if (parent || !controller.theme()) {
 		unit_map::tconsistent_lock lock(units2);
 
-		window = new unit(controller, disp, units2, unit::WINDOW, parent);
+		window = new unit(controller, disp, units2, unit::WINDOW, parent, number);
 		if (!cfg["id"].empty()) {
 			window->cell().id = cfg["id"].str();
 		}
@@ -833,13 +1218,13 @@ void unit::tchild::from(mkwin_controller& controller, mkwin_display& disp, unit_
 		bool first_row = true;
 		std::string type, definition;
 		BOOST_FOREACH (const config& row, cfg.child_range("row")) {
-			rows.push_back(new unit(controller, disp, units2, unit::ROW, parent));
+			rows.push_back(new unit(controller, disp, units2, unit::ROW, parent, number));
 			rows.back()->set_location(map_location(0, rows.size()));
 			rows.back()->from(row);
 			
 			BOOST_FOREACH (const config& col, row.child_range("column")) {
 				if (first_row) {
-					cols.push_back(new unit(controller, disp, units2, unit::COLUMN, parent));
+					cols.push_back(new unit(controller, disp, units2, unit::COLUMN, parent, number));
 					cols.back()->set_location(map_location(cols.size(), 0));
 					cols.back()->from(col);
 				}
@@ -849,9 +1234,9 @@ void unit::tchild::from(mkwin_controller& controller, mkwin_display& disp, unit_
 					definition = c.cfg["definition"].str();
 					gui2::tcontrol_definition_ptr ptr;
 					if (type != "grid") {
-						ptr = mkwin_display::find_widget(type, definition);
+						ptr = mkwin_display::find_widget(disp, type, definition, c.cfg["id"].str());
 					}
-					units.push_back(new unit(controller, disp, units2, std::make_pair(type, ptr), parent));
+					units.push_back(new unit(controller, disp, units2, std::make_pair(type, ptr), parent, number));
 					units.back()->set_location(map_location(colno ++, rows.size()));
 					units.back()->from(col);
 				}
@@ -862,19 +1247,16 @@ void unit::tchild::from(mkwin_controller& controller, mkwin_display& disp, unit_
 		std::string type, definition;
 		double factor = disp.get_zoom_factor();
 		int zoom = disp.hex_size();
-		bool valid = false;
 		BOOST_FOREACH (const config::any_child& v, cfg.all_children_range()) {
-			if (!valid) {
-				if (v.key == "main_map_border") {
-					valid = true;
-				}
+			if (controller.is_theme_reserved(v.key)) {
 				continue;
 			}
+			
 			type = v.key;
 			definition = v.cfg["definition"].str();
 			gui2::tcontrol_definition_ptr ptr;
 			if (type != "grid" && type != "main_map") {
-				ptr = mkwin_display::find_widget(type, definition);
+				ptr = mkwin_display::find_widget(disp, type, definition, v.cfg["definition"].str());
 			}
 			SDL_Rect rect = theme::calculate_relative_loc(v.cfg, theme::XDim, theme::YDim);
 			rect = create_rect(rect.x * factor, rect.y * factor, rect.w * factor, rect.h * factor);
@@ -887,22 +1269,143 @@ void unit::tchild::from(mkwin_controller& controller, mkwin_display& disp, unit_
 	}
 }
 
+void unit::tchild::generate_adjust(const tmode& mode, config& cfg) const
+{
+	for (std::vector<unit*>::const_iterator it = units.begin(); it != units.end(); ++ it) {
+		unit* u = *it;
+		u->generate_adjust(mode, cfg);
+
+		const std::vector<unit::tchild>& children = u->children();
+		for (std::vector<unit::tchild>::const_iterator it2 = children.begin(); it2 != children.end(); ++ it2) {
+			it2->generate_adjust(mode, cfg); 
+		}
+	}
+}
+
+void unit::tchild::draw_minimap_architecture(surface& screen, const SDL_Rect& minimap_location, const double xscaling, const double yscaling, int level) const
+{
+	static std::vector<SDL_Color> candidates;
+	if (candidates.empty()) {
+		candidates.push_back(font::TITLE_COLOR);
+		candidates.push_back(font::BAD_COLOR);
+		candidates.push_back(font::GRAY_COLOR);
+		candidates.push_back(font::BLACK_COLOR);
+		candidates.push_back(font::GOOD_COLOR);
+	}
+	SDL_Color col = candidates[level % candidates.size()];
+	const Uint32 box_color = SDL_MapRGB(screen->format, col.r, col.g, col.b);
+
+	double u_x = window->get_location().x * xscaling;
+	double u_y = window->get_location().y * yscaling;
+	double u_w = window->cell().window.cover_width * xscaling;
+	double u_h = window->cell().window.cover_height * yscaling;
+
+	window->cell().window.color = box_color;
+	if (level) {
+		draw_rectangle(minimap_location.x + round_double(u_x)
+			, minimap_location.y + round_double(u_y)
+			, round_double(u_w)
+			, round_double(u_h)
+			, box_color, screen);
+	}
+
+	for (std::vector<unit*>::const_iterator it = units.begin(); it != units.end(); ++ it) {
+		unit* u = *it;
+		const std::vector<unit::tchild>& children = u->children();
+		for (std::vector<unit::tchild>::const_iterator it2 = children.begin(); it2 != children.end(); ++ it2) {
+			const unit::tchild& sub = *it2;
+			sub.draw_minimap_architecture(screen, minimap_location, xscaling, yscaling, level + 1);
+		}
+	}
+}
+
+void unit::tchild::erase(unit_map& units2)
+{
+	for (std::vector<unit*>::iterator it = units.begin(); it != units.end(); ) {
+		unit* u = *it;
+		units2.erase(u->get_location());
+		it = units.erase(it);
+	}
+	for (std::vector<unit*>::iterator it = rows.begin(); it != rows.end(); ) {
+		unit* u = *it;
+		units2.erase(u->get_location());
+		it = rows.erase(it);
+	}
+	for (std::vector<unit*>::iterator it = cols.begin(); it != cols.end(); ) {
+		unit* u = *it;
+		units2.erase(u->get_location());
+		it = cols.erase(it);
+	}
+	units2.erase(window->get_location());
+	window = NULL;
+}
+
+unit* unit::tchild::find_unit(const std::string& id) const
+{
+	unit* u = NULL;
+	for (std::vector<unit*>::const_iterator it = units.begin(); it != units.end(); ++ it) {
+		u = *it;
+		if (u->cell().id == id) {
+			return u;
+		}
+		const std::vector<tchild>& children = u->children();
+		for (std::vector<tchild>::const_iterator it = children.begin(); it != children.end(); ++ it) {
+			const tchild& child = *it;
+			u = child.find_unit(id);
+			if (u) {
+				return u;
+			}
+		}
+	}
+	return NULL;
+}
+
+std::pair<unit*, int> unit::tchild::find_layer(const std::string& id) const
+{
+	for (std::vector<unit*>::const_iterator it = units.begin(); it != units.end(); ++ it) {
+		unit* u = *it;
+		
+		const std::vector<tchild>& children = u->children();
+		for (std::vector<tchild>::const_iterator it = children.begin(); it != children.end(); ++ it) {
+			const tchild& child = *it;
+			if (u->is_stacked_widget() && child.window->cell().id == id) {
+				return std::make_pair(u, std::distance(children.begin(), it));
+			}
+			std::pair<unit*, int> ret = child.find_layer(id);
+			if (ret.first) {
+				return ret;
+			}
+		}
+	}
+	return std::make_pair((unit*)NULL, gui2::twidget::npos);
+}
+
+bool unit::from_widget_tpl(const config& cfg)
+{
+	std::string tpl_id = extract_from_tpl_widget_id(cell_.id);
+	const config& tpl_cfg = controller_.core_config().find_child("widget_template", "id", tpl_id);
+	if (!tpl_cfg) {
+		return false;
+	}
+
+	widget_ = std::make_pair(form_widget_tpl(tpl_id), gui2::tcontrol_definition_ptr());
+	controller_.insert_used_widget_tpl(tpl_cfg);
+	return true;
+}
+
 void unit::from_grid(const config& cfg)
 {
 	children_.push_back(tchild());
 	unit::tchild& child = children_.back();
-	child.from(controller_, disp_, units_, this, cfg);
+	child.from(controller_, disp_, units_, this, children_.size() - 1, cfg);
 }
 
 void unit::from_stacked_widget(const config& cfg)
 {
-	const config& stack_cfg = cfg.child("stack");
-	if (!stack_cfg) {
-		return;
-	}
-	BOOST_FOREACH (const config& layer, stack_cfg.child_range("layer")) {
+	const config& s = cfg.has_child("stack")? cfg.child("stack"): cfg;
+	BOOST_FOREACH (const config& layer, s.child_range("layer")) {
 		children_.push_back(tchild());
-		children_.back().from(controller_, disp_, units_, this, layer);
+		children_.back().from(controller_, disp_, units_, this, children_.size() - 1, layer);
 	}
 }
 
@@ -911,33 +1414,36 @@ void unit::from_listbox(const config& cfg)
 	const config& header = cfg.child("header");
 	if (header) {
 		children_.push_back(tchild());
-		children_.back().from(controller_, disp_, units_, this, header);
+		children_.back().from(controller_, disp_, units_, this, children_.size() - 1, header);
 	} else {
-		insert_child(mkwin_controller::default_width, mkwin_controller::default_height);
+		insert_child(mkwin_controller::default_child_width, mkwin_controller::default_child_height);
 	}
 
 	children_.push_back(tchild());
-	children_.back().from(controller_, disp_, units_, this, cfg.child("list_definition"));
+	children_.back().from(controller_, disp_, units_, this, children_.size() - 1, cfg.child("list_definition"));
 
+	// now not support footer
+/*
 	const config& footer = cfg.child("footer");
 	if (footer) {
 		children_.push_back(tchild());
-		children_.back().from(controller_, disp_, units_, this, footer);
+		children_.back().from(controller_, disp_, units_, this, children_.size() - 1, footer);
 	} else {
-		insert_child(mkwin_controller::default_width, mkwin_controller::default_height);
+		insert_child(mkwin_controller::default_child_width, mkwin_controller::default_child_height);
 	}
+*/
 }
 
 void unit::from_toggle_panel(const config& cfg)
 {
 	children_.push_back(tchild());
-	children_.back().from(controller_, disp_, units_, this, cfg.child("grid"));
+	children_.back().from(controller_, disp_, units_, this, children_.size() - 1, cfg.child("grid"));
 }
 
 void unit::from_scrollbar_panel(const config& cfg)
 {
 	children_.push_back(tchild());
-	children_.back().from(controller_, disp_, units_, this, cfg.child("definition"));
+	children_.back().from(controller_, disp_, units_, this, children_.size() - 1, cfg.child("definition"));
 }
 
 void unit::from_tree_view(const config& cfg)
@@ -950,7 +1456,14 @@ void unit::from_tree_view(const config& cfg)
 	cell_.widget.tree_view.node_id = node_cfg["id"].str();
 
 	children_.push_back(tchild());
-	children_.back().from(controller_, disp_, units_, this, node_cfg.child("node_definition"));
+	children_.back().from(controller_, disp_, units_, this, children_.size() - 1, node_cfg.child("node_definition"));
+}
+
+void unit::from_report(const config& cfg)
+{
+	cell_.widget.report.unit_width = cfg["unit_width"].to_int();
+	cell_.widget.report.unit_height = cfg["unit_height"].to_int();
+	cell_.widget.report.gap = cfg["gap"].to_int();
 }
 
 void unit::from_drawing(const config& cfg)
@@ -970,81 +1483,219 @@ void unit::from_drawing(const config& cfg)
 	cell_.widget.draw.name = formual_extract_str(image_cfg["name"].str());
 }
 
-tadjust unit::adjust(const tmode& mode, int type)
+std::string unit::widget_tag() const
 {
-	std::map<std::string, std::vector<tadjust> >::const_iterator it = adjusts_.find(mode.id);
-	if (it == adjusts_.end()) {
-		return null_adjust;
+	std::stringstream ss;
+	ss << "#" << get_map_index();
+
+	return ss.str();
+}
+
+config unit::generate_change2_cfg() const
+{
+	if (!widget_.second.get()) {
+		return null_cfg;
 	}
-	for (std::vector<tadjust>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++ it2) {
-		if (it2->type == type && it2->res == mode.res) {
-			return *it2;
+	return generate2_change2_cfg(cell_);
+}
+
+config unit::generate2_change2_cfg(const gui2::tcell_setting& cell) const
+{
+	if (!widget_.second.get()) {
+		return null_cfg;
+	}
+
+	config cfg;
+	cfg["definition"] = widget_.second->id;
+	if (is_report()) {
+		cfg["unit_width"] = cell.widget.report.unit_width;
+		cfg["unit_height"] = cell.widget.report.unit_height;
+		cfg["gap"] = cell.widget.report.gap;
+	}
+	return cfg;
+}
+
+void calculate_base_modes(const tmode& mode, std::vector<tmode>& base_modes)
+{
+	VALIDATE(mode.id != tmode::def_id || mode.res.width != 1024, null_str);
+
+	if (mode.id != tmode::def_id) {
+		if (mode.res.width != 1024) {
+			base_modes.push_back(tmode(mode.id, 1024, 768));
+			base_modes.push_back(tmode(tmode::def_id, 640, 480));
+			if (mode.res.width != 640) {
+				base_modes.push_back(tmode(mode.id, 640, 480));
+				base_modes.push_back(tmode(tmode::def_id, 480, 320));
+			}
+		} 
+	} else {
+		if (mode.res.width == 480 && mode.res.height == 320) {
+			base_modes.push_back(tmode(mode.id, 640, 480));
+		}
+	}
+}
+
+config unit::get_base_change_cfg(const tmode& mode, bool rect, const config& main_dim_cfg) const
+{
+	config result = main_dim_cfg;
+	tadjust::full_change_cfg(result, rect);
+
+	std::vector<tmode> base_modes;
+	calculate_base_modes(mode, base_modes);
+
+	bool involve_main = true;
+	for (std::vector<tmode>::const_iterator it = base_modes.begin(); it != base_modes.end(); ++ it) {
+		const tmode& mode2 = *it;
+		if (!involve_main && mode2.id == tmode::def_id) {
+			continue;
+		}
+		tadjust adj = adjust(mode2, tadjust::CHANGE);
+		if (adj.valid()) {
+			adj.pure_change_fields(rect);
+			if (!adj.cfg.empty() && adj.different_change_cfg2(result, rect)) {
+				result.merge_attributes(adj.cfg);
+				if (involve_main && mode2.id != tmode::def_id) {
+					involve_main = false;
+				}
+			}
+		}
+	}
+	return result;
+}
+
+bool unit::get_base_remove(const tmode& mode) const
+{
+	std::vector<tmode> base_modes;
+	calculate_base_modes(mode, base_modes);
+
+	for (std::vector<tmode>::const_iterator it = base_modes.begin(); it != base_modes.end(); ++ it) {
+		tadjust adj = adjust(*it, tadjust::REMOVE);
+		if (adj.valid()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool unit::has_remove_adjust() const
+{
+	for (std::vector<tadjust>::const_iterator it = adjusts_.begin(); it != adjusts_.end(); ++ it) {
+		if (it->type == tadjust::REMOVE) {
+			return true;
+		}
+	}
+	return false;
+}
+
+config unit::get_base_remove2_cfg(const tmode& mode) const
+{
+	config result;
+
+	std::vector<tmode> base_modes;
+	calculate_base_modes(mode, base_modes);
+
+	for (std::vector<tmode>::const_iterator it = base_modes.begin(); it != base_modes.end(); ++ it) {
+		const tmode& mode2 = *it;
+		tadjust adj = adjust(mode2, tadjust::REMOVE2);
+		if (adj.valid()) {
+			result.merge_attributes(adj.cfg);
+		}
+	}
+	return result;
+}
+
+tadjust unit::adjust(const tmode& mode, int type) const
+{
+	for (std::vector<tadjust>::const_iterator it = adjusts_.begin(); it != adjusts_.end(); ++ it) {
+		if (it->type == type && it->mode == mode) {
+			return *it;
 		}
 	}
 	return null_adjust;
 }
 
-void unit::insert_adjust(const tmode& mode, const tadjust& adjust)
+void unit::insert_adjust(const tadjust& adjust)
 {
-	VALIDATE(mode.res == adjust.res, null_str);
+	for (std::vector<tadjust>::iterator it = adjusts_.begin(); it != adjusts_.end(); ++ it) {
+		tadjust& adj = *it;
+		if (adj.mode == adjust.mode && adj.type == adjust.type) {
+			if (adjust.type == tadjust::CHANGE) {
+				adj.cfg.merge_attributes(adjust.cfg);
 
-	std::map<std::string, std::vector<tadjust> >::iterator it = adjusts_.find(mode.id);
-	if (it == adjusts_.end()) {
-		adjusts_.insert(std::make_pair(mode.id, std::vector<tadjust>(1, adjust)));
-		return;
-	}
+			} else if (adjust.type == tadjust::REMOVE2) {
+				adj.cfg.merge_attributes(adjust.cfg);
+				adj.pure_remove2_fields(*this);
 
-	for (std::vector<tadjust>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++ it2) {
-		if (it2->res == mode.res && it2->type == adjust.type) {
-			it2->cfg = adjust.cfg;
+			} else {
+				adj.cfg = adjust.cfg;
+			}
 			return;
 		}
 	}
-	it->second.push_back(adjust);
+	if (adjust.type == tadjust::REMOVE2) {
+		if (adjust.is_empty_remove2_fields()) {
+			return;
+		}
+	}
+	adjusts_.push_back(adjust);
 }
 
 void unit::erase_adjust(const tmode& mode, int type)
 {
-	std::map<std::string, std::vector<tadjust> >::iterator it = adjusts_.find(mode.id);
-	if (it == adjusts_.end()) {
-		return;
-	}
-
-	for (std::vector<tadjust>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++ it2) {
-		if (it2->res == mode.res && it2->type == type) {
-			it->second.erase(it2);
+	for (std::vector<tadjust>::iterator it = adjusts_.begin(); it != adjusts_.end(); ++ it) {
+		if (it->mode == mode && it->type == type) {
+			adjusts_.erase(it);
 			return;
 		}
+	}
+}
+
+void unit::adjust_clear_rect_cfg()
+{
+	for (std::vector<tadjust>::iterator it = adjusts_.begin(); it != adjusts_.end(); ++ it) {
+		tadjust& adjust = *it;
+		if (adjust.type != tadjust::CHANGE) {
+			continue;
+		}
+		adjust.pure_change_fields(false);
 	}
 }
 
 void unit::generate_adjust(const tmode& mode, config& cfg)
 {
-	std::map<std::string, std::vector<tadjust> >::const_iterator it = adjusts_.find(mode.id);
-	if (it == adjusts_.end()) {
-		return;
-	}
-
-	for (std::vector<tadjust>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++ it2) {
-		const tadjust& adjust = *it2;
-		if (adjust.res != mode.res) {
+	for (std::vector<tadjust>::const_iterator it = adjusts_.begin(); it != adjusts_.end(); ++ it) {
+		const tadjust& adjust = *it;
+		if (adjust.mode != mode) {
 			continue;
 		}
 		if (adjust.type == tadjust::CHANGE) {
-			if (tadjust::different_cfg(cell_.cfg, adjust.cfg)) {
+			config cfg2 = get_base_change_cfg(mode, true, cell_.rect_cfg);
+
+			cfg2.merge_attributes(get_base_change_cfg(mode, false, generate_change2_cfg()));
+			if (adjust.different_change_cfg(cfg2, t_unset)) {
 				config& change = cfg.add_child("change");
 				change["id"] = cell_.id;
-				for (std::vector<std::string>::const_iterator it = tadjust::change_fields.begin(); it != tadjust::change_fields.end(); ++ it) {
+				for (std::set<std::string>::const_iterator it = tadjust::change_fields.begin(); it != tadjust::change_fields.end(); ++ it) {
 					const std::string& k = *it;
-					if (cell_.cfg[k] != adjust.cfg[k]) {
-						change[k] = adjust.cfg[k];
+					if (cfg2[k] != adjust.cfg[k]) {
+						if (!adjust.cfg[k].empty()) {
+							change[k] = adjust.cfg[k];
+						}
 					}
 				}
 			}
 			
 		} else if (adjust.type == tadjust::REMOVE) {
+			config& remove = cfg.add_child("remove");
+			remove["id"] = parent_.u? noise_config_key(cell_.id): cell_.id;
 
-		} else if (adjust.type == tadjust::ADD) {
+		} else if (adjust.type == tadjust::REMOVE2) {
+			config base_remove2_cfg = get_base_remove2_cfg(mode);
+			std::set<int> ret = adjust.newed_remove2_cfg(base_remove2_cfg);
+			for (std::set<int>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++ it2) {
+				config& remove = cfg.add_child("remove");
+				remove["id"] = children_[*it2].window->cell().id;
+			}
 
 		}
 	}

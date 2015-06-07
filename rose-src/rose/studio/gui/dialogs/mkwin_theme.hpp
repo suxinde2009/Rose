@@ -27,7 +27,7 @@ class unit_map;
 namespace gui2 {
 
 class treport;
-class tscrollbar_panel;
+class tstacked_widget;
 
 class tmkwin_theme: public ttheme
 {
@@ -51,14 +51,17 @@ public:
 		HOTKEY_SELECT = HOTKEY_MIN,
 		HOTKEY_STATUS,
 		HOTKEY_GRID,
+		HOTKEY_SWITCH,
 		HOTKEY_RCLICK,
 
 		HOTKEY_RUN,
-		HOTKEY_SETTING, HOTKEY_SPECIAL_SETTING, HOTKEY_RECT_SETTING, HOTKEY_LINKED_GROUP, HOTKEY_MODE_SETTING, HOTKEY_ERASE,
+		HOTKEY_SETTING, HOTKEY_SPECIAL_SETTING, HOTKEY_LINKED_GROUP, HOTKEY_ERASE,
 		HOTKEY_INSERT_TOP, HOTKEY_INSERT_BOTTOM, HOTKEY_ERASE_ROW,
 		HOTKEY_INSERT_LEFT, HOTKEY_INSERT_RIGHT, HOTKEY_ERASE_COLUMN,
-		HOTKEY_INSERT_CHILD, HOTKEY_ERASE_CHILD
+		HOTKEY_INSERT_CHILD, HOTKEY_ERASE_CHILD, HOTKEY_UNPACK
 	};
+
+	enum {WIDGET_PAGE, OBJECT_PAGE};
 
 	tmkwin_theme(mkwin_display& disp, mkwin_controller& controller, const config& cfg);
 	void report_ptr(treport** unit_ptr, treport** hero_ptr, treport** ctrl_bar_ptr);
@@ -74,6 +77,8 @@ private:
 
 private:
 	mkwin_controller& controller_;
+	tstacked_widget* page_panel_;
+	int current_widget_page_;
 };
 
 } //end namespace gui2

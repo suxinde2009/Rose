@@ -69,66 +69,49 @@ namespace gui2 {
  * @end{table}
  */
 
-tmode_navigate::tmode_navigate(mkwin_controller& controller, display& disp, tdialog& dialog, bool read_only)
+tmode_navigate::tmode_navigate(mkwin_controller& controller, display& disp)
 	: controller_(controller)
 	, disp_(disp)
-	, dialog_(dialog)
-	, read_only_(read_only)
-	, navigate_(true, false, "sheet")
-	, current_tab_(0)
 {
 }
 
-void tmode_navigate::pre_show(twindow& window)
+void tmode_navigate::pre_show(ttabbar& navigate, twindow& window, const std::string& id)
 {
-	tbutton* button = find_widget<tbutton>(&window, "_append_mode", false, true);
-	if (!read_only_) {
-		connect_signal_mouse_left_click(
-			  *button
-			, boost::bind(
-				&tmode_navigate::append_mode
-				, this
-				, boost::ref(window)));
-	} else {
-		button->set_visible(twidget::INVISIBLE);
-	}
-
-	navigate_.set_report(find_widget<treport>(&window, "navigate", false, true));
-	reload_navigate(window);
-
+	navigate.set_report(find_widget<treport>(&window, id, false, true));
+	reload_navigate(navigate, window);
 }
 
-void tmode_navigate::reload_tab_label() const
+void tmode_navigate::reload_tab_label(ttabbar& navigate) const
 {
-	const tgrid::tchild* children = navigate_.report()->content_grid()->children();
-	int childs = ttabbar::front_childs + navigate_.childs();
+	const tgrid::tchild* children = navigate.report()->content_grid()->children();
+	int childs = ttabbar::front_childs + navigate.childs();
 	for (int i = ttabbar::front_childs; i < childs; i ++) {
 		tcontrol* widget = dynamic_cast<tcontrol*>(children[i].widget_);
-		widget->set_label(form_tab_label(i - ttabbar::front_childs));
+		widget->set_label(form_tab_label(navigate, i - ttabbar::front_childs));
 	}
 }
 
-void tmode_navigate::reload_navigate(twindow& window)
+void tmode_navigate::reload_navigate(ttabbar& navigate, twindow& window)
 {
-	navigate_.erase_children();
+	navigate.erase_children();
 
 	const std::vector<tmode>& modes = controller_.modes();
 
 	std::stringstream ss;
 	int index = 0;
 	for (std::vector<tmode>::const_iterator it = modes.begin(); it != modes.end(); ++ it) {
-		tcontrol* widget = navigate_.create_child(null_str, null_str, NULL, null_str);
-		widget->set_label(form_tab_label(index));
+		tcontrol* widget = navigate.create_child(null_str, null_str, NULL, null_str);
+		widget->set_label(form_tab_label(navigate, index));
 		widget->set_cookie(reinterpret_cast<void*>(index ++));
-		navigate_.insert_child(*widget);
+		navigate.insert_child(*widget);
 	}
-	navigate_.select(0);
-	navigate_.replacement_children();
+	navigate.select(0);
+	navigate.replacement_children();
 }
 
-void tmode_navigate::append_mode(twindow& window)
+void tmode_navigate::append_patch(ttabbar& navigate, twindow& window)
 {
-	gui2::tedit_box::tparam param(null_str, null_str, dgettext("wesnoth-lib", "theme^Mode"), "_untitled");
+	gui2::tedit_box::tparam param(_("New patch"), null_str, _("ID"), "_untitled");
 	{
 		param.verify = boost::bind(&mkwin_controller::verify_new_mode, &controller_, _1);
 		gui2::tedit_box dlg(disp_, param);
@@ -142,14 +125,74 @@ void tmode_navigate::append_mode(twindow& window)
 			return;
 		}
 	}
+
+	const std::vector<tmode>& modes = controller_.modes();
+	int original_size = (int)modes.size();
 	controller_.insert_mode(param.result);
-	reload_navigate(window);
+
+	std::vector<tmode>::const_iterator it = modes.begin();
+	std::advance(it, original_size);
+	for (int index = original_size; it != modes.end(); ++ it) {
+		tcontrol* widget = navigate.create_child(null_str, null_str, NULL, null_str);
+		widget->set_label(form_tab_label(navigate, index));
+		widget->set_cookie(reinterpret_cast<void*>(index ++));
+		navigate.insert_child(*widget);
+	}
+	navigate.replacement_children();
 }
 
-void tmode_navigate::toggle_tabbar(twidget* widget)
+void tmode_navigate::rename_patch(ttabbar& navigate, twindow& window, int at)
 {
-	current_tab_ = (int)reinterpret_cast<long>(widget->cookie());
-	dialog_.tdialog::toggle_tabbar(widget);
+	const std::vector<tmode>& modes = controller_.modes();
+	const tmode& mode = modes[at];
+	const std::string original_id = mode.id;
+
+	std::stringstream ss;
+	ss << _("Original ID") << " " << tintegrate::generate_format(original_id, "green");
+	ss << "\n";
+
+	gui2::tedit_box::tparam param(_("Rename patch"), ss.str(), _("ID"), mode.id);
+	{
+		param.verify = boost::bind(&mkwin_controller::verify_new_mode, &controller_, _1);
+		gui2::tedit_box dlg(disp_, param);
+		try {
+			dlg.show(disp_.video());
+		} catch(twml_exception& e) {
+			e.show(disp_);
+		}
+		int res = dlg.get_retval();
+		if (res != gui2::twindow::OK) {
+			return;
+		}
+		if (original_id == param.result) {
+			return;
+		}
+	}
+
+	controller_.rename_patch(original_id, param.result);
+	navigate.replacement_children();
+
+	reload_tab_label(navigate);
+}
+
+void tmode_navigate::erase_patch(ttabbar& navigate, twindow& window, int at)
+{
+	const std::vector<tmode>& modes = controller_.modes();
+	at -= at % tmode::res_count;
+	const tmode& mode = modes[at];
+	controller_.erase_patch(mode.id);
+
+	for (int index = 0; index < tmode::res_count; index ++) {
+		navigate.erase_child(at);
+	}
+
+	for (int index = at; at < (int)modes.size(); at ++) {
+		const tgrid::tchild& child = navigate.get_child(at);
+		child.widget_->set_cookie(reinterpret_cast<void*>(index));
+	}
+
+	navigate.replacement_children();
+	reload_tab_label(navigate);
 }
 
 }

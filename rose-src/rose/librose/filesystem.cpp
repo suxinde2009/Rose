@@ -59,6 +59,7 @@
 #include "formula_string_utils.hpp"
 #include "posix.h"
 #include "saes.hpp"
+#include "wml_exception.hpp"
 
 #include <boost/foreach.hpp>
 
@@ -1023,7 +1024,8 @@ std::string directory_name(const std::string& file)
 
 namespace {
 
-std::set<std::string> binary_paths;
+#define PRIORITIEST_BINARY_PATHS	1
+std::vector<std::string> binary_paths;
 
 typedef std::map<std::string,std::vector<std::string> > paths_map;
 paths_map binary_paths_cache;
@@ -1032,8 +1034,11 @@ paths_map binary_paths_cache;
 
 static void init_binary_paths()
 {
-	if(binary_paths.empty()) {
-		binary_paths.insert("");
+	if (binary_paths.empty()) {
+		binary_paths.push_back(""); // userdata directory
+		// here is self-add paths
+		binary_paths.push_back(game_config::app + "/");
+		binary_paths.push_back("data/core/");
 	}
 }
 
@@ -1055,17 +1060,26 @@ void binary_paths_manager::set_paths(const config& cfg)
 	cleanup();
 	init_binary_paths();
 
-	BOOST_FOREACH (const config &bp, cfg.child_range("binary_path"))
-	{
+	int inserted = 0;
+	BOOST_FOREACH (const config &bp, cfg.child_range("binary_path")) {
 		std::string path = bp["path"].str();
 		if (path.find("..") != std::string::npos) {
 			ERR_FS << "Invalid binary path '" << path << "'\n";
 			continue;
 		}
-		if (!path.empty() && path[path.size()-1] != '/') path += "/";
-		if(binary_paths.count(path) == 0) {
-			binary_paths.insert(path);
+		if (!path.empty() && path[path.size()-1] != '/') {
+			path += "/";
+		}
+		std::vector<std::string>::iterator it = std::find(binary_paths.begin(), binary_paths.end(), path);
+		if (it == binary_paths.end()) {
+			it = binary_paths.begin();
+			std::advance(it, PRIORITIEST_BINARY_PATHS + inserted);
+			binary_paths.insert(it, path);
+
+			VALIDATE(std::find(paths_.begin(), paths_.end(), path) == paths_.end(), null_str);
+
 			paths_.push_back(path);
+			inserted ++;
 		}
 	}
 }
@@ -1074,9 +1088,11 @@ void binary_paths_manager::cleanup()
 {
 	binary_paths_cache.clear();
 
-	for(std::vector<std::string>::const_iterator i = paths_.begin(); i != paths_.end(); ++i) {
-		binary_paths.erase(*i);
+	for (std::vector<std::string>::const_iterator i = paths_.begin(); i != paths_.end(); ++i) {
+		std::vector<std::string>::iterator it2 = std::find(binary_paths.begin(), binary_paths.end(), *i);
+		binary_paths.erase(it2);
 	}
+	paths_.clear();
 }
 
 void clear_binary_paths_cache()
@@ -1104,19 +1120,14 @@ const std::vector<std::string>& get_binary_paths(const std::string& type)
 
 	BOOST_FOREACH (const std::string &path, binary_paths)
 	{
-		res.push_back(get_user_data_dir() + "/" + path + type + "/");
-
-		if(!game_config::path.empty()) {
+		if (path.empty()) {
+			res.push_back(get_user_data_dir() + "/");
+			res.push_back(get_user_data_dir() + "/" + type + "/");
+			res.push_back(game_config::path + "/");
+		} else {
 			res.push_back(game_config::path + "/" + path + type + "/");
 		}
 	}
-
-	// not found in "/type" directory, try main directory
-	res.push_back(get_user_data_dir() + "/");
-
-	if(!game_config::path.empty())
-		res.push_back(game_config::path+"/");
-
 	return res;
 }
 

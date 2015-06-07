@@ -19,30 +19,6 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
-// language.cpp有init_textdomains函数体,但要把language.cpp加起来会出现很多unsoluve linke, 在这里实现一个
-// 这里实现和language.cpp中是一样的
-static void init_textdomains(const config& cfg)
-{
-	BOOST_FOREACH (const config &t, cfg.child_range("textdomain"))
-	{
-		const std::string &name = t["name"];
-		const std::string &path = t["path"];
-
-		if(path.empty()) {
-			t_string::add_textdomain(name, get_intl_dir());
-		} else {
-			std::string location = get_binary_dir_location("", path);
-
-			if (location.empty()) {
-				//if location is empty, this causes a crash on Windows, so we
-				//disallow adding empty domains
-			} else {
-				t_string::add_textdomain(name, location);
-			}
-		}
-	}
-}
-
 editor::wml2bin_desc::wml2bin_desc() :
 	bin_name(),
 	sha1(),
@@ -258,8 +234,6 @@ bool editor::load_game_cfg(const editor::BIN_TYPE type, const char* name, bool w
 {
 	config tmpcfg, foreground;
 
-	// 以下这句如果不加，（后续）生成的cache-v0.1.1-xxxxx.define.gz会出错，大小上大于应该的字节数
-	// 但测试下来，对真正的须的cache-v0.1.1-xxxx.gz这个文件没影响
 	game_config::config_cache_transaction main_transaction;
 
 	try {
@@ -281,7 +255,7 @@ bool editor::load_game_cfg(const editor::BIN_TYPE type, const char* name, bool w
 
 			if (write_file) {
 				const config& tb_parsed_cfg = tmpcfg.find_child("tb", "id", str);
-				binary_paths_manager paths_manager(editor_config::data_cfg);
+				binary_paths_manager paths_manager(tb_parsed_cfg);
 				terrain_builder(tb_parsed_cfg, nfiles, sum_size, modified);
 			}
 
@@ -293,7 +267,6 @@ bool editor::load_game_cfg(const editor::BIN_TYPE type, const char* name, bool w
 			config& campaign_cfg = campaigns_config_.find_child("campaign", "id", name_str);
 			cache_.add_define(campaign_cfg["define"].str());
 			cache_.get_config(game_config::path + "/data", game_config_);
-			// ::init_textdomains(game_config_);
 			
 			// extract [compaign_addon] block
 			config& refcfg = game_config_.child("campaign_addon");
@@ -316,7 +289,6 @@ bool editor::load_game_cfg(const editor::BIN_TYPE type, const char* name, bool w
 		} else if (type == editor::GUI) {
 			// no pre-defined
 			cache_.get_config(game_config::path + "/data/gui", game_config_);
-			// ::init_textdomains(game_config_);
 			if (write_file) {
 				wml_config_to_file(game_config::path + "/xwml/" + BASENAME_GUI, game_config_, nfiles, sum_size, modified);
 			}
@@ -324,7 +296,6 @@ bool editor::load_game_cfg(const editor::BIN_TYPE type, const char* name, bool w
 		} else if (type == editor::LANGUAGE)  {
 			// no pre-defined
 			cache_.get_config(game_config::path + "/data/languages", game_config_);
-			// ::init_textdomains(game_config_);
 			if (write_file) {
 				wml_config_to_file(game_config::path + "/xwml/" + BASENAME_LANGUAGE, game_config_, nfiles, sum_size, modified);
 			}
@@ -344,7 +315,6 @@ bool editor::load_game_cfg(const editor::BIN_TYPE type, const char* name, bool w
 			// type == editor::MAIN_DATA
 			cache_.add_define("CORE");
 			cache_.get_config(game_config::path + "/data", game_config_);
-			// ::init_textdomains(game_config_);
 
 			// check scenario config valid
 			std::string err_str = check_data_bin(game_config_);
@@ -378,7 +348,7 @@ void editor::reload_extendable_cfg()
 	t_string::reset_translations();
 }
 
-std::vector<std::string> generate_tb_short_paths(const std::string& id)
+std::vector<std::string> generate_tb_short_paths(const std::string& id, const config& cfg)
 {
 	std::stringstream ss;
 	std::vector<std::string> short_paths;
@@ -387,9 +357,19 @@ std::vector<std::string> generate_tb_short_paths(const std::string& id)
 	ss << "data/core/terrain-graphics-" << id;
 	short_paths.push_back(ss.str());
 
-	ss.str("");
-	ss << "data/core/images/terrain-" << id;
-	short_paths.push_back(ss.str());
+	binary_paths_manager paths_manager(cfg);
+	const std::vector<std::string>& paths = paths_manager.paths();
+	if (paths.empty()) {
+		ss.str("");
+		ss << "data/core/images/terrain-" << id;
+		short_paths.push_back(ss.str());
+	} else {
+		for (std::vector<std::string>::const_iterator it = paths.begin(); it != paths.end(); ++ it) {
+			ss.str("");
+			ss << *it << "/images/terrain-" << id;
+			short_paths.push_back(ss.str());
+		}
+	}
 
 	return short_paths;
 }
@@ -409,10 +389,10 @@ void editor::get_wml2bin_desc_from_wml(std::string& path)
 	}
 
 	// tb-[tile].dat
-	std::vector<std::string> tbs;
+	std::vector<const config> tbs;
 	size_t tb_index = 0;
 	BOOST_FOREACH (const config& cfg, tbs_config_.child_range("tb")) {
-		tbs.push_back(cfg["id"].str());
+		tbs.push_back(cfg);
 		bin_types.push_back(editor::TB_DAT);
 	}
 
@@ -436,8 +416,8 @@ void editor::get_wml2bin_desc_from_wml(std::string& path)
 
 		int filter = SKIP_MEDIA_DIR;
 		if (type == editor::TB_DAT) {
-			const std::string& id = tbs[tb_index];
-			short_paths = generate_tb_short_paths(id);
+			const std::string& id = tbs[tb_index]["id"].str();
+			short_paths = generate_tb_short_paths(id, tbs[tb_index]);
 			filter = 0;
 
 			data_tree_checksum(short_paths, dir_checksum, filter);
@@ -456,7 +436,7 @@ void editor::get_wml2bin_desc_from_wml(std::string& path)
 			}
 			calculated_wml_checksum = true;
 
-			desc.bin_name = terrain_builder::tb_dat_prefix + tbs[tb_index] + ".dat";
+			desc.bin_name = terrain_builder::tb_dat_prefix + id + ".dat";
 			tb_index ++;
 
 		} else if (type == editor::SCENARIO_DATA) {

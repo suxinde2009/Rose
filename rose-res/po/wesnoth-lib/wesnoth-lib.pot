@@ -2579,6 +2579,9 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "Dialog"
+msgstr ""
+
 #: src/game_preferences_display.cpp:191
 msgid "Hotkeys"
 msgstr ""
@@ -5519,4 +5522,181 @@ msgid "War of Kingdom"
 msgstr ""
 
 msgid "Rose"
+msgstr ""
+
+msgid "Align left. Maybe stretch"
+msgstr ""
+
+msgid "Align left"
+msgstr ""
+
+msgid "Align center"
+msgstr ""
+
+msgid "Align right"
+msgstr ""
+
+msgid "Align top. Maybe stretch"
+msgstr ""
+
+msgid "Align top"
+msgstr ""
+
+msgid "Align bottom"
+msgstr ""
+
+msgid "Always invisible"
+msgstr ""
+
+msgid "Auto visible"
+msgstr ""
+
+msgid "Horizontal mode"
+msgstr ""
+
+msgid "Vertical mode"
+msgstr ""
+
+msgid "Unit width"
+msgstr ""
+
+msgid "Unit height"
+msgstr ""
+
+msgid "Gap"
+msgstr ""
+
+msgid "widget^definition"
+msgstr ""
+
+msgid "Horizontal layout"
+msgstr ""
+
+msgid "Vertical layout"
+msgstr ""
+
+msgid "Border"
+msgstr ""
+
+msgid "Pixel"
+msgstr ""
+
+msgid "ID"
+msgstr ""
+
+msgid "Width"
+msgstr ""
+
+msgid "Height"
+msgstr ""
+
+msgid "Linked group"
+msgstr ""
+
+msgid "Label"
+msgstr ""
+
+msgid "Tooltip"
+msgstr ""
+
+msgid "Enter fullscreen"
+msgstr ""
+
+msgid "Exit fullscreen"
+msgstr ""
+
+msgid "Once unpake, can not be back to template. Do you want to unpake $id?"
+msgstr ""
+
+msgid "$id holds grid that not all spacer. Do you want to delete?"
+msgstr ""
+
+msgid "Changes in the $window since the last save will be lost."
+msgstr ""
+
+msgid "Rectangle"
+msgstr ""
+
+msgid "Advanced"
+msgstr ""
+
+msgid "Absolute"
+msgstr ""
+
+msgid "ref's $field"
+msgstr ""
+
+msgid "My $field"
+msgstr ""
+
+msgid "$id is absolute type, must not be contain '+' or '-'!"
+msgstr ""
+
+msgid "$id must be integer!"
+msgstr ""
+
+msgid "(top-left)"
+msgstr ""
+
+msgid "(bottom-right)"
+msgstr ""
+
+msgid "rect^ref"
+msgstr ""
+
+msgid "xanchor"
+msgstr ""
+
+msgid "yanchor"
+msgstr ""
+
+msgid "$field1 fixed, $field2 fixed"
+msgstr ""
+
+msgid "$field1 fixed, $field2 scalable"
+msgstr ""
+
+msgid "$field1 scalable, $field2 fixed"
+msgstr ""
+
+msgid "Erase"
+msgstr ""
+
+msgid "Unpack"
+msgstr ""
+
+msgid "Check for errors in the $window"
+msgstr ""
+
+msgid "dialog"
+msgstr ""
+
+msgid "theme"
+msgstr ""
+
+msgid "Use rect layout"
+msgstr ""
+
+msgid "Change"
+msgstr ""
+
+msgid "Patch"
+msgstr ""
+
+msgid "Place grid fail! It's parent widget: $parent\n\nLayout size that calcualted base best size and grow_factor: $layout_size\nNow recalculated best size: $best_size"
+msgstr ""
+
+msgid "Content is copied to clipboard"
+msgstr ""
+
+msgid "Context menu"
+msgstr ""
+
+msgid "New patch"
+msgstr ""
+
+msgid "Rename patch"
+msgstr ""
+
+msgid "Original ID"
 msgstr ""

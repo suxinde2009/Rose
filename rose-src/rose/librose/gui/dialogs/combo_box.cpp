@@ -21,11 +21,7 @@
 #include "gettext.hpp"
 
 #include "gui/dialogs/helper.hpp"
-#ifdef GUI2_EXPERIMENTAL_LISTBOX
-#include "gui/widgets/list.hpp"
-#else
 #include "gui/widgets/listbox.hpp"
-#endif
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/window.hpp"
 #include "gui/widgets/toggle_panel.hpp"
@@ -103,8 +99,6 @@ void tcombo_box::pre_show(CVideo& /*video*/, twindow& window)
 		data["label"]["label"] = item.str;
 		list.add_row(data);
 
-		tgrid* grid_ptr = list.get_row_grid(item_index);
-		ttoggle_panel* toggle = dynamic_cast<ttoggle_panel*>(grid_ptr->find("item", true));
 		item_index ++;
 	}
 	list.set_callback_value_change(dialog_callback<tcombo_box, &tcombo_box::item_selected>);

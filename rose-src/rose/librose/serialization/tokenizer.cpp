@@ -26,7 +26,7 @@ tokenizer::tokenizer(std::istream& in) :
 	current_(EOF),
 	lineno_(1),
 	startlineno_(0),
-	textdomain_(PACKAGE),
+	textdomain_(PACKAGE "-lib"),
 	file_(),
 	token_(),
 	in_(in)

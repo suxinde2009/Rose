@@ -187,7 +187,7 @@ public:
 	typedef iterator_base<const_iter_types> const_iterator;
 
 	virtual void create_coor_map(int w, int h);
-	void clear();
+	virtual void clear();
 
 	controller_base& get_controller() { return controller_; }
 	const controller_base& get_controller() const { return controller_; }

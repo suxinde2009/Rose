@@ -21,7 +21,6 @@
 #include "gui/widgets/report.hpp"
 
 class mkwin_controller;
-struct tsheet_node;
 class unit_map;
 class base_unit;
 class unit;
@@ -34,11 +33,12 @@ class ttoggle_button;
 class mkwin_display : public display
 {
 public:
-	static gui2::tcontrol_definition_ptr find_widget(const std::string& type, const std::string& definition);
+	static gui2::tcontrol_definition_ptr find_widget(display& disp, const std::string& type, const std::string& definition, const std::string& id);
 
 	mkwin_display(mkwin_controller& controller, unit_map& units, CVideo& video, const gamemap& map, const config& theme_cfg, const config& level);
 	~mkwin_display();
 
+	std::string get_theme_patch() const;
 	gui2::ttheme* create_theme_dlg(const config& cfg);
 	void pre_change_resolution(std::map<const std::string, bool>& actives);
 	void post_change_resolution(const std::map<const std::string, bool>& actives);
@@ -46,17 +46,15 @@ public:
 	bool in_theme() const { return true; }
 	void click_widget(const std::string& type, const std::string& definition);
 	void click_grid(const std::string& type);
-	void sheet_toggled(gui2::ttoggle_button& widget);
 
 	const std::pair<std::string, gui2::tcontrol_definition_ptr>& selected_widget() const { return selected_widget_; }
-	void refresh_sheet_header(const std::vector<tsheet_node>& parent_nodes, std::vector<tsheet_node>& unit_nodes, unit* u);
 
-	gui2::ttoggle_button* sheet_widget(int index) const;
 	void resume_mouseover_hex_overlay() { set_mouseover_hex_overlay(using_mouseover_hex_overlay_); }
 
 	gui2::ttoggle_button* scroll_header_widget(int index) const;
 
 	std::pair<std::string, gui2::tcontrol_definition_ptr> spacer;
+	std::pair<std::string, gui2::tcontrol_definition_ptr> toggle_panel;
 
 protected:
 	void pre_draw();
@@ -75,10 +73,10 @@ protected:
 	void post_zoom();
 
 	void set_mouse_overlay(surface& image_fg);
+	void draw_minimap_units(surface& screen);
 	
 private:
 	void reload_widget_palette();
-	void reload_sheet_header();
 	void reload_scroll_header();
 	void scroll_top(gui2::treport& widget);
 	void scroll_bottom(gui2::treport& widget);
@@ -87,7 +85,6 @@ private:
 	mkwin_controller& controller_;
 	unit_map& units_;
 	gui2::treport* widget_palette_;
-	gui2::treport* sheet_header_;
 	gui2::ttabbar scroll_header_;
 
 	std::string current_widget_type_;

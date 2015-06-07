@@ -75,8 +75,17 @@ static TCPsocket get_socket(network::connection handle)
 
 static void check_error()
 {
-	const TCPsocket sock = network_worker_pool::detect_error();
+	// const TCPsocket sock = network_worker_pool::detect_error();
 
+	TCPsocket sock = network_worker_pool::detect_error();
+/*
+	if (!sock) {
+		int ii = 0;
+		if (lobby->chat.state() == tsock::s_consult) {
+			sock = lobby->chat.sock();
+		}
+	}
+*/
 	if (sock) {
 		const tsock& info = lobby->get_connection_details2(sock);
 		if (info.valid()) {

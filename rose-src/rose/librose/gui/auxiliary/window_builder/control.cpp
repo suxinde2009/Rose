@@ -46,6 +46,9 @@ tbuilder_control::tbuilder_control(const config& cfg)
 	}
 
 	if (cfg.has_attribute("rect")) {
+		if (cfg["id"] == "scroll-header") {
+			int ii = 0;
+		}
 		fix_rect = theme::calculate_relative_loc(cfg, settings::screen_width, settings::screen_height);
 	}
 
@@ -72,6 +75,9 @@ void tbuilder_control::init_control(tcontrol* control) const
 	control->set_help_message(help);
 	control->set_use_tooltip_on_label_overflow(use_tooltip_on_label_overflow);
 	if (fix_rect.w && fix_rect.h) {
+		if (id == "scroll-header") {
+			int ii = 0;
+		}
 		control->set_fix_rect(fix_rect);
 	}
 

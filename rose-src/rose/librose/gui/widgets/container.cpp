@@ -155,6 +155,11 @@ tpoint tcontainer_::calculate_best_size() const
 	return result;
 }
 
+tpoint tcontainer_::request_reduce_width(const unsigned maximum_width)
+{
+	return grid_.request_reduce_width(maximum_width - border_space().x);
+}
+
 void tcontainer_::set_origin(const tpoint& origin)
 {
 	// Inherited.
@@ -209,6 +214,11 @@ void tcontainer_::set_active(const bool active)
 	set_dirty();
 
 	set_self_active(active);
+}
+
+std::string tcontainer_::generate_layout_str(const int level) const
+{
+	return grid_.generate_layout_str(level);
 }
 
 bool tcontainer_::disable_click_dismiss() const

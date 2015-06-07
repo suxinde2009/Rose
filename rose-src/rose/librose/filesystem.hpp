@@ -194,6 +194,7 @@ struct binary_paths_manager
 	~binary_paths_manager();
 
 	void set_paths(const class config& cfg);
+	const std::vector<std::string>& paths() const { return paths_; }
 
 private:
 	binary_paths_manager(const binary_paths_manager& o);

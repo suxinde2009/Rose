@@ -21,6 +21,8 @@
 
 namespace gui2 {
 
+class tlistbox;
+
 /**
  * Class for a toggle button.
  *
@@ -30,6 +32,7 @@ namespace gui2 {
  */
 class ttoggle_panel : public tpanel, public tselectable_
 {
+	friend class tlistbox;
 public:
 	ttoggle_panel();
 
@@ -108,6 +111,10 @@ public:
 	void set_retval(const int retval);
 
 	/** Inherited from tselectable_. */
+	void set_callback_state_pre_change(boost::function<bool (twidget*)> callback)
+		{ callback_state_pre_change_ = callback; }
+
+	/** Inherited from tselectable_. */
 	void set_callback_state_change(boost::function<void (twidget*)> callback)
 		{ callback_state_change_ = callback; }
 
@@ -116,6 +123,12 @@ public:
 
 	void set_data(unsigned int data) { data_ = data; }
 	unsigned int get_data() const { return data_; }
+
+	int at() const { return at_; }
+	bool can_selectable() const;
+
+	/** Inherited from tcontrol. */
+	void update_canvas();
 
 	bool exist_anim();
 private:
@@ -155,6 +168,14 @@ private:
 	 * The toggle panel can contain an private data.
 	 */
 	unsigned int data_;
+
+	// In general, toggle panel is used for listbox, treeview. at_ indicate the location in array.
+	int at_;
+
+	bool frame_;
+
+	/** See tselectable_::set_callback_state_change. */
+	boost::function<bool (twidget*)> callback_state_pre_change_;
 
 	/** See tselectable_::set_callback_state_change. */
 	boost::function<void (twidget*)> callback_state_change_;

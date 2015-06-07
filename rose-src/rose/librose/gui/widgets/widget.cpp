@@ -22,6 +22,35 @@
 
 namespace gui2 {
 
+const int twidget::npos = -1;
+
+bool twidget::reduce_width = false;
+std::set<twidget*> twidget::reduce_widgets;
+
+void twidget::insert_reduce_widget(twidget* widget, const tpoint& size)
+{
+	widget->set_layout_size(size);
+	reduce_widgets.insert(widget);
+}
+
+twidget::treduce_width_lock::treduce_width_lock()
+{
+	VALIDATE(!reduce_width, "Current is in reduce state, must not reduce again!");
+	reduce_width = true;
+}
+
+twidget::treduce_width_lock::~treduce_width_lock()
+{
+	for (std::set<twidget*>::const_iterator it = reduce_widgets.begin(); it != reduce_widgets.end(); ++ it) {
+		twidget* widget = *it;
+		widget->set_layout_size(tpoint(0, 0));
+	}
+	reduce_widgets.clear();
+
+	reduce_width = false;
+}
+
+
 twidget::twidget()
 	: id_("")
 	, parent_(NULL)
@@ -95,13 +124,6 @@ twidget::~twidget()
 
 void twidget::set_id(const std::string& id)
 {
-	DBG_GUI_LF << "set id of " << static_cast<void*>(this)
-		<< " to '" << id << "' "
-		<< "(was '" << id_ << "'). Widget type: " <<
-		(dynamic_cast<tcontrol*>(this) ?
-			dynamic_cast<tcontrol*>(this)->get_control_type()
-			: typeid(twidget).name())
-		<< "\n";
 	id_ = id;
 }
 
@@ -249,6 +271,11 @@ void twidget::populate_dirty_list(twindow& caller,
 void twidget::set_layout_size(const tpoint& size) 
 {
 	layout_size_ = size; 
+}
+
+std::string twidget::generate_layout_str(const int level) const
+{
+	return null_str;
 }
 
 void twidget::set_visible(const tvisible visible)

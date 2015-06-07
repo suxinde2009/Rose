@@ -123,13 +123,16 @@ void draw_line(
 		, unsigned x1
 		, unsigned y1
 		, const unsigned x2
-		, unsigned y2)
+		, unsigned y2
+		, bool require_map)
 {
-	color = SDL_MapRGBA(canvas->format,
-		((color & 0xFF000000) >> 24),
-		((color & 0x00FF0000) >> 16),
-		((color & 0x0000FF00) >> 8),
-		((color & 0x000000FF)));
+	if (require_map) {
+		color = SDL_MapRGBA(canvas->format,
+			((color & 0xFF000000) >> 24),
+			((color & 0x00FF0000) >> 16),
+			((color & 0x0000FF00) >> 8),
+			((color & 0x000000FF)));
+	}
 
 	ptrdiff_t start = reinterpret_cast<ptrdiff_t>(canvas->pixels);
 	unsigned w = canvas->w;
@@ -191,13 +194,16 @@ void draw_circle(
 		, Uint32 color
 		, const unsigned x_centre
 		, const unsigned y_centre
-		, const unsigned radius)
+		, const unsigned radius
+		, bool require_map)
 {
-	color = SDL_MapRGBA(canvas->format,
-		((color & 0xFF000000) >> 24),
-		((color & 0x00FF0000) >> 16),
-		((color & 0x0000FF00) >> 8),
-		((color & 0x000000FF)));
+	if (require_map) {
+		color = SDL_MapRGBA(canvas->format,
+			((color & 0xFF000000) >> 24),
+			((color & 0x00FF0000) >> 16),
+			((color & 0x0000FF00) >> 8),
+			((color & 0x000000FF)));
+	}
 
 	ptrdiff_t start = reinterpret_cast<ptrdiff_t>(canvas->pixels);
 	unsigned w = canvas->w;
@@ -1813,8 +1819,7 @@ void blit_surface(const surface& src,
 				Uint8 dst_g = (dst_pixel & 0x0000FF00) >> 8;
 				Uint8 dst_b = dst_pixel & 0x000000FF;
 
-				if(dst_a == 255) {
-
+				if (dst_a == 255) {
 					// Destination fully opaque blend the source.
 					dst_r = (((src_r - dst_r) * src_a) >> 8 ) + dst_r;
 					dst_g = (((src_g - dst_g) * src_a) >> 8 ) + dst_g;

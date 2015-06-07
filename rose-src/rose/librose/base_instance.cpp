@@ -24,6 +24,7 @@
 #include "map.hpp"
 #include "gui/dialogs/message.hpp"
 #include "gui/dialogs/language_selection.hpp"
+#include "gui/dialogs/combo_box.hpp"
 #include "gui/widgets/window.hpp"
 #include <iostream>
 #include <clocale>
@@ -332,6 +333,10 @@ bool base_instance::init_video()
 
 bool base_instance::init_config(const bool force)
 {
+	VALIDATE(!game_config::app.empty(), _("Must set game_config::app"));
+	VALIDATE(!game_config::app_msgid.empty(), _("Must set game_config::app_msgid"));
+	VALIDATE(!game_config::app_channel.empty(), _("Must set game_config::app_channel"));
+
 	cache_.clear_defines();
 
 	load_game_cfg(force);
@@ -340,7 +345,6 @@ bool base_instance::init_config(const bool force)
 	game_config::load_config(cfg ? &cfg : NULL);
 
 	paths_manager_.set_paths(game_config());
-	::init_textdomains(game_config());
 	// about::set_about(game_config());
 	// ai::configuration::init(game_config());
 
@@ -397,7 +401,6 @@ void base_instance::load_game_cfg(const bool force)
 		// save this to game_config_core_
 		game_config_core_ = game_config_;
 
-		// ::init_textdomains(game_config_);
 		// cache_.get_config(game_config::path +"/data", game_config_);
 
 		main_transaction.lock();
@@ -490,4 +493,24 @@ bool base_instance::change_language()
 	wm_title_string += " - " + game_config::version;
 	SDL_SetWindowTitle(disp().video().getWindow(), wm_title_string.c_str());
 	return true;
+}
+
+int base_instance::show_preferences_dialog(display& disp, bool first)
+{
+#if (defined(__APPLE__) && TARGET_OS_IPHONE) || defined(ANDROID)
+	return gui2::twindow::OK;
+#else
+	std::vector<gui2::tval_str> items;
+
+	int fullwindowed = preferences::fullscreen()? preferences::MAKE_WINDOWED: preferences::MAKE_FULLSCREEN;
+	std::string str = preferences::fullscreen()? _("Exit fullscreen") : _("Enter fullscreen");
+	items.push_back(gui2::tval_str(fullwindowed, str));
+	items.push_back(gui2::tval_str(preferences::CHANGE_RESOLUTION, _("Change Resolution")));
+	items.push_back(gui2::tval_str(gui2::twindow::OK, _("Close")));
+
+	gui2::tcombo_box dlg(items, preferences::CHANGE_RESOLUTION);
+	dlg.show(disp.video());
+
+	return dlg.selected_val();
+#endif
 }

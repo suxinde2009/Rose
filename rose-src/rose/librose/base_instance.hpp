@@ -38,8 +38,9 @@ public:
 	display& disp();
 	const config& game_config() const { return game_config_; }
 	bool is_loading() { return false; }
+
 	bool change_language();
-	void start_mkwin(bool theme);
+	virtual int show_preferences_dialog(display& disp, bool first);
 
 	virtual void regenerate_heros(hero_map& heros, bool allow_empty);
 	hero_map& heros() { return heros_; }

@@ -180,7 +180,7 @@ tpoint tscrollbar_container::calculate_best_size() const
 	unsigned w = best_width_(window->variables());
 	unsigned h = best_height_(window->variables());
 
-	if (w >= settings::screen_width || h >= settings::screen_height) {
+	if (reduce_width || w >= settings::screen_width || h >= settings::screen_height) {
 		result = content_grid_->calculate_best_size();
 
 		const tpoint vertical_scrollbar = scrollbar_size(*vertical_scrollbar_grid_, vertical_scrollbar_mode_);
@@ -193,6 +193,10 @@ tpoint tscrollbar_container::calculate_best_size() const
 		}
 		result.x += vertical_scrollbar.x;
 		result.y += horizontal_scrollbar.y;
+
+		if (reduce_width) {
+			return result;
+		}
 
 		if (w >= settings::screen_width) {
 			w -= settings::screen_width;
@@ -254,7 +258,8 @@ void tscrollbar_container::place(const tpoint& origin, const tpoint& size)
 		// it is replace, should keep content_grid_ rectangle to original position.
 		content_grid_origin = content_grid_->get_origin();
 	}
-	set_content_size(content_grid_origin, content_->get_size());
+	place_content_grid(content_->get_origin(), content_->get_size(), content_grid_origin);
+	content_grid_origin = content_grid_->get_origin();
 
 	// Set vertical scrollbar
 	set_scrollbar_mode(vertical_scrollbar_grid_, vertical_scrollbar_,
@@ -279,6 +284,32 @@ void tscrollbar_container::place(const tpoint& origin, const tpoint& size)
 	if (scroll_to_end_) {
 		scroll_vertical_scrollbar(tscrollbar_::END);
 	}
+}
+
+tpoint tscrollbar_container::validate_content_grid_origin(const tpoint& content_origin, const tpoint& content_size, const tpoint& origin, const tpoint& size) const
+{
+	// verify desire_origin
+	//  content_grid origin---> | <--- desire_origin
+	//                          | <--- vertical scrollbar's item_position
+	//  content origin -------> |
+	//  content size            |
+	tpoint origin2 = origin;
+	VALIDATE(origin2.y <= content_origin.y, "y of content_grid must <= content.y!");
+	VALIDATE(size.y >= content_size.y, "content_grid must >= content!");
+
+	int item_position = (int)vertical_scrollbar_->get_item_position();
+	if (origin2.y + item_position != content_origin.y) {
+		origin2.y = content_origin.y - item_position;
+	}
+	if (item_position + content_size.y > size.y) {
+		item_position = size.y - content_size.y;
+		vertical_scrollbar_->set_item_position2(item_position);
+
+		origin2.y = content_origin.y - item_position;
+	}
+
+	VALIDATE(origin2.y <= content_origin.y, "(2)y of content_grid must <= content.y!");
+	return origin2;
 }
 
 void tscrollbar_container::set_origin(const tpoint& origin)
@@ -497,6 +528,14 @@ void tscrollbar_container::invalidate_layout(bool calculate_linked_group)
 	need_layout_ = true;
 }
 
+std::string tscrollbar_container::generate_layout_str(const int level) const
+{
+	if (content_grid_) {
+		return content_grid_->generate_layout_str(level);
+	}
+	return null_str;
+}
+
 void tscrollbar_container::child_populate_dirty_list(twindow& caller,
 		const std::vector<twidget*>& call_stack)
 {
@@ -529,6 +568,7 @@ bool tscrollbar_container::calculate_scrollbar(const tpoint& actual_size, const 
 
 	} else if (horizontal_scrollbar_mode_ != always_invisible) {
 		horizontal_scrollbar_grid_->set_visible(twidget::HIDDEN);
+		horizontal_scrollbar_->set_item_position(0);
 	}
 
 	if (actual_size.y > desire_size.y) {
@@ -543,14 +583,10 @@ bool tscrollbar_container::calculate_scrollbar(const tpoint& actual_size, const 
 
 	} else if (vertical_scrollbar_mode_ != always_invisible) {
 		vertical_scrollbar_grid_->set_visible(twidget::HIDDEN);
+		vertical_scrollbar_->set_item_position(0);
 	}
 
 	return horizontal_visible != horizontal_scrollbar_grid_->get_visible() || vertical_visible != vertical_scrollbar_grid_->get_visible();
-}
-
-void tscrollbar_container::set_content_size(const tpoint& origin, const tpoint& size)
-{
-	content_grid_->place(origin, size);
 }
 
 void tscrollbar_container::show_content_rect(const SDL_Rect& rect)

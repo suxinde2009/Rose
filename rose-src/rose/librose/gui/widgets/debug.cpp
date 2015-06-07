@@ -21,7 +21,6 @@
 #include "gui/widgets/debug.hpp"
 
 #include "formatter.hpp"
-#include "gui/widgets/generator.hpp"
 #ifdef GUI2_EXPERIMENTAL_LISTBOX
 #include "gui/widgets/list.hpp"
 #else

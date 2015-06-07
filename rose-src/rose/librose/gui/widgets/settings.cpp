@@ -381,8 +381,8 @@ void tgui_definition::load_widget_definitions(
 	BOOST_FOREACH(const tcontrol_definition_ptr& def, definitions) {
 
 		// We assume all definitions are unique if not we would leak memory.
-		assert(control_definition[definition_type].find(def->id)
-				== control_definition[definition_type].end());
+		VALIDATE(control_definition[definition_type].find(def->id)
+				== control_definition[definition_type].end(), "Multi-define id!");
 
 		control_definition[definition_type]
 				.insert(std::make_pair(def->id, def));
@@ -540,7 +540,7 @@ tresolution_definition_ptr get_control(
 		LOG_GUI_G << "Control: type '" << control_type << "' definition '"
 			<< definition << "' not found, falling back to 'default'.\n";
 		control = control_definition->second.find("default");
-		assert(control != control_definition->second.end());
+		VALIDATE(control != control_definition->second.end(), "Cannot find defnition, failling back to default!");
 	}
 
 	for(std::vector<tresolution_definition_ptr>::const_iterator

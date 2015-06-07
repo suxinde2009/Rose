@@ -12,6 +12,7 @@
 
    See the COPYING file for more details.
 */
+#define GETTEXT_DOMAIN "wesnoth-lib"
 
 #include "gui/dialogs/helper.hpp"
 #include "gui/dialogs/mkwin_theme.hpp"
@@ -20,7 +21,9 @@
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/report.hpp"
 #include "gui/widgets/listbox.hpp"
+#include "gui/widgets/stacked_widget.hpp"
 
+#include "formula_string_utils.hpp"
 #include "mkwin_display.hpp"
 #include "mkwin_controller.hpp"
 #include "hotkeys.hpp"
@@ -34,6 +37,7 @@ namespace gui2 {
 tmkwin_theme::tmkwin_theme(mkwin_display& disp, mkwin_controller& controller, const config& cfg)
 	: ttheme(disp, controller, cfg)
 	, controller_(controller)
+	, current_widget_page_(twidget::npos)
 {
 }
 
@@ -70,14 +74,17 @@ void tmkwin_theme::app_pre_show()
 	hotkey::insert_hotkey(HOTKEY_SELECT, "select", _("Select"));
 	hotkey::insert_hotkey(HOTKEY_STATUS, "status", _("Status"));
 	hotkey::insert_hotkey(HOTKEY_GRID, "grid", _("Grid"));
+	hotkey::insert_hotkey(HOTKEY_SWITCH, "switch", _("Go into"));
 	hotkey::insert_hotkey(HOTKEY_RCLICK, "rclick", _("Right Click"));
 
-	hotkey::insert_hotkey(HOTKEY_RUN, "run", _("Run"));
-	hotkey::insert_hotkey(HOTKEY_SETTING, "setting", _("Setting"));
-	hotkey::insert_hotkey(HOTKEY_RECT_SETTING, "rect_setting", _("Rect Setting"));
+	std::stringstream err;
+	utils::string_map symbols;
+	symbols["window"] = controller_.theme()? _("theme"): _("dialog");
+
+	hotkey::insert_hotkey(HOTKEY_RUN, "validate", vgettext("wesnoth-lib", "Check for errors in the $window", symbols));
+	hotkey::insert_hotkey(HOTKEY_SETTING, "settings", _("Settings"));
 	hotkey::insert_hotkey(HOTKEY_SPECIAL_SETTING, "special_setting", _("Special Setting"));
 	hotkey::insert_hotkey(HOTKEY_LINKED_GROUP, "linked_group", _("Linked group"));
-	hotkey::insert_hotkey(HOTKEY_MODE_SETTING, "mode_setting", _("Mode Setting"));
 	hotkey::insert_hotkey(HOTKEY_ERASE, "erase", _("Erase"));
 
 	hotkey::insert_hotkey(HOTKEY_INSERT_TOP, "insert_top", _("Insert top"));
@@ -90,9 +97,11 @@ void tmkwin_theme::app_pre_show()
 	hotkey::insert_hotkey(HOTKEY_INSERT_CHILD, "insert_child", _("Insert child"));
 	hotkey::insert_hotkey(HOTKEY_ERASE_CHILD, "erase_child", _("Erase child"));
 
+	hotkey::insert_hotkey(HOTKEY_UNPACK, "unpack", _("Unpack"));
+
 	// widget page
 	tbutton* widget = dynamic_cast<tbutton*>(get_object("select"));
-	widget->set_surface(image::get_image("buttons/studio/select.png"), widget->fix_width(), widget->fix_height());
+	widget->set_surface(image::get_image("buttons/select.png"), widget->fix_width(), widget->fix_height());
 	click_generic_handler(*widget, null_str);
 
 	widget = dynamic_cast<tbutton*>(get_object("status"));
@@ -100,28 +109,47 @@ void tmkwin_theme::app_pre_show()
 	click_generic_handler(*widget, null_str);
 
 	widget = dynamic_cast<tbutton*>(get_object("grid"));
-	widget->set_surface(image::get_image("buttons/studio/grid.png"), widget->fix_width(), widget->fix_height());
+	widget->set_surface(image::get_image("buttons/grid.png"), widget->fix_width(), widget->fix_height());
 	click_generic_handler(*widget, null_str);
 
+	widget = dynamic_cast<tbutton*>(get_object("switch"));
+	if (widget) {
+		widget->set_label("misc/into.png");
+		widget->set_active(controller_.theme());
+		click_generic_handler(*widget, null_str);
+	}
+
 	widget = dynamic_cast<tbutton*>(get_object("rclick"));
+	widget->set_label("misc/rclick.png");
 	click_generic_handler(*widget, null_str);
+
+	std::stringstream ss;
+	ss.str("");
+	tlabel* label = dynamic_cast<tlabel*>(get_object("title"));
+	if (controller_.theme()) {
+		ss << _("Theme");
+	} else {
+		ss << _("Dialog");
+	}
+	label->set_label(ss.str());
 
 	tlistbox* list = dynamic_cast<tlistbox*>(get_object("object-list"));
 	list->set_callback_value_change(dialog_callback<tmkwin_theme, &tmkwin_theme::object_selected>);
 
+	page_panel_ = find_widget<tstacked_widget>(window_, "page_panel", false, true);
 	load_widget_page();
 }
 
 void tmkwin_theme::load_widget_page()
 {
-	set_object_visible("widget_layer", twidget::VISIBLE);
-	set_object_visible("object_layer", twidget::INVISIBLE);
+	page_panel_->set_radio_layer(WIDGET_PAGE);
+	current_widget_page_ = WIDGET_PAGE;
 }
 
 void tmkwin_theme::load_object_page(const unit_map& units)
 {
-	set_object_visible("widget_layer", twidget::INVISIBLE);
-	set_object_visible("object_layer", twidget::VISIBLE);
+	page_panel_->set_radio_layer(OBJECT_PAGE);
+	current_widget_page_ = OBJECT_PAGE;
 
 	fill_object_list(units);
 }
@@ -133,14 +161,18 @@ void tmkwin_theme::object_selected(twindow& window)
 	if (cursel < 0) {
 		return;
 	}
-	tgrid* grid = list.get_row_grid(cursel);
+	twidget* panel = list.get_row_panel(cursel);
 
-	unit* u = reinterpret_cast<unit*>(grid->cookie());
+	unit* u = reinterpret_cast<unit*>(panel->cookie());
 	controller_.select_unit(u);
 }
 
 void tmkwin_theme::fill_object_list(const unit_map& units)
 {
+	if (current_widget_page_ != OBJECT_PAGE) {
+		return;
+	}
+
 	tlistbox* list = dynamic_cast<tlistbox*>(get_object("object-list"));
 	list->clear();
 
@@ -159,7 +191,10 @@ void tmkwin_theme::fill_object_list(const unit_map& units)
 		string_map list_item;
 		std::map<std::string, string_map> list_item_item;
 
-		list_item["label"] = str_cast(index ++);
+		ss.str("");
+		ss << (index ++);
+		ss << "(" << tintegrate::generate_format(u.get_map_index(), "blue");
+		list_item["label"] = ss.str();
 		list_item_item.insert(std::make_pair("number", list_item));
 
 		list_item["label"] = u.cell().id;
@@ -174,14 +209,14 @@ void tmkwin_theme::fill_object_list(const unit_map& units)
 
 		list->add_row(list_item_item);
 
-		tgrid* grid = list->get_row_grid(list->get_item_count() - 1);
-		grid->set_cookie(reinterpret_cast<void*>(&u));
+		twidget* panel = list->get_row_panel(list->get_item_count() - 1);
+
+		panel->set_cookie(reinterpret_cast<void*>(&u));
 	}
 	if (list->get_item_count()) {
 		list->select_row(cursel);
 	}
 	list->invalidate_layout(true);
-	// window.invalidate_layout();
 }
 
 } //end namespace gui2

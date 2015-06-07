@@ -1477,7 +1477,7 @@ hero_map::hero_map(const std::string& path) :
 	map_vsize_(0)
 {
 	if (!path.empty()) {
-		hero::image_file_root_ = path + "/data/core/images";
+		set_path(path);
 	}
 }
 
@@ -1498,7 +1498,7 @@ hero_map& hero_map::operator=(const hero_map &that)
 
 void hero_map::set_path(const std::string& path)
 {
-	hero::image_file_root_ = path + "/data/core/images";
+	hero::image_file_root_ = path + "/" + game_config::app + "/images";
 }
 
 void hero_map::realloc_hero_map(const size_t size)

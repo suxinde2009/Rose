@@ -81,23 +81,6 @@ void app_fill_anim(int type, const config& cfg)
 {
 }
 
-namespace gui2 {
-int app_show_preferences_dialog(display& disp, bool first)
-{
-	std::vector<gui2::tval_str> items;
-
-	int fullwindowed = preferences::fullscreen()? preferences::MAKE_WINDOWED: preferences::MAKE_FULLSCREEN;
-	items.push_back(gui2::tval_str(fullwindowed, dgettext("wesnoth-lib", "Full Screen")));
-	items.push_back(gui2::tval_str(preferences::CHANGE_RESOLUTION, dgettext("wesnoth-lib", "Change Resolution")));
-	items.push_back(gui2::tval_str(gui2::twindow::OK, dgettext("wesnoth-lib", "OK")));
-
-	gui2::tcombo_box dlg(items, preferences::CHANGE_RESOLUTION);
-	dlg.show(disp.video());
-
-	return dlg.selected_val();
-}
-}
-
 bool hero::check_valid() const
 {
 	return true;
@@ -235,27 +218,27 @@ static int do_gameloop(int argc, char** argv)
 	gui2::init();
 	const gui2::event::tmanager gui_event_manager;
 
-	loadscreen::start_stage("load config");
-	res = game.init_config(false);
-	if (res == false) {
-		std::cerr << "could not initialize game config\n";
-		return 1;
-	}
-
-	loadscreen::start_stage("init fonts");
-
-	res = font::load_font_config();
-	if (res == false) {
-		std::cerr << "could not re-initialize fonts for the current language\n";
-		return 1;
-	}
-
-
-	loadscreen::start_stage("titlescreen");
-/*
-	game_config::checksum = calculate_res_checksum(game.disp(), game.game_config());
-*/	
 	try {
+		// form this, code can use VALIDATE macro.
+
+		loadscreen::start_stage("load config");
+		res = game.init_config(false);
+		if (res == false) {
+			std::cerr << "could not initialize game config\n";
+			return 1;
+		}
+
+		loadscreen::start_stage("init fonts");
+
+		res = font::load_font_config();
+		if (res == false) {
+			std::cerr << "could not re-initialize fonts for the current language\n";
+			return 1;
+		}
+
+
+		loadscreen::start_stage("titlescreen");
+
 		for (;;) {
 			// reset the TC, since a game can modify it, and it may be used
 			// by images in add-ons or campaigns dialogs
@@ -298,21 +281,12 @@ static int do_gameloop(int argc, char** argv)
 			} else if (res == gui2::trose::EDIT_THEME) {
 				game.start_mkwin(true);
 
-			} else if (res == gui2::trose::HELP) {
-
 			} else if (res == gui2::trose::EDIT_DIALOG) {
 				game.start_mkwin(false);
 
 			} else if (res == gui2::trose::PLAYER) {
 				gui2::tlogin dlg(game.disp(), game.heros(), "");
 				dlg.show(game.disp().video());
-
-			} else if (res == gui2::trose::PLAYER_SIDE) {
-
-			} else if (res == gui2::trose::REPORT) {
-
-			} else if (res == gui2::trose::MULTIPLAYER) {
-				start_title_screen_anim();
 
 			} else if (res == gui2::trose::CHANGE_LANGUAGE) {
 				if (game.change_language()) {
@@ -324,22 +298,17 @@ static int do_gameloop(int argc, char** argv)
 				gui2::tchat2 dlg(game.disp());
 				dlg.show(game.disp().video());
 			
-			} else if (res == gui2::trose::SIGNIN) {
-
-			} else if (res == gui2::trose::DESIGN) {
-
-			} else if (res == gui2::trose::INAPP_PURCHASE) {
-
 			} else if (res == gui2::trose::EDIT_PREFERENCES) {
-				preferences::show_preferences_dialog(game.disp());
+				preferences::show_preferences_dialog(game.disp(), true);
 
-			} else if (res == gui2::trose::START_MAP_EDITOR) {
-				
 			}
 		}
 
 	} catch (twml_exception& e) {
 		e.show(game.disp());
+
+	} catch(game_logic::formula_error& e) {
+		gui2::show_error_message(game.disp().video(), e.what());
 	}
 
 	return 0;

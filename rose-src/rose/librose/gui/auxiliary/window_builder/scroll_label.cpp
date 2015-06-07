@@ -57,8 +57,8 @@ twidget* tbuilder_scroll_label::build() const
 	widget->init_grid(conf->grid);
 	widget->finalize_setup();
 
-	tlabel* label = dynamic_cast<tlabel*>(widget->content_grid()->find("_label", false));
-	widget->set_text_editable(true);
+	// tlabel* label = dynamic_cast<tlabel*>(widget->content_grid()->find("_label", false));
+	// widget->set_text_editable(true);
 
 	DBG_GUI_G << "Window builder: placed scroll label '"
 			<< id << "' with definition '"

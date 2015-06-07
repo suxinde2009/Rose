@@ -26,6 +26,13 @@
 
 #include <boost/foreach.hpp>
 
+std::set<std::string> controller_base::theme_reserved_wml;
+
+bool controller_base::is_theme_reserved(const std::string& key)
+{
+	return theme_reserved_wml.find(key) != theme_reserved_wml.end();
+}
+
 controller_base::controller_base(int ticks, const config& game_config, CVideo& /*video*/)
 	: events::handler(false)
 	, game_config_(game_config)
@@ -37,6 +44,12 @@ controller_base::controller_base(int ticks, const config& game_config, CVideo& /
 	, finger_motion_direction_(UP)
 	, wait_bh_event_(false)
 {
+	if (theme_reserved_wml.empty()) {
+		theme_reserved_wml.insert("screen");
+		theme_reserved_wml.insert("main_map_border");
+		theme_reserved_wml.insert("context_menu");
+		theme_reserved_wml.insert("linked_group");
+	}
 }
 
 controller_base::~controller_base()

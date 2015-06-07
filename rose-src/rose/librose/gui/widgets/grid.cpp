@@ -21,6 +21,7 @@
 #include "gui/auxiliary/log.hpp"
 #include "gui/widgets/control.hpp"
 #include "gui/widgets/spacer.hpp"
+#include "formula_string_utils.hpp"
 
 #include <boost/foreach.hpp>
 
@@ -273,7 +274,9 @@ void tgrid::insert_child(int unit_w, int unit_h, twidget& widget, int at, bool e
 		col_width_.push_back(unit_w);
 	
 		resize_children((rows_ * cols_) + 1);
-		memmove(&(children_[at + 1]), &(children_[at]), (children_vsize_ - at) * sizeof(tchild));
+		if (children_vsize_ - at) {
+			memmove(&(children_[at + 1]), &(children_[at]), (children_vsize_ - at) * sizeof(tchild));
+		}
 	}
 
 	children_[at].widget_ = &widget;
@@ -377,11 +380,16 @@ void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendabl
 				row_height_[0] = size.y;
 			}
 		}
-		if (w_ && visible == twidget::VISIBLE && (origin2 != origin || size2 != size)) {
-			if (origin2.x != -1 && origin2.y != -1 && size2 == size) {
-				widget2->twidget::place(origin, size);
-			} else {
-				widget2->place(origin, size);
+		if (w_ && visible == twidget::VISIBLE) {
+			if (origin2 != origin || size2 != size) {
+				if (origin2.x != -1 && origin2.y != -1 && size2 == size) {
+					widget2->twidget::place(origin, size);
+				} else {
+					widget2->place(origin, size);
+				}
+			} else if (!extendable) {
+				widget2->set_visible_area(get_rect());
+				widget2->set_dirty();
 			}
 		}
 		origin.x += size.x;
@@ -482,6 +490,105 @@ void tgrid::update_last_draw_end()
 	last_draw_end_ = stuff_widget_[stuff_size_ - 1]->get_origin();
 }
 
+//
+// listbox
+//
+void tgrid::listbox_init()
+{
+	VALIDATE(!children_vsize_, "Must no child in report!");
+	VALIDATE(!stuff_size_, "Must no stuff in report!");
+	VALIDATE(!rows_ && !cols_, "Must no row and col in report!");
+
+	cols_ = 1; // It is toggle_panel widget.
+	col_grow_factor_.push_back(0);
+}
+
+int tgrid::listbox_insert_child(twidget& widget, int at)
+{
+	// make sure the new child is valid before deferring
+	widget.set_parent(this);
+	if (at == npos || at > children_vsize_ - stuff_size_) {
+		at = children_vsize_ - stuff_size_;
+	}
+
+	// below memmove require children_size_ are large than children_vsize_!
+	// resize_children require large than exactly rows_*cols_. because children_vsize_ maybe equal it.
+
+	// i think, all grow factor is 0. except last stuff.
+	row_grow_factor_.push_back(0);
+	rows_ ++;
+	row_height_.push_back(0);
+
+	resize_children((rows_ * cols_) + 1);
+	if (children_vsize_ - at) {
+		memmove(&(children_[at + 1]), &(children_[at]), (children_vsize_ - at) * sizeof(tchild));
+	}
+
+	children_[at].widget_ = &widget;
+	children_vsize_ ++;
+
+	// replacement
+	children_[at].flags_ = VERTICAL_ALIGN_TOP | HORIZONTAL_GROW_SEND_TO_CLIENT;
+
+	return at;
+}
+
+void tgrid::listbox_erase_child(int at)
+{
+	if (at == npos || at >= children_vsize_ - stuff_size_) {
+		return;
+	}
+	delete children_[at].widget_;
+	children_[at].widget_ = NULL;
+	if (at < children_vsize_ - 1) {
+		memcpy(&(children_[at]), &(children_[at + 1]), (children_vsize_ - at - 1) * sizeof(tchild));
+	}
+	children_[children_vsize_ - 1].widget_ = NULL;
+
+	children_vsize_ --;
+	rows_ --;
+	row_grow_factor_.pop_back();
+	row_height_.pop_back();
+}
+
+void tgrid::stacked_init()
+{
+	VALIDATE(!children_vsize_, "Must no child in report!");
+	VALIDATE(!stuff_size_, "Must no stuff in report!");
+	VALIDATE(!rows_ && !cols_, "Must no row and col in report!");
+
+	cols_ = 1; // It is toggle_panel widget.
+	col_grow_factor_.push_back(0);
+}
+
+void tgrid::stacked_insert_child(twidget& widget, int at)
+{
+	// make sure the new child is valid before deferring
+	widget.set_parent(this);
+	if (at == npos || at > children_vsize_ - stuff_size_) {
+		at = children_vsize_ - stuff_size_;
+	}
+
+	// below memmove require children_size_ are large than children_vsize_!
+	// resize_children require large than exactly rows_*cols_. because children_vsize_ maybe equal it.
+
+	// i think, all grow factor is 0. except last stuff.
+	row_grow_factor_.push_back(0);
+	rows_ ++;
+	row_height_.push_back(0);
+
+	resize_children((rows_ * cols_) + 1);
+	if (children_vsize_ - at) {
+		memmove(&(children_[at + 1]), &(children_[at]), (children_vsize_ - at) * sizeof(tchild));
+	}
+
+	children_[at].widget_ = &widget;
+	children_vsize_ ++;
+
+	// replacement
+	children_[at].flags_ = VERTICAL_GROW_SEND_TO_CLIENT | HORIZONTAL_GROW_SEND_TO_CLIENT;
+}
+
 void tgrid::set_active(const bool active)
 {
 	for (int n = 0; n < children_vsize_; n ++) {
@@ -530,8 +637,8 @@ tpoint tgrid::calculate_best_size() const
 	col_width_.resize(cols_, 0);
 
 	// First get the sizes for all items.
-	for(unsigned row = 0; row < rows_; ++row) {
-		for(unsigned col = 0; col < cols_; ++col) {
+	for (unsigned row = 0; row < rows_; ++row) {
+		for (unsigned col = 0; col < cols_; ++col) {
 
 			const tpoint size = cell_get_best_size(child(row, col));
 
@@ -544,20 +651,6 @@ tpoint tgrid::calculate_best_size() const
 			}
 
 		}
-	}
-
-	for(unsigned row = 0; row < rows_; ++row) {
-		DBG_GUI_L << LOG_HEADER
-				<< " the row_height_ for row " << row
-				<< " will be " << row_height_[row]
-				<< ".\n";
-	}
-
-	for(unsigned col = 0; col < cols_; ++col) {
-		DBG_GUI_L << LOG_HEADER
-				<< " the col_width_ for column " << col
-				<< " will be " << col_width_[col]
-				<< ".\n";
 	}
 
 	const tpoint result(
@@ -599,6 +692,63 @@ tpoint tgrid::calculate_best_size_fix() const
 	return result;
 }
 
+int tgrid::column_request_reduce_width(const unsigned column, const unsigned maximum_width)
+{
+	// The minimum width required.
+	int required_width = 0;
+
+	for (size_t row = 0; row < rows_; ++ row) {
+		tgrid::tchild& cell = child(row, column);
+
+		if (cell.widget_->get_visible() == twidget::INVISIBLE) {
+			continue;
+		}
+		const tpoint size = cell.widget_->request_reduce_width(maximum_width - cell_border_space(cell).x);
+		if (!required_width || size.x > required_width) {
+
+			required_width = size.x;
+		}
+
+		if (size.y > static_cast<int>(row_height_[row])) {
+			row_height_[row] = size.y;
+		}
+	}
+
+	return required_width;
+}
+
+tpoint tgrid::request_reduce_width(const unsigned maximum_width)
+{
+	tpoint size(
+		std::accumulate(col_width_.begin(), col_width_.end(), 0),
+		std::accumulate(row_height_.begin(), row_height_.end(), 0));
+
+	VALIDATE(size.x > static_cast<int>(maximum_width), "current width must be large than maximum_width!");
+
+	const unsigned too_wide = size.x - maximum_width;
+	unsigned reduced = 0;
+	for (size_t col = 0; col < cols_; ++ col) {
+		if (too_wide - reduced >= col_width_[col]) {
+			continue;
+		}
+
+		const unsigned wanted_width = col_width_[col] - (too_wide - reduced);
+		const unsigned width = column_request_reduce_width(col, wanted_width);
+
+		if (width < col_width_[col]) {
+			// find and reduced one column.
+			size.x -= col_width_[col] - width;
+			col_width_[col] = width;
+
+			size.y = std::accumulate(row_height_.begin(), row_height_.end(), 0);
+			VALIDATE(size.x <= static_cast<int>(maximum_width), "reduced width must be not large than maximum_width!");
+			break;
+		}
+	}
+
+	return size;
+}
+
 bool tgrid::can_wrap() const
 {
 	for (int n = 0; n < children_vsize_; n ++) {
@@ -610,6 +760,47 @@ bool tgrid::can_wrap() const
 
 	// Inherited.
 	return twidget::can_wrap();
+}
+
+std::string tgrid::generate_layout_str(const int level) const
+{
+	std::stringstream ss, child_ss;
+	std::string str;
+
+	static std::vector<std::string> colors;
+	if (colors.empty()) {
+		colors.push_back("red");
+		colors.push_back("green");
+		colors.push_back("blue");
+		colors.push_back("yellow");
+	}
+
+	int y = 0;
+	for (std::vector<unsigned>::const_iterator it = row_height_.begin(); it != row_height_.end(); ++ it, y ++) {
+		int x = 0;
+		child_ss.str("");
+		for (std::vector<unsigned>::const_iterator it2 = col_width_.begin(); it2 != col_width_.end(); ++ it2, x ++) {
+			child_ss << "(" << x << "," << y << ")";
+			child_ss << "[" << *it2 << "," << *it << "]";
+
+			ss << tintegrate::generate_format(child_ss.str(), colors[level % colors.size()]);
+
+			twidget* widget = child(y, x).widget_;
+			str = widget->generate_layout_str(level + 1);
+			if (level < 2 && !str.empty()) {
+				child_ss.str("");
+				if (!widget->id().empty()) {
+					child_ss << widget->id();
+				} else {
+					child_ss << "--";
+				}
+				ss << "\n" << tintegrate::generate_format(child_ss.str(), colors[(level + 1)% colors.size()]); 
+				ss << str;
+			}
+		}
+	}
+	return ss.str();
+
 }
 
 void tgrid::place(const tpoint& origin, const tpoint& size)
@@ -715,12 +906,25 @@ void tgrid::place(const tpoint& origin, const tpoint& size)
 	}
 
 	// This shouldn't be possible...
-	std::stringstream err;
+	utils::string_map symbols;
+	std::stringstream tmp;
 	if (!parent()->id().empty()) {
-		err << tintegrate::generate_format(parent()->id(), "yellow");
+		tmp << parent()->id();
+	} else {
+		tmp << "--";
 	}
-	err << " tgrid::place, undesired best_size(" << best_size.x << ", " << best_size.y << ") vs size(" << size.x << ", " << size.y << ").";
-	VALIDATE(false, err.str());
+	symbols["parent"] = tintegrate::generate_format(tmp.str(), "red");
+	tmp.str("");
+	tmp << "(" << size.x << "," << size.y << ")";
+	symbols["layout_size"] = tintegrate::generate_format(tmp.str(), "red");
+	tmp.str("");
+	tmp << "(" << best_size.x << "," << best_size.y << ")";
+	symbols["best_size"] = tintegrate::generate_format(tmp.str(), "red");
+
+	tmp.str("");
+	tmp << "Place grid fail! It's parent widget: $parent\n\nLayout size that calcualted base best size and grow_factor: $layout_size\nNow recalculated best size: $best_size";
+	std::string err = vgettext("wesnoth-lib", tmp.str().c_str(), symbols);
+	VALIDATE(false, err);
 }
 
 void tgrid::place_fix(const tpoint& origin, const tpoint& size)
@@ -785,15 +989,12 @@ void tgrid::layout_children()
 	}
 }
 
-void tgrid::child_populate_dirty_list(twindow& caller,
-			const std::vector<twidget*>& call_stack)
+void tgrid::child_populate_dirty_list(twindow& caller, const std::vector<twidget*>& call_stack)
 {
-	assert(!call_stack.empty() && call_stack.back() == this);
+	VALIDATE(!call_stack.empty() && call_stack.back() == this, null_str);
 
 	for (int n = 0; n < children_vsize_; n ++) {
 		tchild& child = children_[n];
-
-		assert(child.widget_);
 
 		std::vector<twidget*> child_call_stack = call_stack;
 		child.widget_->populate_dirty_list(caller, child_call_stack);

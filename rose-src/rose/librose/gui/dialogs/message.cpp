@@ -70,13 +70,9 @@ void tmessage::pre_show(CVideo& /*video*/, twindow& window)
 {
 	// ***** Validate the required buttons ***** ***** ***** *****
 	tmessage_implementation::
-			init_button(window, buttons_[left_1], "left_side");
-	tmessage_implementation::
 			init_button(window, buttons_[cancel], "cancel");
 	tmessage_implementation::
 			init_button(window, buttons_[ok] ,"ok");
-	tmessage_implementation::
-			init_button(window, buttons_[right_1], "right_side");
 
 	// ***** ***** ***** ***** Set up the widgets ***** ***** ***** *****
 	if(!title_.empty()) {

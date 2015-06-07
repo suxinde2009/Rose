@@ -18,27 +18,41 @@
 #include "mkwin_controller.hpp"
 #include "unit_map.hpp"
 #include "gui/dialogs/mkwin_theme.hpp"
+#include "gui/dialogs/message.hpp"
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/toggle_button.hpp"
 #include "game_config.hpp"
+#include "formula_string_utils.hpp"
 
 #include <boost/bind.hpp>
 
-const std::string widget_prefix = "studio/widget/";
 static std::string miss_anim_err_str = "logic can only process map or canvas animation!";
 
-gui2::tcontrol_definition_ptr mkwin_display::find_widget(const std::string& type, const std::string& definition)
+gui2::tcontrol_definition_ptr mkwin_display::find_widget(display& disp, const std::string& type, const std::string& definition, const std::string& id)
 {
 	std::stringstream err;
+	utils::string_map symbols;
 	std::string definition2 = definition.empty()? "default": definition;
+
 	const gui2::tgui_definition::tcontrol_definition_map& controls = gui2::current_gui->second.control_definition;
 	if (!controls.count(type)) {
 		err << "Cannot find widget, type: " << type;
 		VALIDATE(false, err.str());
 	}
-	std::map<std::string, gui2::tcontrol_definition_ptr>::const_iterator it = controls.find(type)->second.find(definition2);
-	err << "Cannot find widget, type: " << type << ", definition: " << definition;
-	VALIDATE(it->second.get(), err.str());
+
+	const std::map<std::string, gui2::tcontrol_definition_ptr>& map = controls.find(type)->second;
+	std::map<std::string, gui2::tcontrol_definition_ptr>::const_iterator it = map.find(definition2);
+	if (it == map.end()) {
+		symbols["id"] = tintegrate::generate_format(id, "red");
+		symbols["type"] = tintegrate::generate_format(type, "red");
+		symbols["definition"] = tintegrate::generate_format(definition, "red");
+		symbols["default"] = tintegrate::generate_format("default", "green");
+
+		err << vgettext("wesnoth-lib", "Cannot find widget definition(id: $id, type: $type, definition: $definition)! Force to use definition $default.", symbols);
+		gui2::show_message(disp.video(), "", err.str());
+
+		it = map.find("default");
+	}
 	return it->second;
 }
 
@@ -49,7 +63,7 @@ mkwin_display::mkwin_display(mkwin_controller& controller, unit_map& units, CVid
 	, controller_(controller)
 	, units_(units)
 	, current_widget_type_()
-	, scroll_header_(true, false, "icon36")
+	, scroll_header_(true, false, "image_tab")
 {
 	min_zoom_ = 48;
 	max_zoom_ = 144;
@@ -57,7 +71,7 @@ mkwin_display::mkwin_display(mkwin_controller& controller, unit_map& units, CVid
 	show_hover_over_ = false;
 
 	// must use grid.
-	set_grid(true);
+	set_grid(controller.theme());
 
 	SDL_Rect screen = screen_area();
 	std::string patch = get_theme_patch();
@@ -66,19 +80,29 @@ mkwin_display::mkwin_display(mkwin_controller& controller, unit_map& units, CVid
 	
 	const gui2::tgui_definition::tcontrol_definition_map& controls = gui2::current_gui->second.control_definition;
 	std::map<std::string, gui2::tcontrol_definition_ptr>::const_iterator it = controls.find("spacer")->second.find("default");
-	spacer.first = "spacer";
-	spacer.second = it->second;
+	spacer = std::make_pair("spacer", it->second);
+
+	it = controls.find("toggle_panel")->second.find("default");
+	toggle_panel = std::make_pair("toggle_panel", it->second);
 
 	widget_palette_ = dynamic_cast<gui2::treport*>(get_theme_object("widget-palette"));
 	reload_widget_palette();
-	sheet_header_ = dynamic_cast<gui2::treport*>(get_theme_object("sheet-header"));
-	reload_sheet_header();
 
 	gui2::treport* report = dynamic_cast<gui2::treport*>(get_theme_object("scroll-header"));
 	scroll_header_.set_report(report);
+	scroll_header_.set_boddy(dynamic_cast<gui2::twidget*>(get_theme_object("palette_panel")));
 	reload_scroll_header();
 
 	click_widget(spacer.first, spacer.second->id);
+}
+
+std::string mkwin_display::get_theme_patch() const
+{
+	std::string id;
+	if (!controller_.theme()) {
+		id = "dialog";
+	}
+	return id;
 }
 
 gui2::ttheme* mkwin_display::create_theme_dlg(const config& cfg)
@@ -92,7 +116,6 @@ mkwin_display::~mkwin_display()
 
 void mkwin_display::pre_change_resolution(std::map<const std::string, bool>& actives)
 {
-	controller_.pre_change_resolution();
 }
 
 void mkwin_display::post_change_resolution(const std::map<const std::string, bool>& actives)
@@ -100,11 +123,9 @@ void mkwin_display::post_change_resolution(const std::map<const std::string, boo
 	widget_palette_ = dynamic_cast<gui2::treport*>(get_theme_object("widget-palette"));
 	reload_widget_palette();
 
-	sheet_header_ = dynamic_cast<gui2::treport*>(get_theme_object("sheet-header"));
-	reload_sheet_header();
-
 	gui2::treport* report = dynamic_cast<gui2::treport*>(get_theme_object("scroll-header"));
 	scroll_header_.set_report(report);
+	scroll_header_.set_boddy(dynamic_cast<gui2::twidget*>(get_theme_object("palette_panel")));
 	reload_scroll_header();
 
 	controller_.post_change_resolution();
@@ -163,15 +184,13 @@ void mkwin_display::reload_widget_palette()
 	if (exclude.empty()) {
 		exclude.insert(spacer.first);
 		exclude.insert("window");
-		exclude.insert("repeating_button");
 		exclude.insert("horizontal_scrollbar");
 		exclude.insert("vertical_scrollbar");
 		exclude.insert("slider");
-		exclude.insert("matrix");
-		exclude.insert("horizontal_listbox");
 	}
 	std::stringstream ss;
-	surface default_surf(image::get_image(widget_prefix + "default.png"));
+	surface default_surf(image::get_image(unit::widget_prefix + "bg.png"));
+	SDL_Rect dst_rect = create_rect(0, 0, 0, 0);
 	for (gui2::tgui_definition::tcontrol_definition_map::const_iterator it = controls.begin(); it != controls.end(); ++ it) {
 		const std::string& type = it->first;
 		if (exclude.find(type) != exclude.end()) {
@@ -179,9 +198,16 @@ void mkwin_display::reload_widget_palette()
 		}
 		for (std::map<std::string, gui2::tcontrol_definition_ptr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++ it2) {
 			const std::string& definition = it2->first;
-			const std::string filename = form_widget_png(type, definition);
+			const std::string filename = unit::form_widget_png(type, definition);
 			surface surf(image::get_image(filename));
-			surf = generate_pip_surface(default_surf, surf);
+			if (!surf) {
+				surf = default_surf;
+			}
+			surf.assign(make_neutral_surface(surf));
+
+			if (definition == "default") {
+				sdl_blit(image::get_image(unit::widget_prefix + "default.png"), NULL, surf, &dst_rect);
+			}
 
 			ss.str("");
 			ss << definition << "(" << it2->second->description << ")";
@@ -191,83 +217,33 @@ void mkwin_display::reload_widget_palette()
 		}
 	}
 
+	const config& core_config = controller_.core_config();
+	BOOST_FOREACH (const config& tpl, core_config.child_range("widget_template")) {
+		const std::string& id = tpl["id"].str();
+		const std::string filename = unit::form_widget_png(unit::tpl_type, id);
+		surface surf(image::get_image(filename));
+		if (!surf) {
+			surf = default_surf;
+		}
+
+		ss.str("");
+		ss << id << "(" << tpl["description"].str() << ")";
+		gui2::tbutton* widget = create_widget_button(controller_, ss.str(), unit::tpl_type, id);
+		widget->set_surface(surf, unit_size.x, unit_size.y);
+		widget_palette_->insert_child(*widget);
+	}
+
 	widget_palette_->replacement_children();
 	scroll_top(*widget_palette_);
 }
 
 gui2::ttoggle_button* create_sheet_button(mkwin_controller& controller, const t_string& tooltip, int index)
 {
-	gui2::ttoggle_button* widget = gui2::create_toggle_button(null_str, "sheet", NULL);
+	gui2::ttoggle_button* widget = gui2::create_toggle_button(null_str, "tab", NULL);
 	widget->set_tooltip(tooltip);
 	widget->set_radio(true);
 
-	widget->set_callback_state_change(boost::bind(&mkwin_controller::sheet_toggled, &controller, _1, index, true));
 	return widget;
-}
-
-void mkwin_display::reload_sheet_header()
-{
-	static int max_level = 15;
-	sheet_header_->erase_children();
-	
-	for (int i = 0; i < max_level; i ++) {
-		gui2::ttoggle_button* widget = create_sheet_button(controller_, null_str, i);
-		if (!i) {
-			widget->set_label("TOP");
-			widget->set_value(true);
-		}
-		sheet_header_->insert_child(*widget);
-	}
-
-	sheet_header_->replacement_children();
-
-	refresh_sheet_header(controller_.parent_nodes(), controller_.unit_nodes(), NULL);
-}
-
-void mkwin_display::refresh_sheet_header(const std::vector<tsheet_node>& parent_nodes, std::vector<tsheet_node>& unit_nodes, unit* u)
-{
-	static int max_level = 15;
-	const gui2::tgrid::tchild* children = sheet_header_->content_grid()->children();
-	size_t size = sheet_header_->content_grid()->children_vsize();
-	int fixes = parent_nodes.size();
-
-	std::stringstream ss;
-	for (int i = 1; i < fixes; i ++) {
-		gui2::ttoggle_button* widget = dynamic_cast<gui2::ttoggle_button*>(children[i].widget_);
-
-		const tsheet_node& node = parent_nodes[i];
-		widget->set_label(node.parent->child_tag(node.number));
-		widget->set_visible(gui2::twidget::VISIBLE);
-		widget->set_cookie(0);
-	}
-
-	unit_nodes.clear();
-	if (!u || !u->has_child()) {
-		for (int i = fixes; i < (int)size; i ++) {
-			children[i].widget_->set_visible(gui2::twidget::INVISIBLE);
-		}
-	} else {
-		bool grid = u->is_grid();
-		int childs = grid? 1: u->children().size();
-		for (int i = fixes; i < (int)size; i ++) {
-			gui2::ttoggle_button* widget = dynamic_cast<gui2::ttoggle_button*>(children[i].widget_);
-			if (i < fixes + childs) {
-				int number = i - fixes;
-				unit_nodes.push_back(tsheet_node(u, number));
-				widget->set_label(u->child_tag(number));
-				widget->set_visible(gui2::twidget::VISIBLE);
-			} else {
-				widget->set_visible(gui2::twidget::INVISIBLE);
-			}
-		}
-	}
-	sheet_header_->replacement_children();
-}
-
-gui2::ttoggle_button* mkwin_display::sheet_widget(int index) const
-{
-	const gui2::tgrid::tchild* children = sheet_header_->content_grid()->children();
-	return dynamic_cast<gui2::ttoggle_button*>(children[index].widget_);
 }
 
 gui2::ttoggle_button* mkwin_display::scroll_header_widget(int index) const
@@ -279,8 +255,8 @@ gui2::ttoggle_button* mkwin_display::scroll_header_widget(int index) const
 void mkwin_display::reload_scroll_header()
 {
 	std::vector<std::string> images;
-	images.push_back("buttons/studio/widget-palette.png");
-	images.push_back("buttons/studio/object-list.png");
+	images.push_back("buttons/widget-palette.png");
+	images.push_back("buttons/object-list.png");
 
 	scroll_header_.erase_children();
 	
@@ -308,38 +284,31 @@ void mkwin_display::scroll_bottom(gui2::treport& widget)
 
 void mkwin_display::click_widget(const std::string& type, const std::string& definition)
 {
-	const gui2::tgui_definition::tcontrol_definition_map& controls = gui2::current_gui->second.control_definition;
-	const std::map<std::string, gui2::tcontrol_definition_ptr>& definitions = controls.find(type)->second;
-	gui2::tcontrol_definition_ptr widget = definitions.find(definition)->second;
+	surface surf;
+	if (type != unit::tpl_type) {
+		const gui2::tgui_definition::tcontrol_definition_map& controls = gui2::current_gui->second.control_definition;
+		const std::map<std::string, gui2::tcontrol_definition_ptr>& definitions = controls.find(type)->second;
+		gui2::tcontrol_definition_ptr widget = definitions.find(definition)->second;
 
-	if (selected_widget_.second != widget) {
-		selected_widget_ = std::make_pair(type, widget);
-		surface surf;
-		if (type != spacer.first) {
-			surf = image::get_image(form_widget_png(type, widget->id));
+		if (selected_widget_.second != widget) {
+			selected_widget_ = std::make_pair(type, widget);
+			if (type != spacer.first) {
+				surf = image::get_image(unit::form_widget_png(type, widget->id));
+			}
 		}
-		set_mouse_overlay(surf);
+	} else {
+		selected_widget_ = std::make_pair(unit::form_widget_tpl(definition), gui2::tcontrol_definition_ptr());
+		surf = image::get_image(unit::form_widget_png(type, definition));
 	}
+	set_mouse_overlay(surf);
 }
 
 void mkwin_display::click_grid(const std::string& type)
 {
 	if (selected_widget_.first != type) {
 		selected_widget_ = std::make_pair(type, gui2::tcontrol_definition_ptr());
-        surface surf = image::get_image("buttons/studio/grid.png");
+        surface surf = image::get_image("buttons/grid.png");
 		set_mouse_overlay(surf);
-	}
-}
-
-void mkwin_display::sheet_toggled(gui2::ttoggle_button& widget)
-{
-	const gui2::tgrid::tchild* children = sheet_header_->content_grid()->children();
-	size_t size = sheet_header_->content_grid()->children_vsize();
-	for (int i = 0; i < (int)size; i ++) {
-		gui2::ttoggle_button* that = dynamic_cast<gui2::ttoggle_button*>(children[i].widget_);
-		if (that != &widget && that->get_value()) {
-			that->set_value(false);
-		}
 	}
 }
 
@@ -379,6 +348,99 @@ void mkwin_display::set_mouse_overlay(surface& image_fg)
 	using_mouseover_hex_overlay_ = image;
 }
 
+void mkwin_display::draw_minimap_units(surface& screen)
+{
+	static std::vector<SDL_Color> candidates;
+	if (candidates.empty()) {
+		candidates.push_back(font::TITLE_COLOR);
+		candidates.push_back(font::BAD_COLOR);
+		candidates.push_back(font::GRAY_COLOR);
+		candidates.push_back(font::BLACK_COLOR);
+		candidates.push_back(font::GOOD_COLOR);
+	}
+	
+	double xscaling = 1.0 * minimap_location_.w / map_->w();
+	double yscaling = 1.0 * minimap_location_.h / map_->h();
+
+	if (controller_.theme()) {
+		unit* current_unit = controller_.current_unit();
+		if (!current_unit) {
+			std::vector<SDL_Rect> rects;
+			xscaling = 1.0 * minimap_location_.w / (map_->w() * hex_width());
+			yscaling = 1.0 * minimap_location_.h / (map_->h() * hex_width());
+
+			for (unit_map::const_iterator it = units_.begin(); it != units_.end(); ++ it) {
+				const unit* u = dynamic_cast<const unit*>(&*it);
+				
+				if (u->type() != unit::WIDGET) {
+					continue;
+				}
+
+				const SDL_Rect& rect = u->get_rect();
+				double u_x = rect.x * xscaling;
+				double u_y = rect.y * yscaling;
+				double u_w = rect.w * xscaling;
+				double u_h = rect.h * yscaling;
+
+				SDL_Color col = font::GOOD_COLOR;
+				if (u->cell().id != theme::id_main_map) {
+					int level = 1;	// level = 1 is red.
+					for (std::vector<SDL_Rect>::const_iterator it = rects.begin(); it != rects.end(); ++ it) {
+						const SDL_Rect& that = *it;
+						if (rects_overlap(that, rect)) {
+							level ++;
+						}
+					}
+					col = candidates[level % candidates.size()];;
+				}
+				rects.push_back(rect);
+
+				const Uint32 mapped_col = SDL_MapRGB(screen->format, col.r, col.g, col.b);
+
+				draw_rectangle(minimap_location_.x + round_double(u_x)
+					, minimap_location_.y + round_double(u_y)
+					, round_double(u_w)
+					, round_double(u_h)
+					, mapped_col, screen);
+
+			}
+		} else {
+			std::vector<unit::tchild>& children = current_unit->children();
+			for (std::vector<unit::tchild>::const_iterator it = children.begin(); it != children.end(); ++ it) {
+				const unit::tchild& child = *it;
+				child.draw_minimap_architecture(screen, minimap_location_, xscaling, yscaling, 1);
+			}
+		}
+
+	} else if (controller_.top().window) {
+		controller_.top().draw_minimap_architecture(screen, minimap_location_, xscaling, yscaling, 0);
+	}
+
+	const unit* copied_unit = controller_.copied_unit();
+	if (copied_unit) {
+		double u_x = copied_unit->get_location().x * xscaling;
+		double u_y = copied_unit->get_location().y * yscaling;
+		double u_w = xscaling;
+		double u_h = yscaling;
+
+		const SDL_Color col = font::GOOD_COLOR;
+		const Uint32 mapped_col = SDL_MapRGB(screen->format, col.r, col.g, col.b);
+
+		SDL_Rect r = create_rect(minimap_location_.x + round_double(u_x)
+				, minimap_location_.y + round_double(u_y)
+				, round_double(u_w)
+				, round_double(u_h));
+
+		sdl_fill_rect(screen, &r, mapped_col);
+/*
+		{
+			surface_lock locker(screen);
+			draw_circle(screen, mapped_col, r.x + r.w / 2, r.y + r.h / 2, r.w / 2 + 2, false);
+		}
+*/
+	}
+}
+
 void mkwin_display::post_zoom()
 {
 	if (!controller_.in_theme_top()) {
@@ -408,7 +470,6 @@ void mkwin_display::pre_draw(rect_of_hexes& hexes)
 
 void mkwin_display::draw_invalidated()
 {
-	map_location loc_n, loc_ne;
 	std::vector<map_location> unit_invals;
 
 	for (size_t i = 0; i < draw_area_unit_size_; i ++) {

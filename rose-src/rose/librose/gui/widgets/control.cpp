@@ -41,6 +41,8 @@
 
 namespace gui2 {
 
+bool tcontrol::force_add_to_dirty_list = false;
+
 tcontrol::tcontrol(const unsigned canvas_count)
 	: definition_("default")
 	, label_()
@@ -267,6 +269,11 @@ tpoint tcontrol::calculate_best_size() const
 	return result;
 }
 
+tpoint tcontrol::request_reduce_width(const unsigned maximum_width)
+{
+	return get_best_size();
+}
+
 void tcontrol::calculate_integrate()
 {
 	if (!text_editable_) {
@@ -278,7 +285,7 @@ void tcontrol::calculate_integrate()
 	int max = get_text_maximum_width();
 	if (max > 0) {
 		// before place, w_ = 0. it indicate not ready.
-		integrate_ = new tintegrate(label_, get_text_maximum_width(), -1, config()->text_font_size, font::NORMAL_COLOR, text_editable_);
+		integrate_ = new tintegrate(label_, get_text_maximum_width(), -1, config()->text_font_size, font::BLACK_COLOR, text_editable_);
 		if (!locator_.empty()) {
 			integrate_->fill_locator_rect(locator_, true);
 		}
@@ -368,7 +375,6 @@ void tcontrol::set_label(const std::string& label)
 
 	label_ = label;
 	label_size_.second.x = 0;
-	set_layout_size(tpoint(0, 0));
 	update_canvas();
 	set_dirty();
 
@@ -474,6 +480,14 @@ void tcontrol::erase_animation(int id)
 	}
 }
 
+void tcontrol::set_canvas_variable(const std::string& name, const variant& value)
+{
+	BOOST_FOREACH(tcanvas& canvas, canvas_) {
+		canvas.set_variable("border", value);
+	}
+	set_dirty();
+}
+
 class tshare_canvas_integrate_lock
 {
 public:
@@ -505,6 +519,13 @@ void tcontrol::impl_draw_background(
 	tshare_canvas_integrate_lock lock2(integrate_);
 
 	canvas(get_state()).blit(frame_buffer, calculate_blitting_rectangle(x_offset, y_offset), get_dirty(), pre_anims_, post_anims_);
+}
+
+void tcontrol::child_populate_dirty_list(twindow& caller, const std::vector<twidget*>& call_stack)
+{
+	if (force_add_to_dirty_list && !canvas_.empty()) {
+		caller.add_to_dirty_list(call_stack);
+	}
 }
 
 void tcontrol::definition_load_configuration(const std::string& control_type)

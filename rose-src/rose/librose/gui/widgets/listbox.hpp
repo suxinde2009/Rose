@@ -18,23 +18,53 @@
 
 #ifndef GUI2_EXPERIMENTAL_LISTBOX
 
-#include "gui/widgets/generator.hpp"
 #include "gui/widgets/scrollbar_container.hpp"
 
 namespace gui2 {
 
 namespace implementation {
 	struct tbuilder_listbox;
-	struct tbuilder_horizontal_listbox;
 }
 
+class ttoggle_panel;
+
 /** The listbox class. */
-class tlistbox: public tscrollbar_container, public tradio_page
+class tlistbox: public tscrollbar_container
 {
 	friend struct implementation::tbuilder_listbox;
-	friend struct implementation::tbuilder_horizontal_listbox;
 	friend class tdebug_layout_graph;
 public:
+	class tgrid2: public tgrid
+	{
+	public:
+		tgrid2(tlistbox& listbox)
+			: listbox_(listbox)
+		{}
+
+		tpoint calculate_best_size() const
+		{
+			return listbox_.list_calculate_best_size();
+		}
+
+		void place(const tpoint& origin, const tpoint& size)
+		{
+			listbox_.list_place(origin, size);
+		}
+
+		void set_origin(const tpoint& origin)
+		{
+			listbox_.list_set_origin(origin);
+		}
+
+		void set_visible_area(const SDL_Rect& area)
+		{
+			listbox_.list_set_visible_area(area);
+		}
+
+	private:
+		tlistbox& listbox_;
+	};
+
 	/**
 	 * Constructor.
 	 *
@@ -46,22 +76,9 @@ public:
 	 * @param select              Select an item when selected, if false it
 	 *                            changes the visible state instead.
 	 */
-	tlistbox(const std::vector<tradio_page::tpage>& pages, const bool has_minimum, const bool has_maximum,
-			const tgenerator_::tplacement placement, const bool select);
+	tlistbox();
 
 	/***** ***** ***** ***** Row handling. ***** ***** ****** *****/
-	/**
-	 * When an item in the list is selected by the user we need to
-	 * update the state. We installed a callback handler which
-	 * calls us.
-	 *
-	 * @param item                The data send to the set_members of the
-	 *                            widgets.
-	 * @param index               The item before which to add the new item,
-	 *                            0 == begin, -1 == end.
-	 */
-	void add_row(const string_map& item, const int index = -1);
-
 	/**
 	 * Adds single row to the grid.
 	 *
@@ -91,16 +108,16 @@ public:
 	 * @param count               The number of rows to remove, 0 means all
 	 *                            rows (starting from row).
 	 */
-	void remove_row(const unsigned row, unsigned count = 1);
+	void remove_row(int row, int count = 1);
 
 	/** Removes all the rows in the listbox, clearing it. */
 	void clear();
 
 	/** Sort all items. */
-	void sort(void* caller, bool (*callback)(void*, tgrid&, tgrid&));
+	void sort(void* caller, bool (*callback)(void*, twidget&, twidget&));
 
 	/** Returns the number of items in the listbox. */
-	unsigned get_item_count() const;
+	int get_item_count() const;
 
 	/**
 	 * Makes a row active or inactive.
@@ -118,7 +135,7 @@ public:
 	 * @param row                 The row to show or hide.
 	 * @param shown               true visible, false invisible.
 	 */
-	void set_row_shown(const unsigned row, const bool shown);
+	void set_row_shown(const int row, const bool visible);
 
 	/**
 	 * Makes a row visible or invisible.
@@ -135,7 +152,7 @@ public:
 	void set_row_shown(const std::vector<bool>& shown);
 
 	/**
-	 * Returns the grid of the wanted row.
+	 * Returns the panel of the wanted row.
 	 *
 	 * There's only a const version since allowing callers to modify the grid
 	 * behind our backs might give problems. We return a pointer instead of a
@@ -144,18 +161,9 @@ public:
 	 *
 	 * @param row                 The row to get the grid from, the caller has
 	 *                            to make sure the row is a valid row.
-	 * @returns                   The grid of the wanted row.
+	 * @returns                   The panel of the wanted row.
 	 */
-	const tgrid* get_row_grid(const unsigned row) const;
-
-	/**
-	 * The possibly-giving-problems nonconst version of get_row_grid
-	 *
-	 * @param row                 The row to get the grid from, the caller has
-	 *                            to make sure the row is a valid row.
-	 * @returns                   The grid of the wanted row.
-	 */
-	tgrid* get_row_grid(const unsigned row);
+	twidget* get_row_panel(const unsigned row) const;
 
 	/**
 	 * Selectes a row.
@@ -163,7 +171,9 @@ public:
 	 * @param row                 The row to select.
 	 * @param select              Select or deselect the row.
 	 */
-	bool select_row(const unsigned row, const bool select = true);
+	void select_row(const unsigned row);
+
+	void select_row(twidget* widget);
 
 	/**
 	 * Returns the first selected row
@@ -173,13 +183,16 @@ public:
 	 */
 	int get_selected_row() const;
 
+	/**
+	 * Scroll to row.
+	 */
+	void scroll_to_row(const unsigned row);
+
 	/** Function to call after the user clicked on a row. */
-	void list_item_clicked(twidget* caller);
+	bool list_item_clicked(twidget* caller);
 
 	/** Inherited from tcontainer_. */
 	void set_self_active(const bool /*active*/)  {}
-//		{ state_ = active ? ENABLED : DISABLED; }
-//
 
 	/***** ***** ***** ***** inherited ***** ***** ****** *****/
 
@@ -198,6 +211,9 @@ public:
 
 	void set_list_builder(tbuilder_grid_ptr list_builder);
 
+	void set_dynamic(bool val) { dynamic_ = val; }
+	bool dynamic() const { return dynamic_; }
+
 protected:
 
 	/***** ***** ***** ***** keyboard functions ***** ***** ***** *****/
@@ -208,11 +224,8 @@ protected:
 	/** Inherited from tscrollbar_container. */
 	void handle_key_down_arrow(SDLMod modifier, bool& handled);
 
-	/** Inherited from tscrollbar_container. */
-	void handle_key_left_arrow(SDLMod modifier, bool& handled);
-
-	/** Inherited from tscrollbar_container. */
-	void handle_key_right_arrow(SDLMod modifier, bool& handled);
+	int list_grid_handle_key_up_arrow(SDLMod /*modifier*/, bool& handled);
+	int list_grid_handle_key_down_arrow(SDLMod /*modifier*/, bool& handled);
 
 private:
 	/**
@@ -241,6 +254,14 @@ private:
 			tbuilder_grid_const_ptr header,
 			tbuilder_grid_const_ptr footer,
 			const std::vector<string_map>& list_data);
+
+	tpoint list_calculate_best_size() const;
+	void list_place(const tpoint& origin, const tpoint& size);
+	void list_set_origin(const tpoint& origin);
+	void list_set_visible_area(const SDL_Rect& area);
+
+	ttoggle_panel* next_selectable_row(int start, bool invert) const;
+
 	/**
 	 * Contains a pointer to the generator.
 	 *
@@ -248,10 +269,13 @@ private:
 	 * of the tscrollbar_container super class and freed when it's grid is
 	 * freed.
 	 */
-	tgenerator_* generator_;
+	tgrid2* list_grid_;
 
 	/** Contains the builder for the new items. */
 	tbuilder_grid_const_ptr list_builder_;
+
+	bool dynamic_;
+	int cursel_;
 
 	/**
 	 * This callback is called when the value in the listbox changes.
@@ -263,7 +287,7 @@ private:
 	void (*callback_value_changed_) (twidget*);
 
 	/** Inherited from tscrollbar_container. */
-	virtual void set_content_size(const tpoint& origin, const tpoint& size);
+	void place_content_grid(const tpoint& content_origin, const tpoint& content_size, const tpoint& desire_origin);
 
 	/** Inherited from tcontrol. */
 	const std::string& get_control_type() const;

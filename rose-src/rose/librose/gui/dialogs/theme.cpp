@@ -149,61 +149,137 @@ static config &find_ref(const std::string &id, config &cfg, bool remove = false)
 	return empty_config;
 }
 
+void full_rect_cfg(const config& cfg, config& result)
+{
+	static std::vector<std::string> rect_fields;
+	if (rect_fields.empty()) {
+		rect_fields.push_back("rect");
+		rect_fields.push_back("ref");
+		rect_fields.push_back("xanchor");
+		rect_fields.push_back("yanchor");
+	}
+	for (std::vector<std::string>::const_iterator it = rect_fields.begin(); it != rect_fields.end(); ++ it) {
+		const std::string& key = *it;
+		if (cfg.has_attribute(key)) {
+			result[key] = cfg[key];
+
+		} else {
+			result[key] = null_str;
+		}
+	}
+}
+
+config& fill_rect_cfg(std::map<std::string, config>& cache, config& main_res, const std::string& id, const config& chg)
+{
+	config chg2;
+	std::map<std::string, config>::iterator it = cache.find(id);
+	if (it == cache.end()) {
+		// has been no data, fill data from main_res.
+		const config& target = find_ref(id, main_res);
+		if (!target.empty()) {
+			full_rect_cfg(target, chg2);
+			chg2["id"] = id;
+		}
+		cache.insert(std::make_pair(id, chg2));
+		it = cache.find(id);
+	}
+	if (!it->second.empty()) {
+		// verlay with current cfg
+		it->second.merge_attributes(chg);
+	}
+	return it->second;
+}
+
 static const config& modify_top_cfg_according_to_mode(const std::string& patch, const config& top_cfg, config& tmp)
 {
 	if (patch.empty()) {
 		return top_cfg;
 	}
-	if (const config& sub = top_cfg.child(patch)) {
-		tmp = top_cfg;
-		BOOST_FOREACH (const config::any_child& child, sub.all_children_range()) {
-			bool is_resolution = true;
-			config* find = &tmp.find_child("resolution", "id", child.key);
-			if (!(*find)) {
-				is_resolution = false;
-				find = &tmp.find_child("partialresolution", "id", child.key);
+	const config& sub = top_cfg.child(patch);
+	if (!sub) {
+		return top_cfg;
+	}
+
+	std::map<std::string, config> change_cache;
+
+	std::vector<std::string> res_ids;
+	res_ids.push_back("1024x768");
+	res_ids.push_back("640x480");
+	res_ids.push_back("480x320");
+
+	config* main_res = NULL;
+	tmp = top_cfg;
+	for (std::vector<std::string>::const_iterator it = res_ids.begin(); it != res_ids.end(); ++ it) {
+		const std::string& key = *it;
+		const config& cfg = sub.child(key);
+
+		bool is_resolution = it == res_ids.begin();
+		config* find = NULL;
+		if (is_resolution) {
+			find = &tmp.find_child("resolution", "id", key);
+			main_res = find;
+		} else {
+			find = &tmp.find_child("partialresolution", "id", key);
+		}
+
+		if (!*find) {
+			VALIDATE(!is_resolution, "Theme must define 1024x768!");
+			continue;
+		}
+		if (cfg) {
+			BOOST_FOREACH (const config &rm, cfg.child_range("remove")) {
+				if (is_resolution) {
+					find_ref(rm["id"], *find, true);
+				} else {
+					config& find2 = find->find_child("remove", "id", rm["id"]);
+					if (!find2) {
+						find->add_child("remove", rm);
+					}
+				}
 			}
-			if (*find) {
-				BOOST_FOREACH (const config &rm, child.cfg.child_range("remove")) {
-					if (is_resolution) {
-						find_ref(rm["id"], *find, true);
+
+			BOOST_FOREACH (const config &chg, cfg.child_range("change")) {
+				const std::string& id = chg["id"];
+				const config& chg2 = fill_rect_cfg(change_cache, *main_res, id, chg);
+
+				if (is_resolution) {
+					config& target = find_ref(id, *find);
+					if (!target.empty()) {
+						target.merge_attributes(chg2);
+					}
+
+				} else {
+					config& find2 = find->find_child("change", "id", id);
+					if (find2) {
+						find2.merge_attributes(chg2);
 					} else {
-						config& find2 = find->find_child("remove", "id", rm["id"]);
-						if (!find2) {
-							find->add_child("remove", rm);
-						}
+						find->add_child("change", chg2);
 					}
 				}
+			}
 
-				BOOST_FOREACH (const config &chg, child.cfg.child_range("change")) {
-					if (is_resolution) {
-						config& target = find_ref(chg["id"], *find);
-						target.merge_attributes(chg);
-					} else {
-						config& find2 = find->find_child("change", "id", chg["id"]);
-						if (find2) {
-							find2.merge_attributes(chg);
-						} else {
-							find->add_child("change", chg);
-						}
-					}
+			BOOST_FOREACH (const config &add, cfg.child_range("add")) {
+				if (!is_resolution) {
+					continue;
 				}
-
-				BOOST_FOREACH (const config &add, child.cfg.child_range("add")) {
-					if (!is_resolution) {
-						continue;
-					}
-					const std::string parent = add["parent"].str();
-					config& target = parent.empty()? *find: find_ref(parent, *find);
-					BOOST_FOREACH (const config::any_child &j, add.all_children_range()) {
-						target.add_child(j.key, j.cfg);
-					}
+				const std::string parent = add["id"].str();
+				config& target = parent.empty()? *find: find_ref(parent, *find);
+				BOOST_FOREACH (const config::any_child &j, add.all_children_range()) {
+					target.add_child(j.key, j.cfg);
+				}
+			}
+		} else {
+			for (std::map<std::string, config>::const_iterator it2 = change_cache.begin(); it2 != change_cache.end(); ++ it2) {
+				config& find2 = find->find_child("change", "id", it2->first);
+				if (find2) {
+					find2.merge_attributes(it2->second);
+				} else {
+					find->add_child("change", it2->second);
 				}
 			}
 		}
-		return tmp;
 	}
-	return top_cfg;
+	return tmp;
 }
 
 // I make sure there is a 480x320 [resolution] in [theme]. so:
@@ -276,13 +352,6 @@ static void expand_partialresolution(const std::string& patch, config& dst_cfg, 
 
 static void do_resolve_rects(const config& cfg, config& resolved_config, config* resol_cfg = NULL) 
 {
-	// recursively resolve children
-	BOOST_FOREACH (const config::any_child &value, cfg.all_children_range()) {
-		config &childcfg = resolved_config.add_child(value.key);
-		do_resolve_rects(value.cfg, childcfg,
-			value.key == "resolution" ? &childcfg : resol_cfg);
-	}
-
 	// copy all key/values
 	resolved_config.merge_attributes(cfg);
 
@@ -308,6 +377,13 @@ static void do_resolve_rects(const config& cfg, config& resolved_config, config*
 	// resolve the rect value to absolute coordinates
 	if (!cfg["rect"].empty()) {
 		resolved_config["rect"] = resolve_rect(cfg["rect"]);
+	}
+
+	// recursively resolve children
+	BOOST_FOREACH (const config::any_child &value, cfg.all_children_range()) {
+		config &childcfg = resolved_config.add_child(value.key);
+		do_resolve_rects(value.cfg, childcfg,
+			value.key == "resolution" ? &childcfg : resol_cfg);
 	}
 }
 
@@ -512,11 +588,7 @@ gui2::tbutton* create_context_button(display& disp, const std::string& main, con
 	widget->set_visible(gui2::twidget::INVISIBLE);
 
 	std::stringstream file;
-	file << std::string("buttons/");
-	if (!game_config::app.empty()) {
-		file << game_config::app << "/";
-	}
-	file << id << ".png";
+	file << "buttons/" << id << ".png";
 	// set surface
 	surface surf = image::get_image(file.str());
 	if (surf) {
@@ -682,7 +754,7 @@ void ttheme::pre_show(CVideo& video, twindow& window)
 	join();
 
 	hotkey::insert_hotkey(HOTKEY_ZOOM_IN, "zoomin", _("Zoom In"));
-	hotkey::insert_hotkey(HOTKEY_ZOOM_OUT, "zoomout", _("Zoom In"));
+	hotkey::insert_hotkey(HOTKEY_ZOOM_OUT, "zoomout", _("Zoom Out"));
 	hotkey::insert_hotkey(HOTKEY_ZOOM_DEFAULT, "zoomdefault", _("Default Zoom"));
 	hotkey::insert_hotkey(HOTKEY_SCREENSHOT, "screenshop", _("Screenshot"));
 	hotkey::insert_hotkey(HOTKEY_MAP_SCREENSHOT, "mapscreenshop", _("Map Screenshot"));
@@ -690,6 +762,7 @@ void ttheme::pre_show(CVideo& video, twindow& window)
 	hotkey::insert_hotkey(HOTKEY_UNDO, "undo", _("Undo"));
 	hotkey::insert_hotkey(HOTKEY_REDO, "redo", _("Redo"));
 	hotkey::insert_hotkey(HOTKEY_COPY, "copy", _("Copy"));
+	hotkey::insert_hotkey(HOTKEY_CUT, "cut", _("Cut"));
 	hotkey::insert_hotkey(HOTKEY_PASTE, "paste", _("Paste"));
 	hotkey::insert_hotkey(HOTKEY_HELP, "help", _("Help"));
 	hotkey::insert_hotkey(HOTKEY_SYSTEM, "system", _("System"));

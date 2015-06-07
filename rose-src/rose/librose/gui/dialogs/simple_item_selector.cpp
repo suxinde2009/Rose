@@ -19,11 +19,7 @@
 
 #include "gui/widgets/button.hpp"
 #include "gui/widgets/label.hpp"
-#ifdef GUI2_EXPERIMENTAL_LISTBOX
-	#include "gui/widgets/list.hpp"
-#else
-	#include "gui/widgets/listbox.hpp"
-#endif
+#include "gui/widgets/listbox.hpp"
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/window.hpp"
 
@@ -98,7 +94,7 @@ void tsimple_item_selector::pre_show(CVideo& /*video*/, twindow& window)
 		list.add_row(data);
 	}
 
-	if(index_ != -1 && static_cast<unsigned>(index_) < list.get_item_count()) {
+	if(index_ != -1 && index_ < list.get_item_count()) {
 		list.select_row(index_);
 	}
 

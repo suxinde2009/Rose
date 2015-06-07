@@ -344,10 +344,9 @@ void tbrowse::add_row(twindow& window, tlistbox& list, const std::string& name, 
 	list.add_row(list_item_item);
 
 	int index = list.get_item_count() - 1;
-	tgrid* grid_ptr = list.get_row_grid(index);
-	ttoggle_panel* toggle = dynamic_cast<ttoggle_panel*>(grid_ptr->find("_toggle", true));
+	ttoggle_panel* panel = dynamic_cast<ttoggle_panel*>(list.get_row_panel(index));
 
-	tbutton* button = find_widget<tbutton>(grid_ptr, "open", false, true);
+	tbutton* button = find_widget<tbutton>(panel, "open", false, true);
 	if (dir) {
 		connect_signal_mouse_left_click(
 			*button
@@ -359,6 +358,17 @@ void tbrowse::add_row(twindow& window, tlistbox& list, const std::string& name, 
 				, _4
 				, (int)true
 				, (int)index));
+
+		panel->connect_signal<event::LEFT_BUTTON_DOUBLE_CLICK>(boost::bind(
+				  &tbrowse::open
+				, this
+				, boost::ref(window)
+				, _3
+				, _4
+				, (int)true
+				, (int)index)
+			, event::tdispatcher::back_pre_child);
+
 	} else {
 		button->set_visible(twidget::HIDDEN);
 		button->set_active(false);
@@ -374,6 +384,7 @@ void tbrowse::reload_file_table(twindow& window, int cursel)
 	for (std::set<tfile>::const_iterator it = dirs_in_current_dir_.begin(); it != dirs_in_current_dir_.end(); ++ it) {
 		const tfile& file = *it;
 		add_row(window, *list, file.name, true);
+
 	}
 	for (std::set<tfile>::const_iterator it = files_in_current_dir_.begin(); it != files_in_current_dir_.end(); ++ it) {
 		const tfile& file = *it;
@@ -505,6 +516,15 @@ void tbrowse::item_selected(twindow& window)
 	}
 
 	set_ok_active(window, dir);
+}
+
+void tbrowse::item_double_click(twindow& window)
+{
+	tlistbox& list = find_widget<tlistbox>(&window, "default", false);
+	int row = list.get_selected_row();
+
+	bool handled, halt;
+	open(window, handled, halt, true, row);
 }
 
 void tbrowse::set_ok_active(twindow& window, tristate dir)

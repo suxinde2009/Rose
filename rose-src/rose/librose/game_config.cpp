@@ -57,7 +57,7 @@ namespace game_config
 	unsigned lobby_network_timer = 100;
 	unsigned lobby_refresh = 4000;
 	const int gold_carryover_percentage = 80;
-	const std::string rose_version = "0.0.5";
+	const std::string rose_version = "0.0.6";
 	std::string version = "1.0.31";
 	version_info wesnoth_version(version);
 	int reside_troop_increase_loyalty = 50;

@@ -60,6 +60,7 @@ public:
 	bool consistent() const { return !rect_.w || !rect_.h; }
 	const SDL_Rect& get_rect() const { return rect_; }
 	virtual void set_rect(const SDL_Rect& rect);
+	void set_rect2(const SDL_Rect& rect);
 
 	int get_map_index() const { return map_index_; }
 	void set_map_index(int index) { map_index_ = index; }
@@ -79,7 +80,9 @@ protected:
 	std::set<map_location> touch_locs_;
 	std::set<map_location> draw_locs_;
 	bool base_;
+
 	bool refreshing_;
+	size_t redraw_counter_;
 
 	SDL_Rect rect_;
 

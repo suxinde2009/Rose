@@ -32,26 +32,23 @@ namespace gui2 {
 class tmode_navigate
 {
 public:
-	explicit tmode_navigate(mkwin_controller& controller, display& disp, tdialog& dialog, bool read_only);
+	tmode_navigate(mkwin_controller& controller, display& disp);
 
 protected:
-	void pre_show(twindow& window);
+	void pre_show(ttabbar& navigate, twindow& window, const std::string& id);
 
-	void append_mode(twindow& window);
+	void append_patch(ttabbar& navigate, twindow& window);
+	void rename_patch(ttabbar& navigate, twindow& window, int at);
+	void erase_patch(ttabbar& navigate, twindow& window, int at);
 
-	void reload_navigate(twindow& window);
-	virtual void toggle_tabbar(twidget* widget);
+	void reload_navigate(ttabbar& navigate, twindow& window);
 
-	virtual std::string form_tab_label(int at) const = 0;
-	void reload_tab_label() const;
+	virtual std::string form_tab_label(ttabbar& navigate, int at) const = 0;
+	void reload_tab_label(ttabbar& navigate) const;
+
 protected:
 	display& disp_;
 	mkwin_controller& controller_;
-	tdialog& dialog_;
-	bool read_only_;
-
-	ttabbar navigate_;
-	int current_tab_;
 };
 
 

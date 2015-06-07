@@ -733,6 +733,15 @@ void ttext_box::place(const tpoint& origin, const tpoint& size)
 	update_offsets();
 }
 
+void ttext_box::set_visible_area(const SDL_Rect& area)
+{
+	tcontrol::set_visible_area(area);
+	BOOST_FOREACH(tcanvas& tmp, canvas()) {
+		tmp.set_variable("visible_y", variant(area.y - y_));
+		tmp.set_variable("visible_height", variant(area.h));
+	}
+}
+
 void ttext_box::cursor_timer_handler()
 {
 	if (SDL_GetTicks() > forbid_hide_ticks_) {
@@ -799,6 +808,7 @@ void ttext_box::update_canvas()
 		}
 	}
 
+	const SDL_Rect dirty_rect = get_dirty_rect();
 	/***** Set in all canvases *****/
 	
 	BOOST_FOREACH(tcanvas& tmp, canvas()) {
@@ -823,6 +833,9 @@ void ttext_box::update_canvas()
 
 		tmp.set_variable("selection_width_iii", variant(selection_width_iii));
 		tmp.set_variable("selection_height_iii", variant(selection_height_iii));
+
+		tmp.set_variable("visible_y", variant(dirty_rect.y - y_));
+		tmp.set_variable("visible_height", variant(dirty_rect.h));
 	}
 }
 

@@ -467,9 +467,9 @@ void tline::draw(surface& canvas
 	surface_lock locker(canvas);
 	if(x1 > x2) {
 		// invert points
-		draw_line(canvas, color_, x2, y2, x1, y1);
+		draw_line(canvas, color_, x2, y2, x1, y1, true);
 	} else {
-		draw_line(canvas, color_, x1, y1, x2, y2);
+		draw_line(canvas, color_, x1, y1, x2, y2, true);
 	}
 }
 
@@ -563,7 +563,7 @@ trectangle::trectangle(const config& cfg)
  * See [[#general_variables|Line]].
  *
  */
-	if(border_color_ == 0) {
+	if (border_color_ == 0) {
 		border_thickness_ = 0;
 	}
 
@@ -609,16 +609,16 @@ void trectangle::draw(surface& canvas
 		const unsigned bottom = top + h - (i * 2) - 1;
 
 		// top horizontal (left -> right)
-		draw_line(canvas, border_color_, left, top, right, top);
+		draw_line(canvas, border_color_, left, top, right, top, true);
 
 		// right vertical (top -> bottom)
-		draw_line(canvas, border_color_, right, top, right, bottom);
+		draw_line(canvas, border_color_, right, top, right, bottom, true);
 
 		// bottom horizontal (left -> right)
-		draw_line(canvas, border_color_, left, bottom, right, bottom);
+		draw_line(canvas, border_color_, left, bottom, right, bottom, true);
 
 		// left vertical (top -> bottom)
-		draw_line(canvas, border_color_, left, top, left, bottom);
+		draw_line(canvas, border_color_, left, top, left, bottom, true);
 	}
 
 	// The fill_rect_alpha code below fails, can't remember the exact cause
@@ -632,7 +632,7 @@ void trectangle::draw(surface& canvas
 
 		for(unsigned i = top; i < bottom; ++i) {
 
-			draw_line(canvas, fill_color_, left, i, right, i);
+			draw_line(canvas, fill_color_, left, i, right, i, true);
 		}
 	}
 }
@@ -750,7 +750,7 @@ void tcircle::draw(surface& canvas
 
 	// lock the surface
 	surface_lock locker(canvas);
-	draw_circle(canvas, color_, x, y, radius);
+	draw_circle(canvas, color_, x, y, radius, true);
 }
 
 /***** ***** ***** ***** ***** IMAGE ***** ***** ***** ***** *****/
@@ -908,7 +908,6 @@ void timage::draw(surface& canvas
 		return;
 	}
 
-
 	/*
 	 * The locator might return a different surface for every call so we can't
 	 * cache the output, also not if no formula is used.
@@ -932,23 +931,19 @@ void timage::draw(surface& canvas
 	local_variables.add("image_original_height", variant(image_->h));
 
 	unsigned w = w_(local_variables);
-	VALIDATE(static_cast<int>(w) >= 0, "Image doesn't fit on canvas.");
-/*
 	VALIDATE_WITH_DEV_MESSAGE(
 			  static_cast<int>(w) >= 0
 			, _("Image doesn't fit on canvas.")
 			, (formatter() << "Image '" << name
 				<< "', w = " << static_cast<int>(w) << ".").str());
-*/
+
 	unsigned h = h_(local_variables);
-	VALIDATE(static_cast<int>(h) >= 0, "Image doesn't fit on canvas.");
-/*
 	VALIDATE_WITH_DEV_MESSAGE(
 			  static_cast<int>(h) >= 0
 			, _("Image doesn't fit on canvas.")
 			, (formatter() << "Image '" << name
 				<< "', h = " << static_cast<int>(h) << ".").str());
-*/
+
 	if ((!w && w_.has_formula()) || (!h && h_.has_formula())) { 
 		return;
 	}
@@ -957,24 +952,19 @@ void timage::draw(surface& canvas
 	local_variables.add("image_height", variant(h ? h : image_->h));
 
 	const unsigned x = x_(local_variables);
-	VALIDATE(static_cast<int>(x) >= 0, "Image doesn't fit on canvas.");
-/*
 	VALIDATE_WITH_DEV_MESSAGE(
 			  static_cast<int>(x) >= 0
 			, _("Image doesn't fit on canvas.")
 			, (formatter() << "Image '" << name
 				<< "', x = " << static_cast<int>(x) << ".").str());
-*/
 
 	const unsigned y = y_(local_variables);
-	VALIDATE(static_cast<int>(y) >= 0, "Image doesn't fit on canvas.");
-/*
 	VALIDATE_WITH_DEV_MESSAGE(
 			  static_cast<int>(y) >= 0
 			, _("Image doesn't fit on canvas.")
 			, (formatter() << "Image '" << name
 				<< "', y = " << static_cast<int>(y) << ".").str());
-*/
+
 	// Copy the data to local variables to avoid overwriting the originals.
 	SDL_Rect src_clip = src_clip_;
 	SDL_Rect dst_clip = ::create_rect(x, y, 0, 0);
@@ -1271,7 +1261,7 @@ void ttext::draw(surface& canvas
 
 	SDL_Rect dst = ::create_rect(x, y, canvas->w, canvas->h);
 	blit_surface(surf, &clip, canvas, &dst);
-	// sdl_blit(surf, 0, canvas, &dst);
+	// sdl_blit(surf, &clip, canvas, &dst);
 }
 
 /***** ***** ***** ***** ***** ANIMATION ***** ***** ***** ***** *****/

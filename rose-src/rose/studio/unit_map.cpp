@@ -28,6 +28,12 @@ unit_map::unit_map(mkwin_controller& controller, const gamemap& gmap, bool consi
 {
 }
 
+unit_map::~unit_map()
+{
+	// destruct cannot call virtual function. but clear is.
+	clear();
+}
+
 void unit_map::create_coor_map(int w, int h)
 {
 	size_t orignal_map_vsize = map_vsize_;
@@ -55,35 +61,39 @@ void unit_map::create_coor_map(int w, int h)
 	}
 }
 
-void unit_map::move_mass(bool horizontal, bool extend, int start, int stop)
+void unit_map::clear()
 {
-	map_location loc;
-	int inc_factor = extend? 1: -1;
-	if (horizontal) {
-		for (int y = 0; y < h_; y ++) {
-			int pitch = y * w_;
-			for (int x = start; x <= stop; x ++) {
-				base_unit* n = coor_map_[pitch + x].overlay;
-				loc = map_location(x + inc_factor, y);
-				n->set_location(loc);
-			}
-		}
-	} else {
-		for (int y = start; y <= stop; y ++) {
-			int pitch = y * w_;
-			for (int x = 0; x < w_; x ++) {
-				base_unit* n = coor_map_[pitch + x].overlay;
-				loc = map_location(x, y + inc_factor);
-				n->set_location(loc);
-			}
+	for (int i = 1; i < map_vsize_; i ++) {
+		unit* u = dynamic_cast<unit*>(map_[i]);
+		if (u->type() == unit::WINDOW) {
+			map_vsize_ = i;
+			break;
 		}
 	}
+	base_map::clear();
 }
 
 void unit_map::add(const map_location& loc, const base_unit* base_u)
 {
 	const unit* u = dynamic_cast<const unit*>(base_u);
 	insert(loc, new unit(*u));
+}
+
+bool unit_map::erase(const map_location& loc, bool overlay)
+{
+	unit* u = find_unit(loc);
+	if (!u) {
+		return false;
+	}
+	if (u->consistent()) {
+		std::vector<unit::tchild>& children = u->children();
+		for (std::vector<unit::tchild>::iterator it = children.begin(); it != children.end();) {
+			unit::tchild& child = *it;
+			child.erase(*this);
+			it = children.erase(it);
+		}
+	}
+	return erase2(u, true);
 }
 
 unit* unit_map::find_unit(const map_location& loc) const
@@ -141,26 +151,87 @@ void unit_map::save_map_to(unit::tchild& child, bool clear)
 	}
 }
 
-void unit_map::restore_map_from(const unit::tchild& child)
+std::vector<unit*> unit_map::form_units() const
 {
-	VALIDATE(!map_vsize_, "map_vsize_ must be 0.");
+	std::vector<unit*> result;
 
 	if (consistent_) {
-		insert(map_location(0, 0), child.window);
-		for (int x = 1; x < w_; x ++) {
-			insert(map_location(x, 0), child.cols[x - 1]);
-		}
-		int uindex = 0;
 		for (int y = 1; y < h_; y ++) {
 			int pitch = y * w_;
 			for (int x = 0; x < w_; x ++) {
 				if (x) {
-					insert(map_location(x, y), child.units[uindex ++]);
-				} else {
-					insert(map_location(x, y), child.rows[y - 1]);
+					result.push_back(dynamic_cast<unit*>(map_[pitch + x]));
 				}
 			}
 		}
+	} else {
+		for (int i = 1; i < map_vsize_; i ++) {
+			unit* u = dynamic_cast<unit*>(map_[i]);
+			if (u->type() == unit::WIDGET) {
+				result.push_back(dynamic_cast<unit*>(map_[i]));
+			}
+		}
+	}
+
+	return result;
+}
+
+void unit_map::restore_map_from(const unit::tchild& child, const int xstart, const int ystart, bool create)
+{
+	const int serial_gap = 1;
+	if (create) {
+		VALIDATE(xstart || ystart || !map_vsize_, "map_vsize_ must be 0.");
+	}
+
+	unit* window = child.window;
+	gui2::tpoint max_increase(0, 0);
+
+	if (consistent_) {
+		int w = (int)child.cols.size();
+		int h = (int)child.rows.size();
+		
+		if (create) {
+			insert(map_location(xstart, ystart), window);
+			for (int x = 0; x < w; x ++) {
+				insert(map_location(xstart + x + 1, ystart), child.cols[x]);
+			}
+			for (int y = 0; y < h; y ++) {
+				insert(map_location(xstart, ystart + y + 1), child.rows[y]);
+			}
+		}
+		int uindex = 0;
+		gui2::tpoint child_max(0, 0);
+		int increase_xstart = 0;
+		int increase_ystart = 1 + h + serial_gap;
+		for (int y = 1; y <= h; y ++) {
+			for (int x = 1; x <= w; x ++) {
+				unit* u = child.units[uindex ++];
+				if (create) {
+					insert(map_location(xstart + x, ystart + y), u);
+				}
+				const std::vector<unit::tchild>& children = u->children();
+				
+				for (std::vector<unit::tchild>::const_iterator it = children.begin(); it != children.end(); ++ it) {
+					const unit::tchild& child = *it;
+					restore_map_from(child, xstart + increase_xstart, ystart + increase_ystart, create);
+					gui2::tcell_setting& cell = child.window->cell();
+
+					increase_xstart += cell.window.cover_width + serial_gap;
+					if (cell.window.cover_height + serial_gap > child_max.y) {
+						child_max.y = cell.window.cover_height + serial_gap;
+					}
+				}
+			}
+		}
+		max_increase.x = 1 + w + serial_gap;
+		if (increase_xstart > max_increase.x) {
+			max_increase.x = increase_xstart;
+		}
+		max_increase.y = increase_ystart + child_max.y;
+
+		window->cell().window.cover_width = max_increase.x - serial_gap;
+		window->cell().window.cover_height = max_increase.y - serial_gap;
+
 	} else {
 		display& disp = controller_.get_display();
 		insert2(disp, child.window);
@@ -176,135 +247,63 @@ void unit_map::restore_map_from(const unit::tchild& child)
 	}
 }
 
-void unit_map::move_line(bool horizontal, const int index)
+gui2::tpoint unit_map::restore_map_from(const std::vector<unit::tchild>& children, bool create)
 {
-	int threshold = horizontal? h_: w_;
-	if (threshold <= 2) {
-		return;
+	const int serial_gap = 1;
+
+	if (create) {
+		VALIDATE(!map_vsize_, "map_vsize_ must be 0.");
 	}
-	if (!index || index >= threshold) {
-		return;
+	VALIDATE(consistent_, "Must be consistent_ == true!");
+	VALIDATE(!children.empty(), "children must not be empty!");
+
+	gui2::tpoint max_increase(0, 0);
+
+	int uindex = 0;
+	gui2::tpoint child_max(0, 0);
+	int increase_xstart = 0;
+	
+	for (std::vector<unit::tchild>::const_iterator it = children.begin(); it != children.end(); ++ it) {
+		const unit::tchild& child = *it;
+		restore_map_from(child, increase_xstart, 0, create);
+		gui2::tcell_setting& cell = child.window->cell();
+
+		increase_xstart += cell.window.cover_width + serial_gap;
+		if (cell.window.cover_height + serial_gap > child_max.y) {
+			child_max.y = cell.window.cover_height + serial_gap;
+		}
 	}
 
-	std::vector<base_unit*> caches;
-	if (horizontal) {
-		int pitch = index * w_;
-		for (int x = 0; x < w_; x ++) {
-			caches.push_back(coor_map_[pitch + x].overlay);
-		}
-		for (int y = index + h_ - 1; y > index; y --) {
-			if (y == h_) {
-				continue;
-			}
-			int from = y % h_;
-			int to = (y + 1) % h_;
-			if (!to) {
-				to ++;
-			}
+	max_increase.x = increase_xstart - serial_gap;
+	max_increase.y = child_max.y - serial_gap;
 
-			int from_pitch = from * w_;
-			int to_pitch = to * w_;
-			for (int x = 0; x < w_; x ++) {
-				base_unit* from_u = coor_map_[from_pitch + x].overlay;
-				from_u->set_location(map_location(x, to));
-				coor_map_[to_pitch + x].overlay = from_u;
+	return max_increase;
+}
 
-				sort_map(*from_u);
-			}
-		}
+void unit_map::recalculate_size(const unit::tchild& child)
+{
+	restore_map_from(child, 0, 0, false);
+}
 
-		int to = (index + 1 != h_)? index + 1: 1;
-		pitch = to * w_;
-		for (int x = 0; x < w_; x ++) {
-			base_unit* from_u = caches[x];
-			from_u->set_location(map_location(x, to));
-			coor_map_[pitch + x].overlay = from_u;
-
-			sort_map(*from_u);
-		}
-	} else {
-		for (int y = 0; y < h_; y ++) {
-			int pitch = y * w_;
-			caches.push_back(coor_map_[pitch + index].overlay);
-		}
-		for (int x = index + w_ - 1; x > index; x --) {
-			if (x == w_) {
-				continue;
-			}
-			int from = x % w_;
-			int to = (x + 1) % w_;
-			if (!to) {
-				to ++;
-			}
-
-			for (int y = 0; y < h_; y ++) {
-				int pitch = y * w_;
-				base_unit* from_u = coor_map_[pitch + from].overlay;
-				from_u->set_location(map_location(to, y));
-				coor_map_[pitch + to].overlay = from_u;
-
-				sort_map(*from_u);
-			}
-		}
-
-		int to = (index + 1 != w_)? index + 1: 1;
-		for (int y = 0; y < h_; y ++) {
-			int pitch = y * w_;
-			base_unit* from_u = caches[y];
-			from_u->set_location(map_location(to, y));
-			coor_map_[pitch + to].overlay = from_u;
-
-			sort_map(*from_u);
-		}
+void unit_map::zero_map()
+{
+	// attention! if map_vsize_ != 0, means has unit in base_map, you maybe call display::invalidate_all to redraw them.
+	if (map_) {
+		memset(map_, 0, w_ * h_ * sizeof(base_unit*));
+		map_vsize_ = 0;
+	}
+	if (coor_map_) {
+		memset(coor_map_, 0, w_ * h_ * sizeof(loc_cookie));
 	}
 }
 
-void unit_map::swap_line(bool horizontal, const int index)
+void unit_map::layout(const unit::tchild& child)
 {
-	int threshold = horizontal? h_: w_;
-	if (threshold <= 2) {
-		return;
-	}
-	if (!index || index >= threshold) {
-		return;
-	}
-	int next = index + 1;
-	if (next == threshold) {
-		next = 1;
-	}
-
-	std::vector<base_unit*> caches;
-	if (horizontal) {
-		for (int x = 0; x < w_; x ++) {
-			int from_pitch = index * w_;
-			int next_pitch = next * w_;
-			
-			base_unit* from = coor_map_[from_pitch + x].overlay;
-			base_unit* to = coor_map_[next_pitch + x].overlay;
-
-			from->set_location(map_location(x, next));
-			sort_map(*from);
-			to->set_location(map_location(x, index));
-			sort_map(*to);
-
-			coor_map_[from_pitch + x].overlay = to;
-			coor_map_[next_pitch + x].overlay = from;
-		}
+	zero_map();
+	if (controller_.theme()) {
+		restore_map_from(controller_.current_unit()->children(), true);
 	} else {
-		for (int y = 0; y < h_; y ++) {
-			int pitch = y * w_;
-			
-			base_unit* from = coor_map_[pitch + index].overlay;
-			base_unit* to = coor_map_[pitch + next].overlay;
-
-			from->set_location(map_location(next, y));
-			sort_map(*from);
-			to->set_location(map_location(index, y));
-			sort_map(*to);
-
-			coor_map_[pitch + index].overlay = to;
-			coor_map_[pitch + next].overlay = from;
-		}
+		restore_map_from(child, 0, 0, true);
 	}
 }
 
@@ -329,3 +328,4 @@ bool unit_map::line_is_spacer(bool row, int index) const
 	}
 	return true;
 }
+

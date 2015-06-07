@@ -20,6 +20,7 @@
 #include "formula_callable.hpp"
 #include "formula_function.hpp"
 #include "map_utils.hpp"
+#include "wml_exception.hpp"
 
 #include <boost/foreach.hpp>
 
@@ -1133,6 +1134,8 @@ variant formula::execute(const formula_callable& variables, formula_debugger *fd
 	try {
 		return expr_->evaluate(variables, fdb);
 	} catch(type_error& e) {
+		VALIDATE(false, std::string("formula type error: ") + e.message);
+
 		std::cerr << "formula type error: " << e.message << "\n";
 		return variant();
 	}

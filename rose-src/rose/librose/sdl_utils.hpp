@@ -360,7 +360,8 @@ void draw_line(
 		, unsigned x1
 		, unsigned y1
 		, const unsigned x2
-		, unsigned y2);
+		, unsigned y2
+		, bool require_map);
 
 /**
  * Draws a circle on a surface.
@@ -380,7 +381,8 @@ void draw_circle(
 		, Uint32 color
 		, const unsigned x_centre
 		, const unsigned y_centre
-		, const unsigned radius);
+		, const unsigned radius
+		, bool require_map);
 
 /**
  * Helper class for pinning SDL surfaces into memory.

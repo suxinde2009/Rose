@@ -102,6 +102,7 @@ private:
 	void set_ok_active(twindow& window, tristate dir);
 
 	void item_selected(twindow& window);
+	void item_double_click(twindow& window);
 	void goto_higher(twindow& window);
 	void click_navigate(twindow& window, bool& handled, bool& halt, int index);
 

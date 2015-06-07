@@ -1407,13 +1407,6 @@ void set_zoom_to_default(int zoom)
 	image::set_zoom(display::default_zoom_);
 }
 
-namespace gui2 {
-int app_show_preferences_dialog(display& disp, bool first)
-{
-	return twindow::OK;
-}
-}
-
 void handle_app_event(Uint32 type)
 {
 }
@@ -1450,6 +1443,8 @@ int PASCAL WinMain(HINSTANCE inst, HINSTANCE, LPSTR lpCmdLine, int nCmdShow)
 	}
 
 	set_preferences_dir("kingdom");
+	game_config::app = "studio";
+
 	preferences::base_manager base;
 
 	try {

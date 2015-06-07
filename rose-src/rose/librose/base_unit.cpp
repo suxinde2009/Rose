@@ -27,6 +27,7 @@ base_unit::base_unit(base_map& units)
 	, draw_locs_()
 	, base_(false)
 	, refreshing_(false)
+	, redraw_counter_(0)
 	, rect_(empty_rect)
 {
 }
@@ -90,6 +91,12 @@ void base_unit::set_rect(const SDL_Rect& rect)
 			calculate_draw_locs();
 		}
 	}
+}
+
+void base_unit::set_rect2(const SDL_Rect& rect)
+{
+	// for example, only alterante consistent with non-consistent.
+	rect_ = rect;
 }
 
 bool base_unit::sort_compare(const base_unit& that) const

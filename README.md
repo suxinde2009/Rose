@@ -2,11 +2,21 @@ Rose<br>
 ---
 Rose is a corss-platform C++ SDK. It is based on [SDL](http://www.libsdl.org), and provide higher level interface to application. For more information on Rose please browse our [site](http://www.freeors.com).<br> 
 
-Rose is distributed under the [zlib license](http://www.gzip.org/zlib/zlib_license.html). This license allows you to use Rose freely in any software.<br>
+V0.0.6<br>
+----
+* SDK
+	* UI style to flat design.
+	* Implement "Radio page" using stacked_widget.
+	* Remove gui2 widget type: [multi_page], [repeating_button], [horizontal_listbox], [matrix].
+	* Remove gui2 module: viewport, instance, placer and generator.
+	* On IRC client, now can operate one history message, for example "Reply", "Copy".<br>
+
+* Studio
+	* Implement "Dialog editor".
+	* Implement "Theme eidtor"  
 
 V0.0.5<br>
-1. Support IRC protocol. It can use as IRC Client<br>
+----
+* SDK
+	* Support IRC protocol. It can use as IRC Client<br>
 
-V0.0.2<br>
-1. Build new theme mechanism, use controller_base+display+tdialog.<br>
-2. Add report widget. It can impletement context menu, multi-segment menu, etc.

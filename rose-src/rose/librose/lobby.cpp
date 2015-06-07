@@ -563,7 +563,7 @@ void add(int id, bool channel, const tlobby_user& sender, const std::string& msg
 		} else if (log.t < t) {
 			diff = t - log.t;
 		}
-		if (diff <= 2 && sender.nick == log.nick) {
+		if (diff <= 5 && sender.nick == log.nick) {
 			std::stringstream ss;
 			ss << log.msg << "\n" << msg;
 			log.msg = ss.str();

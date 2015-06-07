@@ -707,6 +707,14 @@ private:
 			, bool& handled);
 };
 
+template <class D, class W, void (D::*fptr)(twindow&, W&)>
+void dialog_callback2(twidget* caller)
+{
+	D* dialog = dynamic_cast<D*>(caller->dialog());
+	twindow* window = dynamic_cast<twindow*>(caller->get_window());
+	(dialog->*fptr)(*window, *dynamic_cast<W*>(caller));
+}
+
 } // namespace gui2
 
 #endif

@@ -27,13 +27,13 @@
 #include <boost/bind.hpp>
 
 unit2::unit2(mkwin_controller& controller, mkwin_display& disp, unit_map& units, const std::pair<std::string, gui2::tcontrol_definition_ptr>& widget, unit* parent, const SDL_Rect& rect)
-	: unit(controller, disp, units, widget, parent)
+	: unit(controller, disp, units, widget, parent, -1)
 {
 	rect_ = rect;
 }
 
 unit2::unit2(mkwin_controller& controller, mkwin_display& disp, unit_map& units, int type, unit* parent, const SDL_Rect& rect)
-	: unit(controller, disp, units, type, parent)
+	: unit(controller, disp, units, type, parent, -1)
 {
 	set_rect(rect);
 }
@@ -102,16 +102,16 @@ void unit2::redraw_unit()
 			const unsigned bottom = top + rect_.h - (i * 2) - 1;
 
 			// top horizontal (left -> right)
-			draw_line(surf, border_color, left, top, right, top);
+			draw_line(surf, border_color, left, top, right, top, true);
 
 			// right vertical (top -> bottom)
-			draw_line(surf, border_color, right, top, right, bottom);
+			draw_line(surf, border_color, right, top, right, bottom, true);
 
 			// bottom horizontal (left -> right)
-			draw_line(surf, border_color, left, bottom, right, bottom);
+			draw_line(surf, border_color, left, bottom, right, bottom, true);
 
 			// left vertical (top -> bottom)
-			draw_line(surf, border_color, left, top, left, bottom);
+			draw_line(surf, border_color, left, top, left, bottom, true);
 		}
 	}
 
@@ -139,6 +139,7 @@ bool unit2::sort_compare(const base_unit& that_base) const
 void unit2::generate_window(config& cfg) const
 {
 	cfg["name"] = cell_.id;
+	cfg["description"] = t_string(cell_.window.description, cell_.window.textdomain);
 
 	config& res_cfg = cfg.add_child("resolution");
 	res_cfg["id"] = "1024x768";
@@ -150,7 +151,48 @@ void unit2::generate_window(config& cfg) const
 	screen_cfg["rect"] = "0,0,1024,768";
 
 	config& border_cfg = res_cfg.add_child("main_map_border");
-	border_cfg["border_size"] = 0.2;
+	generate_main_map_border(border_cfg);
+
+	controller_.generate_linked_groups(res_cfg);
+	controller_.generate_context_menus(res_cfg);
+}
+
+void unit2::generate_main_map_border(config& cfg) const
+{
+	if (cell_.window.tile_shape == game_config::tile_hex) {
+		cfg["border_size"] = 0.5;
+		cfg["background_image"] = "terrain-hexagonal/off-map/background.png";
+
+	} else {
+		cfg["border_size"] = 0;
+		cfg["view_rectangle_color"] = "blue";
+
+		cfg["background_image"] = "terrain-square/off-map/background.png";
+	}
+	if (!cell_.window.tile_shape.empty()) {
+		cfg["tile_shape"] = cell_.window.tile_shape;
+	}
+	cfg["tile_image"] = "off-map/alpha.png";
+
+	cfg["corner_image_top_left"] = "terrain-hexagonal/off-map/fade_corner_top_left_editor.png";
+	cfg["corner_image_bottom_left"] = "terrain-hexagonal/off-map/fade_corner_bottom_left_editor.png";
+
+	// odd means the corner is on a tile with an odd x value,
+	// the tile is the ingame tile not the odd in C++
+	cfg["corner_image_top_right_odd"] = "terrain-hexagonal/off-map/fade_corner_top_right_odd_editor.png";
+	cfg["corner_image_top_right_even"] = "terrain-hexagonal/off-map/fade_corner_top_right_even_editor.png";
+
+	cfg["corner_image_bottom_right_odd"] = "terrain-hexagonal/off-map/fade_corner_bottom_right_odd_editor.png";
+	cfg["corner_image_bottom_right_even"] = "terrain-hexagonal/off-map/fade_corner_bottom_right_even_editor.png";
+
+	cfg["border_image_left"] = "terrain-hexagonal/off-map/fade_border_left_editor.png";
+	cfg["border_image_right"] = "terrain-hexagonal/off-map/fade_border_right_editor.png";
+
+	cfg["border_image_top_odd"] = "terrain-hexagonal/off-map/fade_border_top_odd_editor.png";
+	cfg["border_image_top_even"] = "terrain-hexagonal/off-map/fade_border_top_even_editor.png";
+
+	cfg["border_image_bottom_odd"] = "terrain-hexagonal/off-map/fade_border_bottom_odd_editor.png";
+	cfg["border_image_bottom_even"] = "terrain-hexagonal/off-map/fade_border_bottom_even_editor.png";
 }
 
 void unit2::from_window(const config& cfg)
@@ -159,4 +201,20 @@ void unit2::from_window(const config& cfg)
 	// [/theme]
 
 	cell_.id = cfg["name"].str();
+	t_string description = cfg["description"].t_str();
+	split_t_string(description, cell_.window.textdomain, cell_.window.description);
+
+	const config& main_map_cfg = cfg.child("resolution").child("main_map_border");
+	cell_.window.tile_shape = main_map_cfg["tile_shape"].str();
+
+	std::set<std::string> shapes;
+	const config& core_config = controller_.core_config();
+	BOOST_FOREACH (const config &c, core_config.child_range("tb")) {
+		const std::string& id = c["id"].str();
+		shapes.insert(id);
+	}
+
+	if (shapes.find(cell_.window.tile_shape) == shapes.end()) {
+		cell_.window.tile_shape = game_config::tile_square;
+	}
 }

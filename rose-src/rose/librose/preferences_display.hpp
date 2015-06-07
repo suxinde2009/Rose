@@ -26,7 +26,7 @@ namespace preferences {
 
 	// this result maybe return by tdialog. twindow::OK is 0, so must large than 0.
 	// reserve by other value, start at 100.
-	enum tresoluton {CHANGE_RESOLUTION = 100, MAKE_FULLSCREEN, MAKE_WINDOWED};
+	enum tresoluton {CHANGE_RESOLUTION = 100, MIN_RESOLUTION = CHANGE_RESOLUTION, MAKE_FULLSCREEN, MAKE_WINDOWED, MAX_RESOLUTION = MAKE_WINDOWED};
 
 	/**
 	 * Detect a good resolution.
@@ -64,11 +64,8 @@ namespace preferences {
 
 	std::string show_wesnothd_server_search(display&);
 	bool show_video_mode_dialog(display& disp);
-	void show_preferences_dialog(display& disp);
+	int show_preferences_dialog(display& disp, bool first);
+	bool is_resolution_retval(int res);
 } // end namespace preferences
-
-namespace gui2 {
-int app_show_preferences_dialog(display& disp, bool first);
-}
 
 #endif

@@ -31,6 +31,7 @@
 #include "serialization/parser.hpp"
 #include "filesystem.hpp"
 #include "util.hpp"
+#include "wml_exception.hpp"
 
 #include <boost/foreach.hpp>
 #include <stdexcept>
@@ -346,7 +347,7 @@ void preprocessor_streambuf::error(const std::string& error_type, int l)
 	position = lineno_string(pos.str());
 	error = error_type + " at " + position;
 	ERR_CF << error << '\n';
-	throw preproc_config::error(error);
+	VALIDATE(false, error);
 }
 
 

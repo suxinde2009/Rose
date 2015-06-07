@@ -209,10 +209,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\librose\app\anim_display.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\studio\mkwin_controller.hpp"
 				>
 			</File>
@@ -322,6 +318,54 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\studio\gui\dialogs\edit_formula.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\studio\gui\dialogs\edit_formula.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\studio\gui\dialogs\example2.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\studio\gui\dialogs\example2.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\studio\gui\dialogs\grid_setting.cpp"
 					>
 					<FileConfiguration
@@ -418,7 +462,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\studio\gui\dialogs\mode_setting.cpp"
+					RelativePath="..\..\studio\gui\dialogs\rose.cpp"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
@@ -438,31 +482,7 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\..\studio\gui\dialogs\mode_setting.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\studio\gui\dialogs\rect_setting.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\studio\gui\dialogs\rect_setting.hpp"
+					RelativePath="..\..\studio\gui\dialogs\rose.hpp"
 					>
 				</File>
 				<File
@@ -487,54 +507,6 @@
 				</File>
 				<File
 					RelativePath="..\..\studio\gui\dialogs\row_setting.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\studio\gui\dialogs\scroll_setting.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\studio\gui\dialogs\scroll_setting.hpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\studio\gui\dialogs\test.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\studio\gui\dialogs\test.hpp"
 					>
 				</File>
 				<File

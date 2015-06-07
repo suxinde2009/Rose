@@ -43,7 +43,7 @@ twidget* tbuilder_spacer::build() const
 	const unsigned width = width_(size);
 	const unsigned height = height_(size);
 
-	if(width || height) {
+	if (width || height) {
 		widget->set_best_size(tpoint(width, height));
 	}
 

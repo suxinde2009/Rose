@@ -25,21 +25,26 @@ class unit_map: public base_map
 {
 public:
 	unit_map(mkwin_controller& controller, const gamemap& gmap, bool consistent);
+	~unit_map();
 
 	void create_coor_map(int w, int h);
+	void clear();
 	void add(const map_location& loc, const base_unit* base_u);
+	bool erase(const map_location& loc, bool overlay = true);
 
 	unit* find_unit(const map_location& loc) const;
 	unit* find_unit(const map_location& loc, bool verlay) const;
 
 	unit* find_unit(int i) const { return dynamic_cast<unit*>(map_[i]); }
 
-	void move_mass(bool horizontal, bool extend, int start, int stop);
+	void zero_map();
 	void save_map_to(unit::tchild& child, bool clear);
-	void restore_map_from(const unit::tchild& child);
+	std::vector<unit*> form_units() const;
 
-	void move_line(bool horizontal, const int index);
-	void swap_line(bool horizontal, const int index);
+	void restore_map_from(const unit::tchild& child, const int xstart, const int ystart, bool create);
+	gui2::tpoint restore_map_from(const std::vector<unit::tchild>& children, bool create);
+	void recalculate_size(const unit::tchild& child);
+	void layout(const unit::tchild& child);
 
 	bool line_is_spacer(bool row, int index) const;
 

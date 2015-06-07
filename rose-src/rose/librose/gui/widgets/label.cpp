@@ -27,6 +27,17 @@ namespace gui2 {
 
 REGISTER_WIDGET(label)
 
+tpoint tlabel::request_reduce_width(const unsigned maximum_width)
+{
+	unsigned w = maximum_width;
+
+	ttext_maximum_width_lock lock(*this, maximum_width);
+	tpoint size = calculate_best_size();
+
+	insert_reduce_widget(this, size);
+	return size;
+}
+
 bool tlabel::can_wrap() const
 {
 	return can_wrap_ || characters_per_line_ != 0;

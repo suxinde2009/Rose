@@ -127,7 +127,7 @@ void tscrollbar_::set_item_position(const unsigned item_position)
 
 	update_canvas();
 
-	assert(item_position_ <= item_count_ - visible_items_);
+	VALIDATE(item_position_ <= item_count_ - visible_items_, null_str);
 }
 
 void tscrollbar_::update_canvas() {

@@ -34,6 +34,10 @@ REGISTER_WIDGET(image)
 
 tpoint timage::calculate_best_size() const
 {
+	if (best_size_ != tpoint(0, 0)) {
+		return best_size_;
+	}
+
 	surface image(image::get_image(image::locator(label())));
 
 	if(!image) {

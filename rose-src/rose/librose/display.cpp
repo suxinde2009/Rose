@@ -63,6 +63,7 @@ namespace {
 	bool benchmark = false;
 }
 
+bool display::require_change_resolution = false;
 int display::default_zoom_ = display::ZOOM_72;
 int display::last_zoom = display::ZOOM_72;
 
@@ -225,15 +226,14 @@ void display::create_theme()
 		border_ = theme::tborder();
 	}
 
-	// create theme dialog
 	static std::set<std::string> reserve_wml_tag;
 	if (reserve_wml_tag.empty()) {
-		reserve_wml_tag.insert("screen");
-		reserve_wml_tag.insert("main_map_border");
+		reserve_wml_tag = controller_base::theme_reserved_wml;
 		reserve_wml_tag.insert("main_map");
-		reserve_wml_tag.insert("context_menu");
+		reserve_wml_tag.erase("linked_group");
 	}
 
+	// create theme dialog
 	VALIDATE(!theme_, "theme_ must be NULL!");
 	gui2::reload_window_builder(game_config::theme_window_id, *theme_current_cfg_, reserve_wml_tag);
 
@@ -302,12 +302,18 @@ void display::reload_map()
 		memset(draw_area_, BOARD, last_map_w_ * last_map_h_);
 		draw_area_pitch_ = last_map_w_;
 		draw_area_size_ = last_map_w_ * last_map_h_;
-		map_border_size_ = map_->border_size();
 
+		map_border_size_ = map_->border_size();
 		if (draw_area_unit_) {
 			free(draw_area_unit_);
 		}
 		draw_area_unit_ = (base_unit**)malloc(map_->w() * map_->h() * sizeof(base_unit*));
+
+		// invalidate whole main-map.
+		redraw_background_ = true;
+		bounds_check_position();
+		invalidate_all();
+		recalculate_minimap();
 	}
 	builder_->reload_map();
 }
@@ -1286,7 +1292,7 @@ void display::draw_wrap(bool update, bool force)
 	const int current_time = SDL_GetTicks();
 	const int wait_time = nextDraw_ - current_time;
 
-	if(redrawMinimap_) {
+	if (redrawMinimap_) {
 		redrawMinimap_ = false;
 		draw_minimap();
 	}
@@ -1429,7 +1435,7 @@ double display::minimap_shift_y(const SDL_Rect& map_rect, const SDL_Rect& map_ou
 void display::draw_minimap()
 {
 	gui2::tminimap* widget = dynamic_cast<gui2::tminimap*>(get_theme_object("mini-map"));
-	if (!widget) {
+	if (!widget || widget->get_visible() != gui2::twidget::VISIBLE) {
 		return;
 	}
 	SDL_Rect area = widget->get_rect();
@@ -1901,6 +1907,7 @@ extern void clear();
 
 void display::change_resolution()
 {
+	require_change_resolution = false;
 	if (controller_) {
 		hotkey::clear();
 
