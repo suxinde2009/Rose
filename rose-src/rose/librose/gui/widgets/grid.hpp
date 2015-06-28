@@ -32,6 +32,7 @@ class tgrid : public virtual twidget
 {
 	friend class tdebug_layout_graph;
 	friend struct tgrid_implementation;
+	friend class tvisual_layout;
 
 public:
 
@@ -261,13 +262,15 @@ public:
 
 	void place_fix(const tpoint& origin, const tpoint& size);
 
-	void init_report(int unit_w, int unit_y, int gap, bool extendable);
-	void insert_child(int unit_w, int unit_h, twidget& widget, int at, bool extendable);
-	void erase_child(int at, bool extendable);
-	void replacement_children(int unit_w, int unit_h, int gap, bool extendable);
-	void erase_children(int unit_w, int unit_h, int gap, bool extendable);
-	void hide_children(int unit_w, int unit_h, int gap, bool extendable);
+	void report_create_stuff(int unit_w, int unit_y, int gap, bool extendable, int fixed_cols);
+	void insert_child(int unit_w, int unit_h, twidget& widget, int at);
+	void erase_child(int at);
+	void replacement_children(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols, const tspacer& content);
+	void erase_children(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols, const tspacer& content);
+	void hide_children(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols, const tspacer& content);
+	void clear_stuff_widget() { stuff_widget_.clear(); }
 
+	void calculate_grid_params(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols);
 	void resize_children(int size);
 
 	// listbox help
@@ -388,6 +391,8 @@ protected:
 	std::vector<tspacer*> stuff_widget_;
 	int stuff_size_;
 	tpoint last_draw_end_;
+
+	const std::string& get_control_type() const;
 };
 
 /** Returns the best size for the cell. */

@@ -13,8 +13,6 @@
    See the COPYING file for more details.
 */
 
-#ifndef GUI2_EXPERIMENTAL_LISTBOX
-
 #define GETTEXT_DOMAIN "wesnoth-lib"
 
 #include "gui/widgets/listbox.hpp"
@@ -496,23 +494,25 @@ void tlistbox::set_content_grid_visible_area(const SDL_Rect& area)
 void tlistbox::scroll_to_row(const unsigned row)
 {
 	//
-	// This function has BUG. dont't call it.
+	// This function only call list is complete! that mean no modify.
 	//
-	return;
-/*
-	// when new row inserted, but you scall to new row, show_content_rect will result access-deny!
 
-	if (row >= get_item_count()) {
+	if ((int)row >= get_item_count()) {
 		return;
 	}
 
 	const SDL_Rect& visible = content_visible_area();
-	SDL_Rect rect = generator_->item(row).get_rect();
+	SDL_Rect rect = list_grid_->child(0, row).widget_->get_rect();
 
 	rect.x = visible.x;
+	if (rect.y < visible.y) {
+		tgrid* header = find_widget<tgrid>(content_grid_, "_header_grid", true, false);
+		int header_height = header->get_best_size().y;
+		rect.y -= header_height;
+	}
 	rect.w = visible.w;
+
 	show_content_rect(rect);
-*/
 }
 
 int tlistbox::list_grid_handle_key_up_arrow(SDLMod /*modifier*/, bool& handled)
@@ -589,11 +589,16 @@ void tlistbox::handle_key_up_arrow(SDLMod modifier, bool& handled)
 		SDL_Rect rect = list_grid_->child(0, cursel).widget_->get_rect();
 
 		rect.x = visible.x;
+		if (rect.y < visible.y) {
+			tgrid* header = find_widget<tgrid>(content_grid_, "_header_grid", true, false);
+			int header_height = header->get_best_size().y;
+			rect.y -= header_height;
+		}
 		rect.w = visible.w;
 
 		show_content_rect(rect);
 
-		if(callback_value_changed_) {
+		if (callback_value_changed_) {
 			callback_value_changed_(this);
 		}
 	} else {
@@ -749,5 +754,3 @@ const std::string& tlistbox::get_control_type() const
 }
 
 } // namespace gui2
-
-#endif

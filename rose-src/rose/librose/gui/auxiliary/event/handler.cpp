@@ -28,6 +28,7 @@
 #include "video.hpp"
 #include "display.hpp"
 #include "gui/widgets/settings.hpp"
+#include "preferences.hpp"
 #include "wml_exception.hpp"
 
 #include <boost/foreach.hpp>
@@ -55,10 +56,21 @@
 /* Since this code is still very experimental it's not enabled yet. */
 //#define ENABLE
 
-extern int revise_screen_width(int width);
-extern int revise_screen_height(int height);
-
 namespace gui2 {
+
+tpoint revise_screen_size(const int width, const int height)
+{
+	tpoint landscape_size = twidget::toggle_orientation_size(width, height);
+	if (landscape_size.x < preferences::min_allowed_width()) {
+		landscape_size.x = preferences::min_allowed_width();
+	}
+	if (landscape_size.y < preferences::min_allowed_height()) {
+		landscape_size.y = preferences::min_allowed_height();
+	}
+
+	tpoint normal_size = twidget::toggle_orientation_size(landscape_size.x, landscape_size.y);
+	return normal_size;
+}
 
 namespace event {
 
@@ -485,7 +497,7 @@ void thandler::handle_event(const SDL_Event& event)
 				// draw(true);
 
 			} else if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-				video_resize(tpoint(revise_screen_width(event.window.data1), revise_screen_height(event.window.data2)));
+				video_resize(revise_screen_size(event.window.data1, event.window.data2));
 
 			} else if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED || event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
 				activate();
@@ -591,6 +603,12 @@ void thandler::draw(const bool force)
 	std::vector<bool> require_draw;
 	int last_area = 0;
 	for (std::vector<tdispatcher*>::const_reverse_iterator rit = dispatchers_.rbegin(); rit != dispatchers_.rend(); ++ rit) {
+		{
+			// only draw topest window.
+			require_draw.insert(require_draw.begin(), require_draw.empty());
+			continue;
+		}
+
 		twindow* widget = dynamic_cast<twindow*>(*rit);
 		if (widget->is_theme()) {
 			require_draw.insert(require_draw.begin(), false);
@@ -628,21 +646,35 @@ void thandler::draw(const bool force)
 	if (!dispatchers_.empty()) {
 		display* disp = display::get_singleton();
 		
-		CVideo& video = dynamic_cast<twindow&>(*dispatchers_.back()).video();
+		twindow* window = dynamic_cast<twindow*>(dispatchers_.back());
+		CVideo& video = window->video();
 
 		surface frame_buffer = video.getSurface();
 
+		// tip's buff will used to other place, require remember first.
+		window->draw_tip(frame_buffer);
 		disp->draw_float_anim();
 		cursor::draw(frame_buffer);
+
 		video.flip();
+
 		cursor::undraw(frame_buffer);
 		disp->undraw_float_anim();
+		window->undraw_tip(frame_buffer);
 	}
 }
 
 void thandler::video_resize(const tpoint& new_size)
 {
-	DBG_GUI_E << "Firing: " << SDL_VIDEO_RESIZE << ".\n";
+	if (dispatchers_.size() > 1) {
+		// when tow or more, forbidden scale.
+		// It is bug, require deal with in the feature.
+
+		// I cannot change SDL_VIDEO_RESIZE runtime. replace with recovering window size.
+		display* disp = display::get_singleton();
+		disp->video().sdl_set_window_size(settings::screen_width, settings::screen_height);
+		return;
+	}
 
 	BOOST_FOREACH(tdispatcher* dispatcher, dispatchers_) {
 		dispatcher->fire(SDL_VIDEO_RESIZE
@@ -951,7 +983,6 @@ std::ostream& operator<<(std::ostream& stream, const tevent event)
 		case SDL_ACTIVATE           : stream << "SDL activate"; break;
 		case MESSAGE_SHOW_TOOLTIP   : stream << "message show tooltip"; break;
 		case SHOW_HELPTIP           : stream << "show helptip"; break;
-		case MESSAGE_SHOW_HELPTIP   : stream << "message show helptip"; break;
 		case REQUEST_PLACEMENT      : stream << "request placement"; break;
 	}
 
@@ -964,10 +995,13 @@ void async_draw()
 {
 	
 	/* It is call by display::draw only.
-	 * There is 2 window at max. First is theme, second is tooltip.
+	 * if there are tow or more dialog, in change resolution.
 	 */
-	assert(event::handler);
-
+/*
+	if (event::handler->dispatchers_.size() > 1) {
+		return;
+	}
+*/
 	bool first = true;
 	BOOST_FOREACH(event::tdispatcher* dispatcher, event::handler->dispatchers_) {
 		if (!first) {

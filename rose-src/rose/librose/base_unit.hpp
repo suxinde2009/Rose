@@ -23,6 +23,7 @@
 #define UNIT_NO_INDEX		-1
 
 class base_map;
+class animation;
 
 class base_unit
 {
@@ -47,6 +48,10 @@ public:
 	};
 
 	base_unit(base_map& units);
+
+	// Copy constructor
+	base_unit(const base_unit& that);
+
 	virtual ~base_unit();
 
 	virtual const t_string& name() const { return name_; }
@@ -70,6 +75,25 @@ public:
 
 	virtual void redraw_unit() {};
 
+	animation* get_animation() const { return anim_; }
+
+	/** States for animation. */
+	enum STATE {
+		STATE_STANDING,   /** anim must fit in a hex */
+		STATE_FORGET,     /** animation will be automatically replaced by a standing anim when finished */
+		STATE_ANIM};      /** normal anims */
+
+	virtual animation* create_animation(const animation& anim);
+	void start_animation(int start_time, const animation* anim,
+		bool with_bars, bool cycles = false, const std::string &text = "",
+		Uint32 text_color = 0, STATE state = STATE_ANIM);
+
+	virtual void set_standing(bool with_bars);
+	void set_facing(map_location::DIRECTION dir);
+	map_location::DIRECTION facing() const { return facing_; }
+
+	virtual int calculate_next_idling() const;
+
 private:
 	void calculate_draw_locs();
 
@@ -85,6 +109,15 @@ protected:
 	size_t redraw_counter_;
 
 	SDL_Rect rect_;
+
+	// Animations:
+	animation* anim_;
+	int next_idling_;
+	int frame_begin_time_;
+
+	bool draw_bars_;
+	map_location::DIRECTION facing_;
+	STATE state_;
 
 private:
 	base_map& units_;

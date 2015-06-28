@@ -2,6 +2,13 @@ Rose<br>
 ---
 Rose is a corss-platform C++ SDK. It is based on [SDL](http://www.libsdl.org), and provide higher level interface to application. For more information on Rose please browse our [site](http://www.freeors.com).<br> 
 
+V0.0.7<br>
+----
+* SDK
+	* Single line report must be tabbar.<br>
+	* Implement tooltip as a window component, not past window.
+	* Normalize animation config. Provide new class base_animator to play unit animation.<br>
+
 V0.0.6<br>
 ----
 * SDK
@@ -14,9 +21,3 @@ V0.0.6<br>
 * Studio
 	* Implement "Dialog editor".
 	* Implement "Theme eidtor"  
-
-V0.0.5<br>
-----
-* SDK
-	* Support IRC protocol. It can use as IRC Client<br>
-

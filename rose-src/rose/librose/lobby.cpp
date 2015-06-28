@@ -29,6 +29,8 @@
 #include "proto_irc.hpp"
 #include "posix.h"
 
+int dbg_error_no = 0;
+
 struct tfopen_lock
 {
 	tfopen_lock(const std::string& file, bool read_only)
@@ -1539,12 +1541,14 @@ SOCKET_STATE tlobby::tchat_sock::receive_buf(std::vector<char>& buf)
 		}
 		bool res = network::receive_with_timeout(*this, raw_data_ + raw_data_vsize_, chunk_size, true, 30000, 300000, &ret_size);
 		if (!res) {
+			dbg_error_no = 1;
 			return SOCKET_ERRORED;
 		}
 		raw_data_vsize_ += ret_size;
 	} while (ret_size == chunk_size);
 
 	if (!raw_data_vsize_) {
+		dbg_error_no = 2;
 		return SOCKET_ERRORED;
 	}
 
@@ -2055,10 +2059,12 @@ SOCKET_STATE tlobby::thttp_sock::receive_buf(std::vector<char>& buf)
 	do {
 		bool res = network::receive_with_timeout(*this, &header[read_size], support_max_header_size - read_size, true, 30000, 300000, &ret_size);
 		if (!res) {
+			dbg_error_no = 3;
 			return SOCKET_ERRORED;
 		}
 		if (!ret_size) {
 			// resumme can read header with continue.
+			dbg_error_no = 4;
 			return SOCKET_ERRORED;
 		}
 		read_size += ret_size;
@@ -2096,6 +2102,7 @@ SOCKET_STATE tlobby::thttp_sock::receive_buf(std::vector<char>& buf)
 
 		bool res = network::receive_with_timeout(*this, &buf[read_size], total_size - read_size, true);
 		if (!res) {
+			dbg_error_no = 5;
 			return SOCKET_ERRORED;
 		}
 	}
@@ -2280,12 +2287,14 @@ SOCKET_STATE tlobby::ttransit_sock::receive_buf(std::vector<char>& buf)
 	bool res = network::receive_with_timeout(*this, num_buf, 4, false);
 
 	if (!res) {
+		dbg_error_no = 6;
 		return SOCKET_ERRORED;
 	}
 
 	const int len = SDLNet_Read32(reinterpret_cast<void*>(num_buf));
 
 	if (len < 1 || len > 100000000) {
+		dbg_error_no = 7;
 		return SOCKET_ERRORED;
 	}
 
@@ -2300,6 +2309,7 @@ SOCKET_STATE tlobby::ttransit_sock::receive_buf(std::vector<char>& buf)
 
 	res = network::receive_with_timeout(*this, beg, end - beg, true);
 	if (!res) {
+		dbg_error_no = 8;
 		return SOCKET_ERRORED;
 	}
 

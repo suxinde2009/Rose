@@ -1716,7 +1716,7 @@ void mkwin_controller::unpack_widget_tpl(unit* u)
 	gui2::tgrid::tchild cell = u->cell().widget.cell;
 	
 	std::string tpl_id = unit::extract_from_tpl_widget_id(u->cell().id);
-	const config& tpl_cfg = game_config_.find_child("widget_template", "id", tpl_id);
+	const config& tpl_cfg = game_config_.find_child("tpl_widget", "id", tpl_id);
 	
 	config widget_cfg, linked_group_cfg;
 	{
@@ -1916,7 +1916,7 @@ void mkwin_controller::click_widget(const std::string& type, const std::string& 
 	}
 }
 
-bool mkwin_controller::toggle_tabbar(gui2::twidget* widget)
+bool mkwin_controller::toggle_report(gui2::twidget* widget)
 {
 	long index = reinterpret_cast<long>(widget->cookie());
 
@@ -2063,9 +2063,6 @@ config mkwin_controller::generate_theme_cfg(const std::vector<unit*>& units)
 	// default(1024x768)
 	for (std::vector<unit*>::const_iterator it = units.begin(); it != units.end(); ++ it) {
 		const unit* u = *it;
-		if (u->cell().id == "test") {
-			int ii = 0;
-		}
 		if (u->type() != unit::WIDGET) {
 			continue;
 		}

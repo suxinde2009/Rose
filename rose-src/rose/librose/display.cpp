@@ -32,13 +32,14 @@
 #include "map_label.hpp"
 #include "text.hpp"
 #include "time_of_day.hpp"
-#include "tooltips.hpp"
 #include "arrow.hpp"
 #include "minimap.hpp"
 #include "wml_exception.hpp"
 #include "gui/widgets/minimap.hpp"
 #include "gui/widgets/settings.hpp"
+#include "gui/widgets/window.hpp"
 #include "gui/auxiliary/event/handler.hpp"
+#include "gui/auxiliary/window_builder/helper.hpp"
 #include "controller_base.hpp"
 
 #include <boost/foreach.hpp>
@@ -93,6 +94,8 @@ display::display(const std::string& tile, controller_base* controller, CVideo& v
 	: controller_(controller)
 	, screen_(video)
 	, map_(map)
+	, orientation_(gui2::implementation::get_orientation(theme_cfg["orientation"]))
+	, original_landscape_(gui2::twidget::current_landscape)
 	, xpos_(0)
 	, ypos_(0)
 	, last_map_w_(0)
@@ -157,6 +160,8 @@ display::display(const std::string& tile, controller_base* controller, CVideo& v
 {
 	singleton_ = this;
 
+	gui2::twindow::enter_orientation(orientation_);
+
 	// show coordinate and terrain
 	// draw_coordinates_ = true;
 	// draw_terrain_codes_ = true;
@@ -211,6 +216,9 @@ display::~display()
 		draw_area_unit_ = NULL;
 		draw_area_unit_size_ = 0;
 	}
+
+	gui2::twindow::recover_landscape(original_landscape_);
+
 	singleton_ = NULL;
 }
 
@@ -957,7 +965,7 @@ inline display::drawing_buffer_key::drawing_buffer_key(const map_location &loc, 
 
 SDL_Rect display::clip_rect_commit() const
 {
-	return in_theme()? map_area(): area_anim::rt.rect;
+	return in_theme()? map_area(): anim2::rt.rect;
 }
 
 void display::drawing_buffer_commit(surface& screen)
@@ -970,7 +978,7 @@ void display::drawing_buffer_commit(surface& screen)
 	if (screen.get() == get_screen_surface().get()) {
 		clip_rect = clip_rect_commit();
 	} else {
-		clip_rect = area_anim::rt.rect;
+		clip_rect = anim2::rt.rect;
 	}
 	clip_rect_setter set_clip_rect(screen, &clip_rect);
 
@@ -1028,15 +1036,15 @@ void display::flip()
 		fill_rect_alpha(r, color, 1, frameBuffer);
 	}
 
+	theme_->get_window()->draw_tip(frameBuffer);
 	font::draw_floating_labels(frameBuffer);
-	events::raise_volatile_draw_event();
 	cursor::draw(frameBuffer);
 
 	video().flip();
 
 	cursor::undraw(frameBuffer);
-	events::raise_volatile_undraw_event();
 	font::undraw_floating_labels(frameBuffer);
+	theme_->get_window()->undraw_tip(frameBuffer);
 }
 
 void display::update_display()
@@ -1275,7 +1283,7 @@ void display::draw_init()
 		invalidateAll_ = true;
 	}
 
-	if(invalidateAll_) {
+	if (invalidateAll_) {
 		DBG_DP << "draw() with invalidateAll\n";
 
 		// toggle invalidateAll_ first to allow regular invalidations
@@ -1297,7 +1305,7 @@ void display::draw_wrap(bool update, bool force)
 		draw_minimap();
 	}
 
-	if(update) {
+	if (update) {
 		update_display();
 		if(!force && !benchmark && wait_time > 0) {
 			// If it's not time yet to draw, delay until it is
@@ -1923,7 +1931,11 @@ void display::change_resolution()
 		for (std::map<const std::string, bool>::const_iterator it = actives.begin(); it != actives.end(); ++ it) {
 			set_theme_object_active(it->first, it->second);
 		}
-		redraw_everything();
+
+		{
+			// update_locker lock_display(video());
+			redraw_everything();
+		}
 	}
 }
 
@@ -1940,8 +1952,6 @@ void display::redraw_everything()
 	}
 
 	bounds_check_position();
-
-	tooltips::clear_tooltips();
 
 	labels().recalculate_labels();
 
@@ -2299,7 +2309,6 @@ void display::refresh_report(int num, const reports::report& r)
 		return;
 	}
 
-	tooltips::clear_tooltips(orignal.rect);
 	reports_[num] = r;
 	reports_[num].rect = rect;
 
@@ -2316,7 +2325,8 @@ void display::refresh_report(int num, const reports::report& r)
 	}
 
 	if (!r.tooltip.empty()) {
-		tooltips::add_tooltip(rect, r.tooltip);
+		gui2::tcontrol* widget2 = dynamic_cast<gui2::tcontrol*>(widget);
+		widget2->set_tooltip(r.tooltip);
 	}
 }
 
@@ -2347,8 +2357,9 @@ bool display::invalidate(const map_location& loc)
 
 bool display::invalidate(const std::set<map_location>& locs)
 {
-	if (invalidateAll_)
+	if (invalidateAll_) {
 		return false;
+	}
 
 	bool ret = false;
 	BOOST_FOREACH (const map_location& loc, locs) {
@@ -2392,11 +2403,13 @@ bool display::invalidate_visible_locations_in_rect(const SDL_Rect& rect)
 
 bool display::invalidate_locations_in_rect(const SDL_Rect& rect)
 {
-	if (invalidateAll_)
+	if (invalidateAll_) {
 		return false;
+	}
 
 	bool result = false;
-	BOOST_FOREACH (const map_location &loc, hexes_under_rect(rect)) {
+	rect_of_hexes hexes = hexes_under_rect(rect);
+	BOOST_FOREACH (const map_location &loc, hexes) {
 		result |= invalidate(loc);
 	}
 	return result;
@@ -2437,6 +2450,10 @@ void display::invalidate_theme()
 				widget->set_dirty(false);
 			}
 		}
+	}
+	gui2::twindow* window = theme_->get_window();
+	if (window->has_tip()) {
+		rects.push_back(window->tip_rect());
 	}
 
 	rect_of_hexes underlying_hex;

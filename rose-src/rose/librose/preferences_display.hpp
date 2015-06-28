@@ -53,7 +53,7 @@ namespace preferences {
 	 * @returns                   The status true if width and height are the
 	 *                            size of the framebuffer, false otherwise.
 	 */
-	bool set_resolution(display& disp, const unsigned width, const unsigned height);
+	bool set_resolution(display& disp, const unsigned width, const unsigned height, bool theme = true);
 	void set_turbo(display& disp, bool ison);
 	void set_grid(display& disp, bool ison);
 	void set_turbo_speed(display& disp, double speed);
@@ -66,6 +66,7 @@ namespace preferences {
 	bool show_video_mode_dialog(display& disp);
 	int show_preferences_dialog(display& disp, bool first);
 	bool is_resolution_retval(int res);
+
 } // end namespace preferences
 
 #endif

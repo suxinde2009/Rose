@@ -62,7 +62,7 @@ private:
 	void set_textdomain_label(twindow& window, bool label);
 
 	bool pre_toggle_tabbar(twidget* widget, twidget* previous);
-	void toggle_tabbar(twidget* widget);
+	void toggle_report(twidget* widget);
 
 	void pre_base(twindow& window);
 	void pre_rect(twindow& window);
@@ -91,13 +91,14 @@ private:
 	void set_yanchor_label(twindow& window, const config& cfg) const;
 
 	void rect_toggled(twidget* widget);
+	void custom_rect_toggled(twidget* widget);
 	bool rect_pre_toggle_tabbar(twidget* widget, twidget* previous);
 	void rect_toggle_tabbar(twidget* widget);
 
 	void switch_rect_cfg(twindow& window, const config& cfg);
 
-	std::string form_tab_label(ttabbar& navigate, int at) const;
-	bool require_show_flag(ttabbar& navigate, int index) const;
+	std::string form_tab_label(treport& navigate, int at) const;
+	bool require_show_flag(treport& navigate, int index) const;
 
 	//
 	// advanced page
@@ -121,12 +122,12 @@ protected:
 	unit& u_;
 	const std::vector<std::string>& textdomains_;
 	const std::vector<tlinked_group>& linkeds_;
-	ttabbar bar_;
+	treport* bar_;
 	tstacked_widget* page_panel_;
 
-	ttabbar rect_navigate_;
+	treport* rect_navigate_;
 	int rect_current_tab_;
-	ttabbar advanced_navigate_;
+	treport* advanced_navigate_;
 	int advanced_current_tab_;
 
 	//

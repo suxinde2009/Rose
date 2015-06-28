@@ -182,10 +182,6 @@
 				RelativePath="..\..\src\editor2\hero.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\..\src\unit_types.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

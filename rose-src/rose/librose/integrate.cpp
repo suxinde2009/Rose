@@ -570,8 +570,8 @@ void tintegrate::add_img_item(int start, const std::string& path, const std::str
 
 	} else {
 		anim_id = path.substr(pos + anim_tag_prefix.size());
-		int type = area_anim::find(anim_id);
-		if (type == area_anim::NONE) {
+		int type = anim2::find(anim_id);
+		if (type == anim2::NONE) {
 			return;
 		}
 		width = cfg["width"].to_int();

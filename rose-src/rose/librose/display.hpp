@@ -645,6 +645,7 @@ protected:
 	int last_map_h_;
 
 	gui2::tpoint zero_;
+	bool portrait_;
 
 	/** Event raised when the map is being scrolled */
 	mutable events::generic_event scroll_event_;
@@ -932,6 +933,9 @@ protected:
 	int min_zoom_;
 	int max_zoom_;
 	std::map<int, animation*> area_anims_;
+
+	gui2::twidget::torientation orientation_;
+	bool original_landscape_;
 
 private:
 	/** Handle for the label which displays frames per second. */

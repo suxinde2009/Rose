@@ -48,9 +48,7 @@ class tscrollbar_container
 	friend struct implementation::tbuilder_scroll_text_box;
 	friend struct implementation::tbuilder_report;
 	friend struct implementation::tbuilder_scrollbar_panel;
-#ifndef GUI2_EXPERIMENTAL_LISTBOX
 	friend class tlistbox;
-#endif
 	friend class ttree_view;
 	friend class tscroll_label;
 	friend class tscroll_text_box;

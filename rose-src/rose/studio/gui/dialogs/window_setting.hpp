@@ -17,7 +17,6 @@
 #define GUI_DIALOGS_WINDOW_SETTING_HPP_INCLUDED
 
 #include "gui/dialogs/cell_setting.hpp"
-#include "gui/widgets/report.hpp"
 #include "gui/dialogs/mode_navigate.hpp"
 #include "mkwin_controller.hpp"
 #include <vector>
@@ -30,11 +29,12 @@ namespace gui2 {
 
 class tstacked_widget;
 class tlistbox;
+class treport;
 
 class twindow_setting : public tsetting_dialog, public tmode_navigate
 {
 public:
-	enum {BASE_PAGE, CONTEXT_MENU_PAGE, PATCH_PAGE};
+	enum {BASE_PAGE, LINKED_GROUP_PAGE, CONTEXT_MENU_PAGE, PATCH_PAGE};
 	enum {AUTOMATIC_PAGE, MANUAL_PAGE};
 
 	explicit twindow_setting(display& disp, mkwin_controller& controller, const unit& u, const std::vector<std::string>& textdomains);
@@ -47,13 +47,17 @@ private:
 	void pre_show(CVideo& video, twindow& window);
 
 	bool pre_toggle_tabbar(twidget* widget, twidget* previous);
-	void toggle_tabbar(twidget* widget);
+	void toggle_report(twidget* widget);
+
+	bool click_report(twidget* widget);
 
 	void pre_base(twindow& window);
+	void pre_linked_group(twindow& window);
 	void pre_context_menu(twindow& window);
 	void pre_patch(twindow& window);
 
 	bool save_base(twindow& window);
+	bool save_linked_group(twindow& window);
 	bool save_context_menu(twindow& window);
 	bool save_patch(twindow& window);
 
@@ -104,7 +108,7 @@ private:
 	// patch page
 	//
 	void patch_toggle_tabbar(twidget* widget);
-	std::string form_tab_label(ttabbar& navigate, int at) const;
+	std::string form_tab_label(treport& navigate, int at) const;
 
 	void fill_change_list2(tlistbox& list, const tmode& mode, const unit::tchild& child);
 	void fill_change_list(twindow& window);
@@ -131,13 +135,13 @@ private:
 	tstacked_widget* layout_panel_;
 
 	tstacked_widget* bar_panel_;
-	ttabbar bar_;
+	treport* bar_;
 	int current_page_;
 	std::vector<tmenu2>& menus_;
 
-	ttabbar menu_navigate_;
-	ttabbar submenu_navigate_;
-	ttabbar patch_bar_;
+	treport* menu_navigate_;
+	treport* submenu_navigate_;
+	treport* patch_bar_;
 	int patch_current_tab_;
 };
 

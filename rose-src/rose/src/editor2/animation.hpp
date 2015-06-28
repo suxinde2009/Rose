@@ -64,25 +64,28 @@ public:
 
 	tanim_() 
 		: id_()
+		, app_()
 		, cfg_()
-		, screen_mode_(false)
-		, global_(false)
+		, area_mode_(false)
+		, template_(false)
 	{}
 
 	bool operator==(const tanim_& that) const
 	{
 		if (id_ != that.id_) return false;
+		if (app_ != that.app_) return false;
 		if (cfg_ != that.cfg_) return false;
-		if (screen_mode_ != that.screen_mode_) return false;
-		if (global_ != that.global_) return false;
+		if (area_mode_ != that.area_mode_) return false;
+		if (template_ != that.template_) return false;
 		return true;
 	}
 	bool operator!=(const tanim_& that) const { return !operator==(that); }
 
 public:
 	std::string id_;
-	bool screen_mode_;
-	bool global_;
+	std::string app_;
+	bool area_mode_;
+	bool template_;
 	config cfg_;
 };
 
@@ -107,7 +110,7 @@ public:
 		, sub_anims_()
 	{}
 
-	void from_config(const config& cfg, bool golbal);
+	void from_config(const config& cfg);
 	void from_ui(HWND hdlgP);
 	void from_ui_anim_edit(HWND hdlgP);
 	bool from_ui_particular_edit(HWND hdlgP, int n);

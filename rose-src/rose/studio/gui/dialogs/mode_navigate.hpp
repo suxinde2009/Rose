@@ -17,7 +17,6 @@
 #define GUI_DIALOGS_MODE_NAVIGATE_HPP_INCLUDED
 
 #include "gui/dialogs/dialog.hpp"
-#include "gui/widgets/report.hpp"
 #include "util.hpp"
 #include "serialization/string_utils.hpp"
 #include <vector>
@@ -28,6 +27,7 @@ class mkwin_controller;
 
 namespace gui2 {
 
+class treport;
 
 class tmode_navigate
 {
@@ -35,16 +35,16 @@ public:
 	tmode_navigate(mkwin_controller& controller, display& disp);
 
 protected:
-	void pre_show(ttabbar& navigate, twindow& window, const std::string& id);
+	treport* pre_show(twindow& window, const std::string& id);
 
-	void append_patch(ttabbar& navigate, twindow& window);
-	void rename_patch(ttabbar& navigate, twindow& window, int at);
-	void erase_patch(ttabbar& navigate, twindow& window, int at);
+	void append_patch(treport& navigate, twindow& window);
+	void rename_patch(treport& navigate, twindow& window, int at);
+	void erase_patch(treport& navigate, twindow& window, int at);
 
-	void reload_navigate(ttabbar& navigate, twindow& window);
+	void reload_navigate(treport& navigate, twindow& window);
 
-	virtual std::string form_tab_label(ttabbar& navigate, int at) const = 0;
-	void reload_tab_label(ttabbar& navigate) const;
+	virtual std::string form_tab_label(treport& navigate, int at) const = 0;
+	void reload_tab_label(treport& navigate) const;
 
 protected:
 	display& disp_;

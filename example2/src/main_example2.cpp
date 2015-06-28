@@ -32,53 +32,11 @@ void set_zoom_to_default(int zoom)
 	image::set_zoom(display::default_zoom_);
 }
 
-namespace help {
-std::vector<topic> generate_topics(const bool sort_generated, const std::string &generator)
-{
-	std::vector<topic> res;
-	return res;
-}
-
-void generate_sections(const config *help_cfg, const std::string &generator, section &sec, int level)
-{
-	return;
-}
-}
-
 namespace http {
 bool register_user(display& disp, hero_map& heros, bool check_exist)
 {
 	return true;
 }
-}
-
-// anim_area
-int app_fill_anim_tags(std::map<const std::string, int>& tags)
-{
-	int index = area_anim::MAX_ROSE_ANIM;
-	tags.insert(std::make_pair("card", index ++));
-	tags.insert(std::make_pair("pass_scenario", index ++));
-	tags.insert(std::make_pair("blade", index ++));
-	tags.insert(std::make_pair("pierce", index ++));
-	tags.insert(std::make_pair("impact", index ++));
-	tags.insert(std::make_pair("archery", index ++));
-	tags.insert(std::make_pair("collapse", index ++));
-	tags.insert(std::make_pair("arcane", index ++));
-	tags.insert(std::make_pair("fire", index ++));
-	tags.insert(std::make_pair("cold", index ++));
-	tags.insert(std::make_pair("strike", index ++));
-	tags.insert(std::make_pair("magic", index ++));
-	tags.insert(std::make_pair("heal", index ++));
-	tags.insert(std::make_pair("destruct", index ++));
-	tags.insert(std::make_pair("formation_defend", index ++));
-	tags.insert(std::make_pair("income", index ++));
-
-	return tags.size() - 1;
-	// return area_anim::MAX_ROSE_ANIM;
-}
-
-void app_fill_anim(int type, const config& cfg)
-{
 }
 
 bool hero::check_valid() const
@@ -194,25 +152,27 @@ static int do_gameloop(int argc, char** argv)
 	gui2::init();
 	const gui2::event::tmanager gui_event_manager;
 
-	loadscreen::start_stage("load config");
-	res = game.init_config(false);
-	if (res == false) {
-		std::cerr << "could not initialize game config\n";
-		return 1;
-	}
-
-	loadscreen::start_stage("init fonts");
-
-	res = font::load_font_config();
-	if (res == false) {
-		std::cerr << "could not re-initialize fonts for the current language\n";
-		return 1;
-	}
-
-
-	loadscreen::start_stage("titlescreen");
-
 	try {
+		// form this, code can use VALIDATE macro.
+
+		loadscreen::start_stage("load config");
+		res = game.init_config(false);
+		if (res == false) {
+			std::cerr << "could not initialize game config\n";
+			return 1;
+		}
+
+		loadscreen::start_stage("init fonts");
+
+		res = font::load_font_config();
+		if (res == false) {
+			std::cerr << "could not re-initialize fonts for the current language\n";
+			return 1;
+		}
+
+
+		loadscreen::start_stage("titlescreen");
+
 		loadscreen_manager.reset();
 		const font::floating_label_context label_manager(game.disp().video().getSurface());
 
@@ -235,6 +195,12 @@ static int do_gameloop(int argc, char** argv)
 
 	} catch (twml_exception& e) {
 		e.show(game.disp());
+
+	} catch (game_logic::formula_error& e) {
+		gui2::show_error_message(game.disp().video(), e.what());
+
+	} catch (type_error& e) {
+		gui2::show_error_message(game.disp().video(), std::string("formula type error: ") + e.message);
 	}
 
 	return 0;

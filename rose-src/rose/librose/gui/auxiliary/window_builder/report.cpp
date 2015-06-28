@@ -48,7 +48,7 @@ tbuilder_report::tbuilder_report(const config& cfg)
 
 twidget* tbuilder_report::build() const
 {
-	treport* widget = new treport();
+	treport* widget = new treport(unit_width, unit_height, gap);
 
 	init_control(widget);
 
@@ -62,7 +62,6 @@ twidget* tbuilder_report::build() const
 
 	widget->init_grid(conf->grid);
 	widget->finalize_setup();
-	widget->init_report(unit_width, unit_height, gap);
 
 	return widget;
 }

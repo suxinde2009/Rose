@@ -50,6 +50,41 @@ twidget::treduce_width_lock::~treduce_width_lock()
 	reduce_width = false;
 }
 
+const std::string twidget::tpl_widget_id_prefix = "_tpl_";
+
+bool twidget::is_tpl_widget_id(const std::string& id)
+{
+	return id.find(tpl_widget_id_prefix) == 0;
+}
+
+bool twidget::current_landscape = true;
+
+bool twidget::landscape_from_orientation(torientation orientation, bool def)
+{
+	if (orientation != auto_orientation) {
+		return orientation == landscape_orientation;
+	}
+	return def;
+}
+
+bool twidget::orientation_effect_resolution(const int width, const int height)
+{
+	const int min_uneffectable_height = 480;
+	return width < min_uneffectable_height || height < min_uneffectable_height;
+}
+
+tpoint twidget::toggle_orientation_size(int width, int height)
+{
+	if (!orientation_effect_resolution(width, height)) {
+		return tpoint(width, height);
+	}
+	if (!current_landscape) {
+		int tmp = width;
+		width = height;
+		height = tmp;
+	}
+	return tpoint(width, height);
+}
 
 twidget::twidget()
 	: id_("")

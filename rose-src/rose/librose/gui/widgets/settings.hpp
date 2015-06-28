@@ -164,9 +164,22 @@ std::vector<twindow_builder::tresolution>::const_iterator
 
 void reload_window_builder(const std::string& type, const config& cfg, const std::set<std::string>& reserve_wml_tag);
 void reload_test_window(const std::string& type, const config& cfg);
+bool valid_control_definition(const std::string& type, const std::string& definition);
 
 /** Loads the setting for the theme. */
 void load_settings();
+
+struct ttip_definition
+{
+	void read(const config& _cfg);
+
+	int text_extra_width;
+	int text_extra_height;
+	int text_font_size;
+	int vertical_gap;
+
+	config cfg;
+};
 
 /** This namespace contains the 'global' settings. */
 namespace settings {
@@ -179,13 +192,6 @@ namespace settings {
 	extern unsigned screen_height;
 
 	extern unsigned keyboard_height;
-
-	/**
-	 * The size of the map area, if not available equal to the screen
-	 * size.
-	 */
-	extern unsigned gamemap_width;
-	extern unsigned gamemap_height;
 
 	/** These are copied from the active gui. */
 	extern unsigned popup_show_delay;
@@ -201,8 +207,8 @@ namespace settings {
 
 	extern t_string has_helptip_message;
 
-	extern std::map<std::string, config> bubbles;
-	std::vector<ttip> get_tips();
+	extern std::map<std::string, tbuilder_widget_ptr> portraits;
+	extern std::map<std::string, ttip_definition> tip_cfgs;
 }
 
 struct tgui_definition
@@ -223,7 +229,6 @@ struct tgui_definition
 		, sound_toggle_panel_click_()
 		, sound_slider_adjust_()
 		, has_helptip_message_()
-		, tips_()
 	{
 	}
 
@@ -263,8 +268,8 @@ private:
 
 	t_string has_helptip_message_;
 
-	std::map<std::string, config> bubbles_;
-	std::vector<ttip> tips_;
+	std::map<std::string, tbuilder_widget_ptr> portraits_;
+	std::map<std::string, ttip_definition> tip_cfgs_;
 };
 
 extern std::map<std::string, tgui_definition>::const_iterator current_gui;

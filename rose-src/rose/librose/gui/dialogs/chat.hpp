@@ -36,17 +36,18 @@ class tscroll_label;
 class ttext_box;
 class tscroll_text_box;
 class tstacked_widget;
-class ttabbar;
+class treport;
 class ttree_view;
 class tlistbox;
 class tstacked_widget;
+class tgrid;
 
 class tchat_: public tdialog, public tlobby::thandler
 {
 public:
 	static std::string err_encode_str;
 
-	enum {CHAT_LAYER, FIND_LAYER, CHANNEL_LAYER};
+	enum {CONTACT_LAYER, FIND_LAYER, CHANNEL_LAYER, MSG_LAYER};
 
 	struct tcookie 
 	{
@@ -73,7 +74,7 @@ public:
 		bool away;
 	};
 
-	enum {f_none, f_min, f_netdiag = f_min, f_copy, f_replay, f_face, f_part, 
+	enum {f_none, f_min, f_netdiag = f_min, f_copy, f_reply, f_face, f_part, 
 		f_part_friend, f_explore, f_max = f_explore};
 	enum {ft_none = 0x1, ft_person = 0x2, ft_channel = 0x4, ft_chan_person = 0x8};
 	struct tfunc 
@@ -170,8 +171,8 @@ protected:
 
 	void swap_page(twindow& window, int page, bool swap);
 
-	void toggle_tabbar(twidget* widget);
-	void click_tabbar(twidget* widget, const std::string& sparam);
+	void toggle_report(twidget* widget);
+	bool click_report(twidget* widget);
 
 	tsession& get_session(chat_logs::treceiver& receiver, bool allow_create = false);
 	void switch_session(bool person, std::vector<tcookie>& branch, tcookie& cookie);
@@ -180,9 +181,10 @@ protected:
 	void generate_channel_tree(tlobby_channel& channel);
 
 private:
-	void switch_to_chat(twindow& window);
+	void switch_to_contact(twindow& window);
 	void switch_to_find(twindow& window);
 	void switch_to_channel(twindow& window);
+	void switch_to_msg(twindow& window);
 
 	void reload_toolbar(twindow& window);
 	void refresh_toolbar(int type, int id);
@@ -212,17 +214,23 @@ protected:
 	int current_page_;
 	tstacked_widget* page_panel_;
 	std::vector<std::string> chans_;
-	ttabbar* catalog_;
-	ttabbar* toolbar_;
+	treport* catalog_;
+	treport* toolbar_;
 	std::vector<tfunc> funcs_;
 	std::vector<tsession> sessions_;
 	tsession* current_session_;
 	bool inputing_;
+	bool swap_resultion_;
+	bool portrait_;
 
 private:
 	display& disp_;
 	twindow* window_;
 	tstacked_widget* panel_;
+	tgrid* contact_layer_;
+	tgrid* find_layer_;
+	tgrid* channel_layer_;
+	tgrid* msg_layer_;
 	ttree_view* person_tree_;
 	ttree_view* channel_tree_;
 	ttree_view* channel2_tree_;

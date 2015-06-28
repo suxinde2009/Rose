@@ -107,6 +107,8 @@ void register_builder_widget(const std::string& id
  */
 tbuilder_widget_ptr create_builder_widget(const config& cfg);
 
+tbuilder_widget_ptr create_builder_widget2(const std::string& type, const config& cfg);
+
 /**
  * Helper to generate a widget from a WML widget instance.
  *
@@ -217,6 +219,7 @@ public:
 
 		std::string definition;
 		bool theme;
+		twidget::torientation orientation;
 
 		std::vector<tlinked_group> linked_groups;
 

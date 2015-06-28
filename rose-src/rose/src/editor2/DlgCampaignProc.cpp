@@ -238,7 +238,7 @@ tmain::tmain(const std::string& id, const std::string& firstscenario_id)
 	, dirty_(0)
 {
 	if (!id.empty()) {
-		file_ = game_config::path + "\\data\\campaigns\\" + id_ + "\\_main.cfg";
+		file_ = game_config::path + "\\data\\app-kingdom\\campaigns\\" + id_ + "\\_main.cfg";
 	}
 }
 
@@ -250,18 +250,18 @@ std::string tmain::description() const
 std::string tmain::icon(bool absolute) const
 { 
 	if (absolute) {
-		return game_config::path + "\\data\\campaigns\\" + id_ + "\\images\\icon.png"; 
+		return game_config::path + "\\data\\app-kingdom\\campaigns\\" + id_ + "\\images\\icon.png"; 
 	} else {
-		return std::string("data/campaigns/") + id_ + "/images/icon.png"; 
+		return std::string("data/app-kingdom/campaigns/") + id_ + "/images/icon.png"; 
 	}
 }
 
 std::string tmain::image(bool absolute) const 
 { 
 	if (absolute) {
-		return game_config::path + "\\data\\campaigns\\" + id_ + "\\images\\image.png"; 
+		return game_config::path + "\\data\\app-kingdom\\campaigns\\" + id_ + "\\images\\image.png"; 
 	} else {
-		return std::string("data/campaigns/") + id_ + "/images/image.png"; 
+		return std::string("data/app-kingdom/campaigns/") + id_ + "/images/image.png"; 
 	}
 }
 
@@ -287,7 +287,7 @@ void tmain::from_config(const config& campaign_cfg)
 	mode_ = mode_tag::find(campaign_cfg["mode"].str());
 	catalog_ = find_catalog(campaign_cfg["catalog"].str());
 	
-	file_ = game_config::path + "\\data\\campaigns\\" + id_ + "\\_main.cfg";
+	file_ = game_config::path + "\\data\\app-kingdom\\campaigns\\" + id_ + "\\_main.cfg";
 
 	dirty_ = 0;
 	// remember side, will use to compare in future.
@@ -393,9 +393,9 @@ void tmain::generate()
 	strstr << "#ifdef " << define << "\n";
 	strstr << "[campaign_addon]\n";
 	strstr << "\t[binary_path]\n";
-	strstr << "\t\tpath = data/campaigns/" << id_ << "\n";
+	strstr << "\t\tpath = data/app-kingdom/campaigns/" << id_ << "\n";
 	strstr << "\t[/binary_path]\n";
-	strstr << "\t{campaigns/" << id_ << "/scenarios}\n";
+	strstr << "\t{app-kingdom/campaigns/" << id_ << "/scenarios}\n";
 	strstr << "[/campaign_addon]\n";
 	strstr << "#endif";
 
@@ -2518,20 +2518,20 @@ std::string tscenario::file(bool multiplayer, const std::string& campaign_id, co
 	std::stringstream strstr;
 	if (!multiplayer) {
 		if (absolute) {
-			strstr << game_config::path << "\\data\\campaigns\\";
+			strstr << game_config::path << "\\data\\app-kingdom\\campaigns\\";
 			strstr << campaign_id << "\\scenarios\\";
 			strstr << scenario_id << ".cfg";
 		} else {
-			strstr << "campaigns/";
+			strstr << "app-kingdom/campaigns/";
 			strstr << campaign_id << "/scenarios/";
 			strstr << scenario_id << ".cfg";
 		}
 	} else {
 		if (absolute) {
-			strstr << game_config::path << "\\data\\multiplayer\\mscenarios\\";
+			strstr << game_config::path << "\\data\\app-kingdom\\multiplayer\\mscenarios\\";
 			strstr << scenario_id << ".cfg";
 		} else {
-			strstr << "multiplayer/mscenarios/";
+			strstr << "app-kingdom/multiplayer/mscenarios/";
 			strstr << scenario_id << ".cfg";
 		}
 	}
@@ -2549,11 +2549,11 @@ std::string tscenario::map_file(bool multiplayer, const std::string& campaign_id
 	if (!multiplayer) {
 		// if (ns::_main.must_exist_map()) {
 			if (absolute) {
-				strstr << game_config::path << "\\data\\campaigns\\";
+				strstr << game_config::path << "\\data\\app-kingdom\\campaigns\\";
 				strstr << campaign_id << "\\maps\\";
 				strstr << scenario_id << ".map";
 			} else {
-				strstr << "campaigns/";
+				strstr << "app-kingdom/campaigns/";
 				strstr << campaign_id << "/maps/";
 				strstr << scenario_id << ".map";
 			}
@@ -7032,7 +7032,7 @@ void OnNewCampaignEt(HWND hdlgP, int id, HWND hwndCtrl, UINT codeNotify)
 			Edit_SetText(GetDlgItem(hdlgP, IDC_ET_NEWCAMP_FIRSTSCENARIODESC), strstr.str().c_str());
 
 			strstr.str("");
-			strstr << utf8_2_ansi(_("cfg directory:")) << " <res>/data/campaigns/" << str << "/";
+			strstr << utf8_2_ansi(_("cfg directory:")) << " <res>/data/app-kingdom/campaigns/" << str << "/";
 			strstr << "\r\n";
 			strstr << utf8_2_ansi(_("bin file:")) << " <res>/xwml/campaigns/" << str << ".bin";
 			ns_new::set_dirty(ns_new::BIT_ID, false);
@@ -7168,10 +7168,10 @@ namespace ns {
 void new_campaign(const std::string& id, const std::string& firstscenario_id)
 {
 	// create campaign directory
-	MakeDirectory(game_config::path + "/data/campaigns/" + id);
-	MakeDirectory(game_config::path + "/data/campaigns/" + id + "/images");
-	MakeDirectory(game_config::path + "/data/campaigns/" + id + "/maps");
-	MakeDirectory(game_config::path + "/data/campaigns/" + id + "/scenarios");
+	MakeDirectory(game_config::path + "/data/app-kingdom/campaigns/" + id);
+	MakeDirectory(game_config::path + "/data/app-kingdom/campaigns/" + id + "/images");
+	MakeDirectory(game_config::path + "/data/app-kingdom/campaigns/" + id + "/maps");
+	MakeDirectory(game_config::path + "/data/app-kingdom/campaigns/" + id + "/scenarios");
 
 	// create *.bin directory
 	MakeDirectory(game_config::path + "/xwml/campaigns");
@@ -7208,7 +7208,7 @@ void new_campaign(const std::string& id, const std::string& firstscenario_id)
 		side.leader_ = side.troops_[0].heros_army_[0];
 	}
 	// copy logo
-	std::string src = game_config::path + "/data/core/images/scenery/fire1.png";
+	std::string src = game_config::path + "/app-kingdom/images/scenery/fire1.png";
 	CopyFile(src.c_str(), ns::_main.icon(true).c_str(), FALSE);
 
 	_main.generate();

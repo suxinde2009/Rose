@@ -677,8 +677,8 @@ void tcontext_menu::show(const display& disp, const controller_base& controller,
 		return;
 	}
 
-	const gui2::tgrid::tchild* children = report->content_grid()->children();
-	size_t size = report->content_grid()->children_vsize();
+	const gui2::tgrid::tchild* children = report->child_begin();
+	size_t size = report->childs();
 	if (start_child == -1) {
 		// std::string prefix = adjusted_id + "_c:";
 		std::string prefix = adjusted_id + ":";
@@ -702,14 +702,14 @@ void tcontext_menu::show(const display& disp, const controller_base& controller,
 			const std::string& item = items[n - start_child];
 			// Remove commands that can't be executed or don't belong in this type of menu
 			if (controller.in_context_menu(item)) {
-				widget->set_visible(gui2::twidget::VISIBLE);
+				report->set_child_visible(n, true);
 				widget->set_active(controller.actived_context_menu(item));
 				controller.prepare_show_menu(*widget, item, unit_size.x, unit_size.y);
 			} else {
-				widget->set_visible(gui2::twidget::INVISIBLE);
+				report->set_child_visible(n, false);
 			}
 		} else {
-			widget->set_visible(gui2::twidget::INVISIBLE);
+			report->set_child_visible(n, false);
 		}
 	}
 	report->replacement_children();
@@ -804,6 +804,7 @@ void ttheme::post_layout()
 		context_menus_.push_back(tcontext_menu(id));
 		tcontext_menu& m = context_menus_.back();
 		m.report = report;
+		report->tabbar_init(false, "surface");
 		m.load(disp_, cfg);
 	}
 }
@@ -824,17 +825,17 @@ void ttheme::click_generic_handler(tcontrol& widget, const std::string& sparam)
 			, sparam));
 }
 
-void ttheme::toggle_tabbar(twidget* widget)
+void ttheme::toggle_report(twidget* widget)
 {
-	bool conti = controller_.toggle_tabbar(widget);
+	bool conti = controller_.toggle_report(widget);
 	if (conti) {
-		tdialog::toggle_tabbar(widget);
+		tdialog::toggle_report(widget);
 	}
 }
 
-void ttheme::click_tabbar(twidget* widget, const std::string& sparam)
+bool ttheme::click_report(twidget* widget)
 {
-	controller_.click_tabbar(widget, sparam);
+	return controller_.click_report(widget);
 }
 
 void ttheme::destruct_widget(const twidget* widget)

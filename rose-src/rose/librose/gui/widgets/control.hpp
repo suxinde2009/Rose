@@ -435,18 +435,6 @@ private:
 	 */
 	void definition_load_configuration(const std::string& control_type);
 
-public:
-	/**
-	 * Returns the control_type of the control.
-	 *
-	 * The control_type parameter for tgui_definition::get_control() To keep the
-	 * code more generic this type is required so the controls need to return
-	 * the proper string here.  Might be used at other parts as well the get the
-	 * type of
-	 * control involved.
-	 */
-	virtual const std::string& get_control_type() const = 0;
-
 protected:
 	/** Inherited from twidget. */
 	void impl_draw_background(
@@ -464,17 +452,6 @@ protected:
 	void child_populate_dirty_list(twindow& caller, const std::vector<twidget*>& call_stack);
 
 private:
-
-#ifdef GUI2_EXPERIMENTAL_LISTBOX
-	/**
-	 * Initializes the control.
-	 *
-	 * Not everything can be code in the constructor since virtual functions
-	 * can't be used. So after contruction this function needs to be called and
-	 * only once, this happens when set_definition is called.
-	 */
-	virtual void init() {}
-#endif
 
 	/**
 	 * Gets the best size for a text.
@@ -514,11 +491,6 @@ private:
 	/***** ***** ***** signal handlers ***** ****** *****/
 
 	void signal_handler_show_tooltip(
-			  const event::tevent event
-			, bool& handled
-			, const tpoint& location);
-
-	void signal_handler_show_helptip(
 			  const event::tevent event
 			, bool& handled
 			, const tpoint& location);

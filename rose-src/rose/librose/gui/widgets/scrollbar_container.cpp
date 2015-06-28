@@ -232,7 +232,7 @@ static void set_scrollbar_mode(tgrid* scrollbar_grid, tscrollbar_* scrollbar,
 	// scrollbar->set_item_position(0);
 	scrollbar->set_visible_items(visible_items);
 
-	if(scrollbar_mode == tscrollbar_container::auto_visible) {
+	if (scrollbar_mode == tscrollbar_container::auto_visible) {
 
 		const bool scrollbar_needed = items > visible_items;
 

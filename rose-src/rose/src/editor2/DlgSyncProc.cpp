@@ -14,6 +14,7 @@
 #include "xfunc.h"
 #include "win32x.h"
 #include <utility>
+#include "wml_exception.hpp"
 
 #include "language.hpp"
 #include <boost/foreach.hpp>
@@ -457,7 +458,13 @@ DWORD WINAPI ThdSyncProc(LPVOID ctx)
 		ListView_SetItem(hctl, &lvi);
 
 		// execute
-		if (editor_.load_game_cfg((editor::BIN_TYPE)(lvi.lParam), text, true, increment_ctx.itor->second.wml_nfiles, increment_ctx.itor->second.wml_sum_size, (uint32_t)increment_ctx.itor->second.wml_modified)) {
+		bool ret = false;
+		try {
+			ret = editor_.load_game_cfg((editor::BIN_TYPE)(lvi.lParam), text, true, increment_ctx.itor->second.wml_nfiles, increment_ctx.itor->second.wml_sum_size, (uint32_t)increment_ctx.itor->second.wml_modified);
+		} catch (twml_exception& e) {
+			e.show();
+		}
+		if (ret) {
 			lvi.pszText = "SUCCESS";
 		} else {
 			lvi.pszText = "FAIL";

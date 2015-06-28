@@ -57,6 +57,7 @@ class twidget
 
 public:
 	static const int npos;
+	static const std::string tpl_widget_id_prefix;
 
 	static bool reduce_width;
 	static std::set<twidget*> reduce_widgets;
@@ -67,7 +68,15 @@ public:
 		treduce_width_lock();
 		~treduce_width_lock();
 	};
+
+	static bool is_tpl_widget_id(const std::string& id);
 	
+	enum torientation {auto_orientation, landscape_orientation, portrait_orientation};
+	static bool current_landscape;
+	static bool landscape_from_orientation(torientation orientation, bool def);
+	static bool orientation_effect_resolution(const int width, const int height);
+	static tpoint toggle_orientation_size(int width, int height);
+
 	/** @deprecated use the second overload. */
 	twidget();
 
@@ -366,7 +375,7 @@ public:
 	int fix_height() const { return fix_rect_.h; }
 
 	void set_cookie(void* cookie) { cookie_ = cookie; }
-	void* cookie() { return cookie_; }
+	void* cookie() const { return cookie_; }
 
 	/**
 	 * Moves a widget.
@@ -549,6 +558,17 @@ public:
 	{
 		linked_group_ = linked_group;
 	}
+
+	/**
+	 * Returns the control_type of the control.
+	 *
+	 * The control_type parameter for tgui_definition::get_control() To keep the
+	 * code more generic this type is required so the controls need to return
+	 * the proper string here.  Might be used at other parts as well the get the
+	 * type of
+	 * control involved.
+	 */
+	virtual const std::string& get_control_type() const = 0;
 
 protected:
 	/** The x coordinate of the widget in the screen. */

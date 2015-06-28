@@ -4,9 +4,10 @@
 #define GUI_DIALOGS_EXAMPLE2_HPP_INCLUDED
 
 #include "gui/dialogs/chat.hpp"
-#include "gui/widgets/report.hpp"
 
 namespace gui2 {
+
+class treport;
 
 class texample2 : public tchat_
 {
@@ -24,7 +25,7 @@ private:
 	/** Inherited from tdialog. */
 	void pre_show(CVideo& video, twindow& window);
 
-	void toggle_tabbar(twidget* widget);
+	void toggle_report(twidget* widget);
 	void fullscreen_toggled(twidget* widget);
 	void video_mode_button(twindow& window);
 	void set_retval(twindow& window, int retval);
@@ -32,7 +33,7 @@ private:
 private:
 	display& disp_;
 	int start_page_;
-	ttabbar navigate_;
+	treport* navigate_;
 };
 
 

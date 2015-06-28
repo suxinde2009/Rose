@@ -58,6 +58,20 @@ unsigned get_h_align(const std::string& h_align)
 	}
 }
 
+twidget::torientation get_orientation(const std::string& orientation)
+{
+	if (orientation == "landscape") {
+		return twidget::landscape_orientation;
+
+	} else if (orientation == "portrait") {
+		return twidget::portrait_orientation;
+
+	} else {
+		// auto
+		return twidget::auto_orientation;
+	}
+}
+
 unsigned get_border(const std::vector<std::string>& border)
 {
 	unsigned result = 0;

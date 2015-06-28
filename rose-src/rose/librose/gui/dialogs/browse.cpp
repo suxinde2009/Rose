@@ -127,6 +127,7 @@ void tbrowse::pre_show(CVideo& /*video*/, twindow& window)
 				, boost::ref(window)));
 
 	navigate_ = find_widget<treport>(&window, "navigate", false, true);
+	navigate_->tabbar_init(false, "text");
 	reload_navigate(window, true);
 
 	tlistbox& list = find_widget<tlistbox>(&window, "default", false);
@@ -211,8 +212,8 @@ gui2::tbutton* tbrowse::create_navigate_button(twindow& window, const std::strin
 
 void tbrowse::reload_navigate(twindow& window, bool first)
 {
-	const gui2::tgrid::tchild* children = navigate_->content_grid()->children();
-	int childs = navigate_->content_grid()->children_vsize();
+	const gui2::tgrid::tchild* children = navigate_->child_begin();
+	int childs = navigate_->childs();
 
 	size_t prefix_chars;
 	std::string adjusted_current_dir;
@@ -268,7 +269,7 @@ void tbrowse::reload_navigate(twindow& window, bool first)
 		start_pos = adjusted_current_dir.find(path_delim, start_pos + 1);
 	}
 
-	childs = navigate_->content_grid()->children_vsize();
+	childs = navigate_->childs();
 	int n = 0;
 	gui2::tbutton* widget;
 	for (std::vector<std::string>::const_iterator it = ids.begin(); it != ids.end(); ++ it, n ++) {

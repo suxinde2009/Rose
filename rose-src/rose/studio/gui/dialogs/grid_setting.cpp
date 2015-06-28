@@ -29,6 +29,7 @@
 #include "gui/widgets/text_box.hpp"
 #include "gui/widgets/scroll_text_box.hpp"
 #include "gui/widgets/toggle_button.hpp"
+#include "gui/widgets/report.hpp"
 #include "gui/dialogs/combo_box.hpp"
 #include "gui/dialogs/theme.hpp"
 #include "gui/dialogs/message.hpp"
@@ -80,31 +81,35 @@ tgrid_setting::tgrid_setting(mkwin_controller& controller, display& disp, unit_m
 	, u_(u)
 	, control_(control)
 	, current_cfg_()
-	, navigate_(true, false, "tab")
+	, navigate_(NULL)
 	, current_tab_(0)
 {
 }
 
 void tgrid_setting::pre_show(CVideo& /*video*/, twindow& window)
 {
-	tmode_navigate::pre_show(navigate_, window, "navigate");
-	navigate_.set_boddy(find_widget<twidget>(&window, "bar_panel", false, true));
-
-	navigate_.set_visible(0, false);
-	navigate_.select(1);
-	navigate_.replacement_children();
-	current_tab_ = 1;
-	
 	std::stringstream ss;
 	const std::pair<std::string, gui2::tcontrol_definition_ptr>& widget = u_.widget();
 
-	ss.str("");
 	ss << "grid setting";
 	ss << "(";
 	ss << tintegrate::generate_format(control_, "blue");
 	ss << ")";
 	tlabel* label = find_widget<tlabel>(&window, "title", false, true);
 	label->set_label(ss.str());
+
+	if (!controller_.theme()) {
+		tgrid* grid = find_widget<tgrid>(&window, "resolution_grid", false, true);
+		grid->set_visible(twidget::INVISIBLE);
+	}
+
+	navigate_ = tmode_navigate::pre_show(window, "navigate");
+	navigate_->set_boddy(find_widget<twidget>(&window, "bar_panel", false, true));
+
+	navigate_->set_child_visible(0, false);
+	navigate_->select(1);
+	navigate_->replacement_children();
+	current_tab_ = 1;
 
 	ttext_box* text_box = find_widget<ttext_box>(&window, "_id", false, true);
 	text_box->set_maximum_length(max_id_len);
@@ -175,22 +180,22 @@ void tgrid_setting::save(twindow& window, bool exit)
 	if (exit) {
 		window.set_retval(twindow::OK);
 	} else {
-		reload_tab_label(navigate_);
+		reload_tab_label(*navigate_);
 	}
 }
 
-void tgrid_setting::toggle_tabbar(twidget* widget)
+void tgrid_setting::toggle_report(twidget* widget)
 {
 	twindow* window = widget->get_window();
 	save(*window, false);
 
 	current_tab_ = (int)reinterpret_cast<long>(widget->cookie());
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
 
 	switch_cfg(*window);
 }
 
-std::string tgrid_setting::form_tab_label(ttabbar& navigate, int at) const
+std::string tgrid_setting::form_tab_label(treport& navigate, int at) const
 {
 	const tmode& mode = controller_.mode(at);
 	const unit::tparent& parent = u_.parent();

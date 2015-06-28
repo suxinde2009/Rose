@@ -90,6 +90,7 @@ struct tadjust {
 	static config generate_empty_rect_cfg();
 	static void full_change_cfg(config& cfg, bool rect);
 	static bool cfg_is_rect_fields(const config& cfg);
+	static bool cfg_has_rect_fields(const config& cfg);
 
 	void pure_change_fields(bool rect);
 	bool different_change_cfg(const config& that, tristate rect) const;
@@ -261,7 +262,7 @@ public:
 	config generate2_change2_cfg(const gui2::tcell_setting& cell) const;
 
 	config get_base_change_cfg(const tmode& mode, bool rect, const config& main_dim_cfg) const;
-	void adjust_clear_rect_cfg();
+	void adjust_clear_rect_cfg(const tmode* mode);
 
 	bool get_base_remove(const tmode& mode) const;
 	bool has_remove_adjust() const;

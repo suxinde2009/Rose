@@ -27,6 +27,8 @@ class unit_map;
 
 namespace gui2 {
 
+class treport;
+
 class tgrid_setting : public tsetting_dialog, public tmode_navigate
 {
 public:
@@ -41,11 +43,11 @@ private:
 	void pre_show(CVideo& video, twindow& window);
 
 	void save(twindow& window, bool exit);
-	void toggle_tabbar(twidget* widget);
+	void toggle_report(twidget* widget);
 
 	void switch_cfg(twindow& window);
 
-	std::string form_tab_label(ttabbar& navigate, int at) const;
+	std::string form_tab_label(treport& navigate, int at) const;
 
 private:
 	display& disp_;
@@ -53,7 +55,7 @@ private:
 	unit& u_;
 	std::string control_;
 	config current_cfg_;
-	ttabbar navigate_;
+	treport* navigate_;
 	int current_tab_;
 };
 

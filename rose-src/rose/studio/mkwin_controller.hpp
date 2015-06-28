@@ -186,7 +186,7 @@ public:
 	bool in_theme_top() const { return theme_ && !current_unit_; }
 	unit* current_unit() const { return current_unit_; }
 
-	bool toggle_tabbar(gui2::twidget* widget);
+	bool toggle_report(gui2::twidget* widget);
 
 	bool in_context_menu(const std::string& id) const;
 	bool actived_context_menu(const std::string& id) const;

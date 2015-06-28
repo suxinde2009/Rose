@@ -1037,7 +1037,7 @@ static void init_binary_paths()
 	if (binary_paths.empty()) {
 		binary_paths.push_back(""); // userdata directory
 		// here is self-add paths
-		binary_paths.push_back(game_config::app + "/");
+		binary_paths.push_back(game_config::app_dir + "/");
 		binary_paths.push_back("data/core/");
 	}
 }

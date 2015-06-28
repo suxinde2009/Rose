@@ -16,8 +16,6 @@
 #ifndef GUI_WIDGETS_LISTBOX_HPP_INCLUDED
 #define GUI_WIDGETS_LISTBOX_HPP_INCLUDED
 
-#ifndef GUI2_EXPERIMENTAL_LISTBOX
-
 #include "gui/widgets/scrollbar_container.hpp"
 
 namespace gui2 {
@@ -295,6 +293,5 @@ private:
 
 } // namespace gui2
 
-#endif
 #endif
 

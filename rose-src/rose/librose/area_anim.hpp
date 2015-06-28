@@ -26,18 +26,16 @@
 
 class display;
 
-namespace area_anim {
-enum ttype {NONE, REINFORCE, INDIVIDUALITY, TACTIC, FORMATION_ATTACK, PERFECT,
-	STRATAGEM_UP, STRATAGEM_DOWN, LOCATION, HSCROLL_TEXT, TITLE_SCREEN, 
-	LOAD_SCENARIO, FLAGS, TEXT, PLACE, UPGRADE, OPERATING, MAX_ROSE_ANIM = OPERATING};
-
-extern std::map<int, animation> anims;
+namespace anim2 {
+enum ttype {NONE, LOCATION, HSCROLL_TEXT, TITLE_SCREEN, 
+	OPERATING, MIN_APP_ANIM};
 
 int find(const std::string& tag);
-const std::string& rfind(int tag);
+const std::string& rfind(int at);
 
 void fill_anims(const config& cfg);
-const animation* anim(int type);
+const animation* anim(int at);
+void utype_anim_create_cfg(const std::string& anim_renamed_key, const std::string& tpl_id, config& dst, const utils::string_map& symbols);
 
 struct rt_instance
 {
@@ -57,10 +55,6 @@ struct rt_instance
 extern rt_instance rt;
 
 }
-
-// mini callback that app provided
-int app_fill_anim_tags(std::map<const std::string, int>& tags);
-void app_fill_anim(int type, const config& cfg);
 
 class float_animation: public animation
 {
@@ -83,7 +77,7 @@ private:
 	std::vector<std::pair<SDL_Rect, surface> > bufs_;
 };
 
-float_animation* start_float_anim_th(display& disp, area_anim::ttype type);
+float_animation* start_float_anim_th(display& disp, int type);
 void start_float_anim_bh(float_animation& anim);
 
 int start_cycle_float_anim(display& disp, const config& cfg);

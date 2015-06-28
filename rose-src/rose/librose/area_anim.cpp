@@ -22,6 +22,7 @@
 #include "formula_string_utils.hpp"
 #include "display.hpp"
 #include "wml_exception.hpp"
+#include "base_instance.hpp"
 
 #include "sound.hpp"
 #include <boost/foreach.hpp>
@@ -70,34 +71,20 @@ const std::string& rfind(tfield tag)
 
 }
 
-namespace area_anim {
+namespace anim2 {
 std::map<const std::string, int> tags;
-std::map<int, animation> anims;
-int max_anim;
 
 void fill_tags()
 {
 	anim_field_tag::fill_tags();
 
 	if (!tags.empty()) return;
-	tags.insert(std::make_pair("reinforce", REINFORCE));
-	tags.insert(std::make_pair("individuality", INDIVIDUALITY));
-	tags.insert(std::make_pair("tactic", TACTIC));
-	tags.insert(std::make_pair("formation_attack", FORMATION_ATTACK));
-	tags.insert(std::make_pair("perfect", PERFECT));
-	tags.insert(std::make_pair("stratagem_up", STRATAGEM_UP));
-	tags.insert(std::make_pair("stratagem_down", STRATAGEM_DOWN));
 	tags.insert(std::make_pair("location", LOCATION));
 	tags.insert(std::make_pair("hscroll_text", HSCROLL_TEXT));
 	tags.insert(std::make_pair("title_screen", TITLE_SCREEN));
-	tags.insert(std::make_pair("load_scenario", LOAD_SCENARIO));
-	tags.insert(std::make_pair("flags", FLAGS));
-	tags.insert(std::make_pair("text", TEXT));
-	tags.insert(std::make_pair("place", PLACE));
-	tags.insert(std::make_pair("upgrade", UPGRADE));
 	tags.insert(std::make_pair("operating", OPERATING));
 
-	max_anim = app_fill_anim_tags(tags);
+	instance->fill_anim_tags(tags);
 }
 
 int find(const std::string& tag)
@@ -121,41 +108,87 @@ const std::string& rfind(int tag)
 
 void fill_anims(const config& cfg)
 {
+	if (!instance) {
+		// normally instance must not NULL. but now editor.exe, kingdomd.exe
+		return;
+	}
+
 	fill_tags();
-	anims.clear();
+	instance->clear_anims();
+
+	utils::string_map symbols;
+	std::stringstream ss;
+
+	const char* no_id_msgid = "[$child] child, $child must has id attribute!";
+	const char* no_anim_child_msgid = "[$child] child, $child must has [anim] child!";
+	const char* no_code_id_msgid = "[$child] child, WML defined $id, but cannot find corresponding code id!";
+	const char* repeat_id_msgid = "[$child] child, $id is defined repeatly!";
 
 	std::set<int> constructed;
-	BOOST_FOREACH (const config &anim, cfg.child_range("area_anim")) {
+
+	symbols["child"] = tintegrate::generate_format("animation", "yellow");
+	BOOST_FOREACH (const config &anim, cfg.child_range("animation")) {
 		const std::string id = anim["id"].str();
-		if (id.empty()) {
-			throw config::error("[area_anim] error, area_anim must has id attribute");
-		}
+		VALIDATE(!id.empty(), vgettext("wesnoth-lib", no_id_msgid, symbols));
+
+		symbols["id"] = tintegrate::generate_format(id, "red");
+
 		const config& sub = anim.child("anim");
-		if (!sub) {
-			throw config::error("[area_anim] error, area_anim must has [anim] tag");
+		VALIDATE(sub, vgettext("wesnoth-lib", no_anim_child_msgid, symbols));
+
+		bool area = sub["area_mode"].to_bool();
+		bool tpl = !area && anim["template"].to_bool();
+
+		int at = NONE;
+		if (area || !tpl) {
+			at = find(id);
+			VALIDATE(at != NONE, vgettext("wesnoth-lib", no_code_id_msgid, symbols));
+			VALIDATE(constructed.find(at) == constructed.end(), vgettext("wesnoth-lib", repeat_id_msgid, symbols));
+			constructed.insert(at);
 		}
-		int type = find(id);
-		if (type == NONE) {
-			throw config::error("[area_anim] error, area_anim has invalid id: " + id);
-		}
-		if (constructed.find(type) != constructed.end()) {
-			throw config::error("[area_anim] error, duplicate id: " + id);
-		}
-		if (type <= max_anim) {
-			anims.insert(std::make_pair(type, animation(sub)));
-		} else {
-			app_fill_anim(type, sub);
-		}
+
+		instance->fill_anim(at, id, area, tpl, sub);
 	}
 }
 
-const animation* anim(int type)
+const animation* anim(int at)
 {
-	std::map<int, animation>::const_iterator i = anims.find(type);
-	if (i != anims.end()) {
-		return &i->second;
+	return instance->anim(at);
+}
+
+static void utype_anim_replace_cfg_inernal(const config& src, config& dst, const utils::string_map& symbols)
+{
+	BOOST_FOREACH (const config::any_child& c, src.all_children_range()) {
+		config& adding = dst.add_child(c.key);
+		BOOST_FOREACH (const config::attribute &i, c.cfg.attribute_range()) {
+			adding[i.first] = utils::interpolate_variables_into_string(i.second, &symbols);
+		}
+		utype_anim_replace_cfg_inernal(c.cfg, adding, symbols);
 	}
-	return NULL;
+}
+
+void utype_anim_create_cfg(const std::string& anim_renamed_key, const std::string& tpl_id, config& dst, const utils::string_map& symbols)
+{
+	typedef std::multimap<std::string, const config>::const_iterator Itor;
+	std::pair<Itor, Itor> its = instance->utype_anim_tpls().equal_range(tpl_id);
+	while (its.first != its.second) {
+		// tpl          animation instance
+		// [anim] ----> [anim_renamed_key]
+		config& sub_cfg = dst.add_child(anim_renamed_key);
+		if (symbols.count("offset_x")) {
+			sub_cfg["offset_x"] = symbols.find("offset_x")->second;
+		}
+		if (symbols.count("offset_y")) {
+			sub_cfg["offset_y"] = symbols.find("offset_y")->second;
+		}
+		const config& anim_cfg = its.first->second;
+		// replace
+		BOOST_FOREACH (const config::attribute &i, anim_cfg.attribute_range()) {
+			sub_cfg[i.first] = utils::interpolate_variables_into_string(i.second, &symbols);
+		}
+		utype_anim_replace_cfg_inernal(anim_cfg, sub_cfg, symbols);
+		++ its.first;
+	}
 }
 
 rt_instance rt;
@@ -377,7 +410,7 @@ void float_animation::redraw(surface& screen, const SDL_Rect& rect)
 			scale_y = 1;
 		}
 	}
-	area_anim::rt.set(type_, scale_x, scale_y, rect);
+	anim2::rt.set(type_, scale_x, scale_y, rect);
 
 	animation::invalidate(screen);
 	for (std::vector<std::pair<SDL_Rect, surface> >::iterator it = bufs_.begin(); it != bufs_.end(); ++ it) {
@@ -411,9 +444,9 @@ void float_animation::undraw(surface& screen)
 }
 
 
-float_animation* start_float_anim_th(display& disp, area_anim::ttype type)
+float_animation* start_float_anim_th(display& disp, int type)
 {
-	const animation* tpl = area_anim::anim(type);
+	const animation* tpl = anim2::anim(type);
 	if (!tpl) {
 		return NULL;
 	}
@@ -432,11 +465,11 @@ void start_float_anim_bh(float_animation& anim)
 
 int start_cycle_float_anim(display& disp, const config& cfg)
 {
-	int type = area_anim::find(cfg["id"]);
-	if (type == area_anim::NONE) {
+	int type = anim2::find(cfg["id"]);
+	if (type == anim2::NONE) {
 		return INVALID_ANIM_ID;
 	}
-	const animation* tpl = area_anim::anim(type);
+	const animation* tpl = anim2::anim(type);
 	float_animation* clone = new float_animation(*tpl);
 		
 	int id = disp.insert_area_anim2(clone);

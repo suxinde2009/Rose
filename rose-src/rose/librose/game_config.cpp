@@ -47,6 +47,7 @@ namespace game_config
 	std::string app;
 	std::string app_channel;
 	std::string app_msgid;
+	std::string app_dir; // get from app.
 	int base_income = 2;
 	int village_income = 2;
 	int hero_income = 2;
@@ -57,7 +58,7 @@ namespace game_config
 	unsigned lobby_network_timer = 100;
 	unsigned lobby_refresh = 4000;
 	const int gold_carryover_percentage = 80;
-	const std::string rose_version = "0.0.6";
+	const std::string rose_version = "0.0.7";
 	std::string version = "1.0.31";
 	version_info wesnoth_version(version);
 	int reside_troop_increase_loyalty = 50;
@@ -316,6 +317,15 @@ namespace game_config
 	std::set<std::string> reserve_players;
 	std::vector<server_info> server_list;
 	bbs_server_info bbs_server;
+
+	void init(const std::string& _app, const std::string& msgid, const std::string& channel)
+	{
+		app = _app;
+		app_msgid = msgid;
+		app_channel = channel;
+
+		app_dir = std::string("app-") + app;
+	}
 
 	void load_config(const config* cfg)
 	{

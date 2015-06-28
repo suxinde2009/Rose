@@ -129,11 +129,12 @@ public:
 	tcontext_menu* context_menu(const std::string& id);
 
 	void destruct_widget(const twidget* widget);
+	twindow* get_window() const { return window_; }
 
 protected:
 	void click_generic_handler(tcontrol& widget, const std::string& sparam);
-	void toggle_tabbar(twidget* widget);
-	void click_tabbar(twidget* widget, const std::string& sparam);
+	void toggle_report(twidget* widget);
+	bool click_report(twidget* widget);
 
 private:
 	/** Inherited from tdialog, implemented by REGISTER_DIALOG. */

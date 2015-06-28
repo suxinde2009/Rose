@@ -62,8 +62,8 @@ public:
 	virtual bool can_execute_command(int command, const std::string& sparam) const { return true; }
 
 	// true: halt. false: continue to exectue base action.
-	virtual bool toggle_tabbar(gui2::twidget* widget) { return true; }
-	virtual void click_tabbar(gui2::twidget* widget, const std::string& sparam) {}
+	virtual bool toggle_report(gui2::twidget* widget) { return true; }
+	virtual bool click_report(gui2::twidget* widget) { return true; }
 
 	/**
 	 * Get a reference to a display member a derived class uses

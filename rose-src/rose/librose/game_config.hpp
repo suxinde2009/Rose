@@ -34,6 +34,7 @@ namespace game_config
 	extern std::string app;
 	extern std::string app_msgid;
 	extern std::string app_channel;
+	extern std::string app_dir;
 	extern int base_income;
 	extern int village_income;
 	extern int hero_income;
@@ -279,6 +280,7 @@ namespace game_config
 				menu_expand, menu_contract, menu_select;
 	}
 
+	void init(const std::string& _app, const std::string& msgid, const std::string& channel);
 	void load_config(const config* cfg);
 
 	bool is_reserve_player(const std::string& player);

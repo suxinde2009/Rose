@@ -49,8 +49,9 @@ static unsigned int get_flags(unsigned int flags)
 #if defined(__APPLE__) && TARGET_OS_IPHONE
 	flags |= SDL_WINDOW_BORDERLESS;
 #else
-	if (!(flags & SDL_WINDOW_FULLSCREEN))
+	if (!(flags & SDL_WINDOW_FULLSCREEN)) {
 		flags |= SDL_WINDOW_RESIZABLE;
+	}
 #endif
 
 	return flags;
@@ -249,6 +250,11 @@ SDL_Rect CVideo::bound() const
 	int display = window? SDL_GetWindowDisplayIndex(window): 0;
 	SDL_GetDisplayBounds(display, &rc);
 	return rc;
+}
+
+void CVideo::sdl_set_window_size(int width, int height)
+{
+	SDL_SetWindowSize(window, width, height);
 }
 
 Uint32 CVideo::getformat() const

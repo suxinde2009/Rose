@@ -303,7 +303,7 @@ bool editor::load_game_cfg(const editor::BIN_TYPE type, const char* name, bool w
 			// no pre-defined
 			VALIDATE(!write_file, "EXTENDABLE don't support write!");
 
-			const std::string campaigns_cfg = game_config::path + "/data/campaigns.cfg";
+			const std::string campaigns_cfg = game_config::path + CAMPAIGNS_CFG_PATH;
 			if (file_exists(campaigns_cfg)) {
 				cache_.get_config(campaigns_cfg, campaigns_config_);
 			}
@@ -441,7 +441,7 @@ void editor::get_wml2bin_desc_from_wml(std::string& path)
 
 		} else if (type == editor::SCENARIO_DATA) {
 			short_paths.push_back("data/core");
-			short_paths.push_back(std::string("data/campaigns/") + campaigns[campaign_index]);
+			short_paths.push_back(std::string("data/app-kingdom/campaigns/") + campaigns[campaign_index]);
 			filter |= SKIP_GUI_DIR | SKIP_INTERNAL_DIR | SKIP_BOOK;
 
 			desc.bin_name = campaigns[campaign_index] + ".bin";

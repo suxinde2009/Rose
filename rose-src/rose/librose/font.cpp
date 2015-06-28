@@ -25,7 +25,6 @@
 #include "log.hpp"
 #include "marked-up_text.hpp"
 #include "text.hpp"
-#include "tooltips.hpp"
 #include "video.hpp"
 #include "serialization/parser.hpp"
 #include "serialization/preprocessor.hpp"
@@ -878,10 +877,6 @@ SDL_Rect draw_text_line(surface gui_surface, const SDL_Rect& area, int size,
 	dest.w = surface->w;
 	dest.h = surface->h;
 
-	if(line_width(text, size) > area.w) {
-		tooltips::add_tooltip(dest,text);
-	}
-
 	if(dest.x + dest.w > area.x + area.w) {
 		dest.w = area.x + area.w - dest.x;
 	}
@@ -895,10 +890,6 @@ SDL_Rect draw_text_line(surface gui_surface, const SDL_Rect& area, int size,
 		src.x = 0;
 		src.y = 0;
 		sdl_blit(surface,&src,gui_surface,&dest);
-	}
-
-	if(use_tooltips) {
-		tooltips::add_tooltip(dest,text);
 	}
 
 	return dest;
@@ -1008,68 +999,6 @@ std::string make_text_ellipsis(const std::string& text, size_t max_count)
 	}
 
 	return text; // Should not happen
-}
-
-std::string make_text_hide(const std::string& text, bool always, size_t front_should_hide_width, size_t hiden_width, int font_size, int max_showable_width, bool with_tags, bool parse_for_style)
-{
-	static const std::string single_char = " ";
-
-	SDL_Color unused_color;
-	int unused_int;
-	int style = TTF_STYLE_NORMAL;
-	std::string text1 = with_tags? text: del_tags(text);
-	if (parse_for_style) parse_markup(text.begin(), text.end(), &unused_int, &unused_color, &style);
-	
-	int text_width = line_width(text1, font_size, style);
-	if (always) {
-		if (text_width <= max_showable_width) {
-			return text;
-		}
-		if (line_width(single_char, font_size, style) > max_showable_width) {
-			return "";
-		}
-	} else {
-		if (hiden_width + text_width <= front_should_hide_width) {
-			return "";
-		}
-		if (hiden_width >= front_should_hide_width && line_width(single_char, font_size, style) > max_showable_width) {
-			return "";
-		}
-	}
-	
-	std::string current_substring, hide_substring;
-
-	// get markup substring
-	size_t pos = text.rfind(text1);
-	std::string markup_substring;
-	if (pos != std::string::npos) {
-		markup_substring = text.substr(0, pos);
-	}
-
-	utils::utf8_iterator itor(text1);
-
-	for (; itor != utils::utf8_iterator::end(text1); ++itor) {
-		std::string tmp = current_substring;
-		tmp.append(itor.substr().first, itor.substr().second);
-
-		if (always || hiden_width >= front_should_hide_width) {
-			if (line_width(tmp, font_size, style) > max_showable_width) {
-				markup_substring.insert(markup_substring.size(), current_substring);
-				return markup_substring;
-			}
-			current_substring.append(itor.substr().first, itor.substr().second);
-		} else {
-			hide_substring.append(itor.substr().first, itor.substr().second);
-			int hide_substring_width = line_width(hide_substring, font_size, style);
-			if (hiden_width + hide_substring_width > front_should_hide_width) {
-				current_substring.append(itor.substr().first, itor.substr().second);
-				// set hiden_width equal to front_should_hide_width
-				hiden_width = front_should_hide_width;
-			}
-		}
-	}
-	markup_substring.insert(markup_substring.size(), current_substring);
-	return markup_substring;
 }
 
 }
@@ -1736,8 +1665,7 @@ void ttext::recalculate()
 		int text_style = font_style_;
 		SDL_Color color = int_to_color(foreground_color_ >> 8);
 
-		std::string::const_iterator after_markup = markedup_text_? 
-			parse_markup(ln->begin(), ln->end(), &sz, &color, &text_style): ln->begin();
+		std::string::const_iterator after_markup = ln->begin();
 
 		std::vector<std::string> wrapped_lines;
 		

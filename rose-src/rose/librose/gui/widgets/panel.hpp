@@ -61,7 +61,6 @@ public:
 	/** Inherited from tcontrol. */
 	void update_canvas();
 
-private:
 	/** Inherited from tcontrol. */
 	void impl_draw_background(
 			  surface& frame_buffer
@@ -73,7 +72,7 @@ private:
 			  surface& frame_buffer
 			, int x_offset
 			, int y_offset);
-
+private:
 	/** Inherited from tcontrol. */
 	const std::string& get_control_type() const;
 

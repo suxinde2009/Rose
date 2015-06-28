@@ -478,11 +478,12 @@ void tparticular::update_to_ui_frame_edit(HWND hdlgP, int n) const
 	Edit_SetText(GetDlgItem(hdlgP, IDC_ET_ANIMFRAME_ALPHA), builder.highlight_ratio_.get_original().c_str());
 }
 
-void tanim::from_config(const config& cfg, bool global)
+void tanim::from_config(const config& cfg)
 {
 	id_ = cfg["id"].str();
+	app_ = cfg["app"].str();
+	template_ = cfg["template"].to_bool();
 	cfg_ = cfg.child("anim");
-	global_ = global;
 	anim_from_cfg_ = *this;
 
 	parse(cfg_);
@@ -545,7 +546,7 @@ void tanim::parse(const config& cfg)
 	for (std::vector<std::string>::const_iterator it = vstr.begin(); it != vstr.end(); ++ it) {
 		secondary_weapon_type_.insert(*it);
 	}
-	screen_mode_ = cfg["screen_mode"].to_bool();
+	area_mode_ = cfg["area_mode"].to_bool();
 }
 
 void tanim::from_ui_anim_edit(HWND hdlgP)
@@ -1234,7 +1235,7 @@ void tanim::update_to_ui_anim_edit(HWND hdlgP)
 
 	HTREEITEM htvi_screen_mode = TreeView_AddLeaf(hctl, htvi_root);
 	strstr.str("");
-	strstr << _("Area mode") << ": " << (screen_mode_? _("Yes"): _("No"));
+	strstr << _("Area mode") << ": " << (area_mode_? _("Yes"): _("No"));
 	strcpy(text, utf8_2_ansi(strstr.str().c_str()));
 	TreeView_SetItem1(hctl, htvi_screen_mode, TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE, 
 		PARAM_MODE, ns::iico_anim_attribute, ns::iico_anim_attribute, 0, text);
@@ -1254,7 +1255,7 @@ void tanim::update_to_ui_anim_edit(HWND hdlgP)
 	}
 
 	// filter
-	if (!global_) {
+	if (template_) {
 		filter_update_to_ui_anim_edit(hctl, htvi_root);
 	}
 
@@ -1419,29 +1420,32 @@ std::string tanim::generate() const
 {
 	std::stringstream strstr;
 
-	if (!global_) {
-		strstr << "[utype_anim]\n";
-	} else {
-		strstr << "[area_anim]\n";
-	}
+	strstr << "[animation]\n";
 
 	strstr << "\tid=" << id_ << "\n";
+	if (!app_.empty()) {
+		strstr << "\tapp=" << app_ << "\n";
+	}
+	if (template_) {
+		strstr << "\ttemplate=yes\n";
+	}
 	strstr << "\t[anim]\n";
 	::write(strstr, cfg_, 2);
 	strstr << "\t[/anim]\n";
 
-	if (!global_) {
-		strstr << "[/utype_anim]";
-	} else {
-		strstr << "[/area_anim]";
-	}
+	strstr << "[/animation]";
+
 	strstr << "\n";
 
 	return strstr.str();
 }
 
-void tcore::update_to_ui_anim(HWND hdlgP)
+void tcore::update_anim_according_app(HWND hdlgP, int cursel) const
 {
+	std::set<std::string>::const_iterator it = anim_apps_.begin();
+	std::advance(it, cursel);
+	const std::string& curr_app = *it;
+
 	HWND hctl = GetDlgItem(hdlgP, IDC_LV_ANIM_EXPLORER);
 	LVITEM lvi;
 	ListView_DeleteAllItems(hctl);
@@ -1449,9 +1453,14 @@ void tcore::update_to_ui_anim(HWND hdlgP)
 	char text[_MAX_PATH];
 	int row = 0;
 
-	for (std::vector<tanim>::const_iterator it = anims_updating_.begin(); it != anims_updating_.end(); ++ it) {
+	int anim_at = 0;
+	for (std::vector<tanim>::const_iterator it = anims_updating_.begin(); it != anims_updating_.end(); ++ it, anim_at ++) {
 		const tanim& anim = *it;
 		int column = 0;
+
+		if (anim.app_ != curr_app) {
+			continue;
+		}
 
 		lvi.mask = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
 		// number
@@ -1462,7 +1471,7 @@ void tcore::update_to_ui_anim(HWND hdlgP)
 		strcpy(text, strstr.str().c_str());
 		lvi.pszText = text;
 		lvi.iImage = select_iimage_according_fname(text, 0);
-		lvi.lParam = (LPARAM)0;
+		lvi.lParam = (LPARAM)anim_at;
 		ListView_InsertItem(hctl, &lvi);
 
 		// id
@@ -1470,8 +1479,8 @@ void tcore::update_to_ui_anim(HWND hdlgP)
 		lvi.iSubItem = column ++;
 		strstr.str("");
 		strstr << anim.id_;
-		if (!anim.global_) {
-			strstr << "(" << _("arms^Type") << ")";
+		if (anim.template_) {
+			strstr << "(" << _("Template") << ")";
 		}
 		strcpy(text, utf8_2_ansi(strstr.str().c_str()));
 		lvi.pszText = text;
@@ -1490,7 +1499,7 @@ void tcore::update_to_ui_anim(HWND hdlgP)
 		lvi.mask = LVIF_TEXT;
 		lvi.iSubItem = column ++;
 		strstr.str("");
-		strstr << (anim.screen_mode_? _("Yes"): _("No"));
+		strstr << (anim.area_mode_? _("Yes"): _("No"));
 		strcpy(text, utf8_2_ansi(strstr.str().c_str()));
 		lvi.pszText = text;
 		ListView_SetItem(hctl, &lvi);
@@ -1521,6 +1530,24 @@ void tcore::update_to_ui_anim(HWND hdlgP)
 		strcpy(text, utf8_2_ansi(strstr.str().c_str()));
 		lvi.pszText = text;
 		ListView_SetItem(hctl, &lvi);
+	}
+}
+
+void tcore::update_to_ui_anim(HWND hdlgP, int cursel)
+{
+	HWND hctl = GetDlgItem(hdlgP, IDC_CMB_ANIM_APP);
+	ComboBox_ResetContent(hctl);
+	for (std::set<std::string>::const_iterator it = anim_apps_.begin(); it != anim_apps_.end(); ++ it) {
+		const std::string& app = *it;
+		if (app.empty()) {
+			ComboBox_AddString(hctl, "rose");
+		} else {
+			ComboBox_AddString(hctl, it->c_str());
+		}
+	}
+	if (!anim_apps_.empty()) {
+		ComboBox_SetCurSel(hctl, cursel);
+		update_anim_according_app(hdlgP, cursel);
 	}
 }
 
@@ -1981,10 +2008,10 @@ void OnAnimAnimEditBt(HWND hdlgP)
 {
 	tanim& anim = ns::core.anims_updating_[ns::clicked_anim];
 
-	if (anim.screen_mode_) {
-		anim.cfg_.remove_attribute("screen_mode");
+	if (anim.area_mode_) {
+		anim.cfg_.remove_attribute("area_mode");
 	} else {
-		anim.cfg_["screen_mode"] = true;
+		anim.cfg_["area_mode"] = true;
 	}
 	anim.parse(anim.cfg_);
 	scroll::treeview_update_scroll(GetDlgItem(hdlgP, IDC_TV_ANIMEDIT_EXPLORER), cb_treeview_update_scroll_anim, &anim);
@@ -2387,62 +2414,33 @@ void OnAnimEditBt(HWND hdlgP)
 
 	ns::action_anim = ma_edit;
 	if (DialogBoxParam(gdmgr._hinst, MAKEINTRESOURCE(IDD_ANIMEDIT), hdlgP, DlgAnimEditProc, lParam)) {
-		ns::core.update_to_ui_anim(hdlgP);
+		ns::core.update_to_ui_anim(hdlgP, ComboBox_GetCurSel(GetDlgItem(hdlgP, IDC_CMB_ANIM_APP)));
 		ns::core.set_dirty(tcore::BIT_ANIM, ns::core.anims_dirty());
 	}
 
 	return;
 }
 
+void OnAnimAppCmb(HWND hdlgP, int id, HWND hwndCtrl, UINT codeNotify)
+{
+	if (codeNotify != CBN_SELCHANGE) {
+		return;
+	}
+
+	int cursel = ComboBox_GetCurSel(hwndCtrl);
+	ns::core.update_anim_according_app(hdlgP, cursel);
+	return;
+}
+
 void On_DlgAnimCommand(HWND hdlgP, int id, HWND hwndCtrl, UINT codeNotify)
 {
 	tanim& f = ns::core.anims_updating_[ns::clicked_anim];
-/*
-	switch (id) {
-	case IDM_ADD:
-		OnFactionAddBt(hdlgP);
-		break;
-	case IDM_DELETE:
-		OnFactionDelBt(hdlgP);
-		break;
-	case IDM_EDIT:
-		OnFactionEditBt(hdlgP);
-		break;
 
-	case IDM_TOSERVICE:
-	case IDM_TOWANDER:
-		if (id == IDM_TOSERVICE) {
-			f.freshes_.insert(ns::clicked_hero);
-		} else {
-			f.wanderes_.insert(ns::clicked_hero);
-		}
-		ns::core.update_to_ui_faction(hdlgP, ns::clicked_faction);
-		ns::core.set_dirty(tcore::BIT_FACTION, ns::core.factions_dirty());
-		break;
-	case IDM_DELETE_ITEM0:
-		if (ns::type == IDC_LV_FACTION_SERVICE) {
-			if (f.leader_ == ns::clicked_hero) {
-				f.leader_ = HEROS_INVALID_NUMBER;
-			}
-			f.freshes_.erase(ns::clicked_hero);
-		} else if (ns::type == IDC_LV_FACTION_WANDER) {
-			f.wanderes_.erase(ns::clicked_hero);
-		}
-		ns::core.update_to_ui_faction(hdlgP, ns::clicked_faction);
-		ns::core.set_dirty(tcore::BIT_FACTION, ns::core.factions_dirty());
-		break;
-	case IDM_DELETE_ITEM1:
-		if (ns::type == IDC_LV_FACTION_SERVICE) {
-			f.leader_ = HEROS_INVALID_NUMBER;
-			f.freshes_.clear();
-		} else if (ns::type == IDC_LV_FACTION_WANDER) {
-			f.wanderes_.clear();
-		}
-		ns::core.update_to_ui_faction(hdlgP, ns::clicked_faction);
-		ns::core.set_dirty(tcore::BIT_FACTION, ns::core.factions_dirty());
+	switch (id) {
+	case IDC_CMB_ANIM_APP:
+		OnAnimAppCmb(hdlgP, id, hwndCtrl, codeNotify);
 		break;
 	}
-*/
 	return;
 }
 
@@ -2467,7 +2465,7 @@ void anim_notify_handler_dblclk(HWND hdlgP, int DlgItem, LPNMHDR lpNMHdr)
 
 	if (lpnmitem->iItem >= 0) {
 		if (lpNMHdr->idFrom == IDC_LV_ANIM_EXPLORER) {
-			ns::clicked_anim = lpnmitem->iItem;
+			ns::clicked_anim = lvi.lParam;
 			OnAnimEditBt(hdlgP);
 		}
 	}

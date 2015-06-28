@@ -32,6 +32,7 @@
 #include "gui/widgets/toggle_button.hpp"
 #include "gui/widgets/stacked_widget.hpp"
 #include "gui/widgets/listbox.hpp"
+#include "gui/widgets/report.hpp"
 #include "gui/dialogs/combo_box.hpp"
 #include "gui/dialogs/message.hpp"
 #include "unit.hpp"
@@ -80,12 +81,12 @@ twindow_setting::twindow_setting(display& disp, mkwin_controller& controller, co
 	, controller_(controller)
 	, u_(u)
 	, textdomains_(textdomains)
-	, bar_(true, false, "dusk_tab")
 	, current_page_(0)
 	, menus_(controller.context_menus())
-	, menu_navigate_(true, false, "tab")
-	, submenu_navigate_(true, false, "tab")
-	, patch_bar_(true, false, "tab")
+	, bar_(NULL)
+	, menu_navigate_(NULL)
+	, submenu_navigate_(NULL)
+	, patch_bar_(NULL)
 	, patch_current_tab_(0)
 {
 	VALIDATE(!menus_.empty(), null_str);
@@ -104,33 +105,36 @@ void twindow_setting::pre_show(CVideo& /*video*/, twindow& window)
 	// prepare navigate bar.
 	std::vector<std::string> labels;
 	labels.push_back(_("Base"));
+	labels.push_back(_("Linked group"));
 	labels.push_back(_("Context menu"));
 	labels.push_back(_("Patch"));
 
-	bar_.set_report(find_widget<treport>(&window, "bar", false, true));
-	bar_.set_boddy(find_widget<twidget>(&window, "_bar_panel", false, true));
+	bar_ = find_widget<treport>(&window, "bar", false, true);
+	bar_->tabbar_init(true, "dusk_tab");
+	bar_->set_boddy(find_widget<twidget>(&window, "_bar_panel", false, true));
 
 	int index = 0;
 	for (std::vector<std::string>::const_iterator it = labels.begin(); it != labels.end(); ++ it) {
-		tcontrol* widget = bar_.create_child(null_str, null_str, reinterpret_cast<void*>(index ++), null_str);
+		tcontrol* widget = bar_->create_child(null_str, null_str, reinterpret_cast<void*>(index ++));
 		widget->set_label(*it);
-		bar_.insert_child(*widget);
+		bar_->insert_child(*widget);
 	}
-	bar_.select(BASE_PAGE);
-	bar_.replacement_children();
+	bar_->select(BASE_PAGE);
+	bar_->replacement_children();
 
 	bar_panel_ = find_widget<tstacked_widget>(&window, "bar_panel", false, true);
 	bar_panel_->set_radio_layer(BASE_PAGE);
 
 	pre_base(window);
+	pre_linked_group(window);
 
 	if (controller_.theme()) {
 		pre_context_menu(window);
 		pre_patch(window);
 
 	} else {
-		bar_.set_visible(CONTEXT_MENU_PAGE, false);
-		bar_.set_visible(PATCH_PAGE, false);
+		bar_->set_child_visible(CONTEXT_MENU_PAGE, false);
+		bar_->set_child_visible(PATCH_PAGE, false);
 	}
 }
 
@@ -196,6 +200,39 @@ void twindow_setting::pre_base(twindow& window)
 				, _3, _4));
 }
 
+void twindow_setting::pre_linked_group(twindow& window)
+{
+	treport& report = find_widget<treport>(&window, "test_report", false);
+	report.multiline_init(false, "portrait_icon");
+
+	tcontrol* widget = report.create_child(null_str, null_str, NULL);
+	widget->set_canvas_variable("image", variant("buttons/copy.png"));
+	widget->set_label("buttons/copy.png");
+	report.insert_child(*widget);
+
+	widget = report.create_child(null_str, null_str, NULL);
+	widget->set_canvas_variable("image", variant("buttons/cut.png"));
+	widget->set_label("buttons/cut.png");
+	report.insert_child(*widget);
+
+	widget = report.create_child(null_str, null_str, NULL);
+	widget->set_canvas_variable("image", variant("buttons/erase.png"));
+	widget->set_label("buttons/erase.png");
+	report.insert_child(*widget);
+
+	widget = report.create_child(null_str, null_str, NULL);
+	widget->set_canvas_variable("image", variant("buttons/erase_child.png"));
+	widget->set_label("buttons/erase_child.png");
+	report.insert_child(*widget);
+
+	widget = report.create_child(null_str, null_str, NULL);
+	widget->set_canvas_variable("image", variant("buttons/grid.png"));
+	widget->set_label("buttons/grid.png");
+	report.insert_child(*widget);
+
+	report.replacement_children();
+}
+
 void twindow_setting::pre_context_menu(twindow& window)
 {
 	tbutton* button = find_widget<tbutton>(&window, "append_menu_item", false, true);
@@ -224,8 +261,9 @@ void twindow_setting::pre_context_menu(twindow& window)
 	tlistbox& list = find_widget<tlistbox>(&window, "menu", false);
 	list.set_callback_value_change(dialog_callback2<twindow_setting, tlistbox, &twindow_setting::item_selected>);
 
-	submenu_navigate_.set_report(find_widget<treport>(&window, "submenu_navigate", false, true));
-	submenu_navigate_.set_boddy(find_widget<twidget>(&window, "submenu_panel", false, true));
+	submenu_navigate_ = find_widget<treport>(&window, "submenu_navigate", false, true);
+	submenu_navigate_->tabbar_init(true, "tab");
+	submenu_navigate_->set_boddy(find_widget<twidget>(&window, "submenu_panel", false, true));
 
 	reload_submenu_navigate(menus_[0], window, NULL);
 	reload_menu_table(menus_[0], window, 0);
@@ -233,8 +271,8 @@ void twindow_setting::pre_context_menu(twindow& window)
 
 void twindow_setting::pre_patch(twindow& window)
 {
-	tmode_navigate::pre_show(patch_bar_, window, "navigate");
-	patch_bar_.set_boddy(find_widget<twidget>(&window, "navigate_panel", false, true));
+	patch_bar_ = tmode_navigate::pre_show(window, "navigate");
+	patch_bar_->set_boddy(find_widget<twidget>(&window, "navigate_panel", false, true));
 
 	tbutton* button = find_widget<tbutton>(&window, "_append_patch", false, true);
 	connect_signal_mouse_left_click(
@@ -261,8 +299,8 @@ void twindow_setting::pre_patch(twindow& window)
 			, boost::ref(window)));
 
 	patch_current_tab_ = 1;
-	patch_bar_.select(patch_current_tab_);
-	patch_bar_.set_visible(0, false);
+	patch_bar_->select(patch_current_tab_);
+	patch_bar_->set_child_visible(0, false);
 
 	switch_patch_cfg(window);
 }
@@ -301,6 +339,11 @@ bool twindow_setting::save_base(twindow& window)
 	return true;
 }
 
+bool twindow_setting::save_linked_group(twindow& window)
+{
+	return true;
+}
+
 bool twindow_setting::save_context_menu(twindow& window)
 {
 	return true;
@@ -313,12 +356,12 @@ bool twindow_setting::save_patch(twindow& window)
 
 bool twindow_setting::pre_toggle_tabbar(twidget* widget, twidget* previous)
 {
-	ttabbar* tabbar = ttabbar::get_tabbar(widget);
+	treport* report = treport::get_report(widget);
 
-	if (tabbar == &menu_navigate_) {
+	if (report == menu_navigate_) {
 		return menu_pre_toggle_tabbar(widget, previous);
 
-	} else if (tabbar == &submenu_navigate_) {
+	} else if (report == submenu_navigate_) {
 		return submenu_pre_toggle_tabbar(widget, previous);
 	}
 
@@ -327,23 +370,25 @@ bool twindow_setting::pre_toggle_tabbar(twidget* widget, twidget* previous)
 	int previous_page = (int)reinterpret_cast<long>(previous->cookie());
 	if (previous_page == BASE_PAGE) {
 		ret = save_base(window);
+	} else if (previous_page == LINKED_GROUP_PAGE) {
+		ret = save_linked_group(window);
 	} else if (previous_page == CONTEXT_MENU_PAGE) {
 		ret = save_context_menu(window);
 	}
 	return ret;
 }
 
-void twindow_setting::toggle_tabbar(twidget* widget)
+void twindow_setting::toggle_report(twidget* widget)
 {
-	ttabbar* tabbar = ttabbar::get_tabbar(widget);
+	treport* report = treport::get_report(widget);
 
-	if (tabbar == &menu_navigate_) {
+	if (report == menu_navigate_) {
 		menu_toggle_tabbar(widget);
 		return;
-	} else if (tabbar == &submenu_navigate_) {
+	} else if (report == submenu_navigate_) {
 		submenu_toggle_tabbar(widget);
 		return;
-	} else if (tabbar == &patch_bar_) {
+	} else if (report == patch_bar_) {
 		patch_toggle_tabbar(widget);
 		return;
 	}
@@ -351,7 +396,12 @@ void twindow_setting::toggle_tabbar(twidget* widget)
 	int page = (int)reinterpret_cast<long>(widget->cookie());
 	bar_panel_->set_radio_layer(page);
 
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
+}
+
+bool twindow_setting::click_report(twidget* widget)
+{
+	return false;
 }
 
 void twindow_setting::set_tile_shape(twindow& window)
@@ -538,7 +588,7 @@ void twindow_setting::set_textdomain_label(twindow& window)
 void twindow_setting::save(twindow& window, bool& handled, bool& halt)
 {
 	bool ret = true;
-	int current_page = (int)reinterpret_cast<long>(bar_.cursel()->cookie());
+	int current_page = (int)reinterpret_cast<long>(bar_->cursel()->cookie());
 	if (current_page == BASE_PAGE) {
 		ret = save_base(window);
 	} else if (current_page == CONTEXT_MENU_PAGE) {
@@ -696,7 +746,7 @@ std::string twindow_setting::get_menu_item_id(tmenu2& menu, twindow& window, int
 
 void twindow_setting::reload_submenu_navigate(tmenu2& menu, twindow& window, const tmenu2* cursel)
 {
-	submenu_navigate_.erase_children();
+	submenu_navigate_->erase_children();
 
 	std::vector<tmenu2*> menus;
 	menus.push_back(&menu);
@@ -709,19 +759,19 @@ void twindow_setting::reload_submenu_navigate(tmenu2& menu, twindow& window, con
 		if (m == cursel) {
 			selected = std::distance(menus.begin(), it);
 		}
-		tcontrol* widget = submenu_navigate_.create_child(null_str, null_str, NULL, null_str);
+		tcontrol* widget = submenu_navigate_->create_child(null_str, null_str, NULL);
 		widget->set_label(m->id);
 		widget->set_cookie(reinterpret_cast<void*>(m));
-		submenu_navigate_.insert_child(*widget);
+		submenu_navigate_->insert_child(*widget);
 	}
-	submenu_navigate_.select(selected);
-	submenu_navigate_.replacement_children();
+	submenu_navigate_->select(selected);
+	submenu_navigate_->replacement_children();
 	refresh_parent_desc(window, *menus[selected]);
 }
 
 tmenu2* twindow_setting::current_submenu() const
 {
-	tcontrol* widget = submenu_navigate_.cursel();
+	tcontrol* widget = submenu_navigate_->cursel();
 	return reinterpret_cast<tmenu2*>(widget->cookie());
 }
 
@@ -734,7 +784,7 @@ void twindow_setting::menu_toggle_tabbar(twidget* widget)
 {
 	twindow* window = widget->get_window();
 	tmenu2* menu = reinterpret_cast<tmenu2*>(widget->cookie());
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
 }
 
 bool twindow_setting::submenu_pre_toggle_tabbar(twidget* widget, twidget* previous)
@@ -746,7 +796,7 @@ void twindow_setting::submenu_toggle_tabbar(twidget* widget)
 {
 	twindow* window = widget->get_window();
 	tmenu2* menu = reinterpret_cast<tmenu2*>(widget->cookie());
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
 
 	refresh_parent_desc(*window, *menu);
 	reload_menu_table(*menu, *window, 0);
@@ -889,21 +939,21 @@ void twindow_setting::switch_patch_cfg(twindow& window)
 
 void twindow_setting::append_patch(twindow& window)
 {
-	tmode_navigate::append_patch(patch_bar_, window);
+	tmode_navigate::append_patch(*patch_bar_, window);
 }
 
 void twindow_setting::erase_patch(twindow& window)
 {
-	tmode_navigate::erase_patch(patch_bar_, window, patch_current_tab_);
+	tmode_navigate::erase_patch(*patch_bar_, window, patch_current_tab_);
 
 	patch_current_tab_ = 1;
-	patch_bar_.select(patch_current_tab_);
+	patch_bar_->select(patch_current_tab_);
 	switch_patch_cfg(window);
 }
 
 void twindow_setting::rename_patch(twindow& window)
 {
-	tmode_navigate::rename_patch(patch_bar_, window, patch_current_tab_);
+	tmode_navigate::rename_patch(*patch_bar_, window, patch_current_tab_);
 }
 
 void twindow_setting::fill_change_list2(tlistbox& list, const tmode& mode, const unit::tchild& child)
@@ -1122,13 +1172,13 @@ int twindow_setting::calculate_remove2_count(const unit::tchild& child, int at) 
 void twindow_setting::patch_toggle_tabbar(twidget* widget)
 {
 	patch_current_tab_ = (int)reinterpret_cast<long>(widget->cookie());
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
 
 	twindow* window = widget->get_window();
 	switch_patch_cfg(*window);
 }
 
-std::string twindow_setting::form_tab_label(ttabbar& navigate, int at) const
+std::string twindow_setting::form_tab_label(treport& navigate, int at) const
 {
 	const tmode& mode = controller_.mode(at);
 

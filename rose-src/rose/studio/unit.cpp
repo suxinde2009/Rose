@@ -145,6 +145,11 @@ bool tadjust::cfg_is_rect_fields(const config& cfg)
 	return true;
 }
 
+bool tadjust::cfg_has_rect_fields(const config& cfg)
+{
+	return cfg.has_attribute("rect");
+}
+
 config tadjust::generate_empty_rect_cfg()
 {
 	config cfg;
@@ -250,9 +255,6 @@ unit::unit(mkwin_controller& controller, mkwin_display& disp, unit_map& units, c
 	, parent_(tparent(parent, number))
 	, adjusts_()
 {
-	if (is_report()) {
-		cell_.widget.horizontal_mode = gui2::tscrollbar_container::always_invisible; 
-	}
 }
 
 unit::unit(mkwin_controller& controller, mkwin_display& disp, unit_map& units, int type, unit* parent, int number)
@@ -876,9 +878,13 @@ void unit::generate_widget(config& cfg) const
 	}
 
 	if (is_scroll()) {
-		if (cell_.widget.horizontal_mode != gui2::tscrollbar_container::auto_visible) {
+		if (is_report() && cell_.widget.vertical_mode != gui2::tscrollbar_container::auto_visible) {
+			sub["horizontal_scrollbar_mode"] = gui2::horizontal_mode.find(gui2::tscrollbar_container::always_invisible)->second.id;
+
+		} else if (cell_.widget.horizontal_mode != gui2::tscrollbar_container::auto_visible) {
 			sub["horizontal_scrollbar_mode"] = gui2::horizontal_mode.find(cell_.widget.horizontal_mode)->second.id;
 		}
+
 		if (cell_.widget.vertical_mode != gui2::tscrollbar_container::auto_visible) {
 			sub["vertical_scrollbar_mode"] = gui2::vertical_mode.find(cell_.widget.vertical_mode)->second.id;
 		}
@@ -932,7 +938,7 @@ void unit::generate_widget_tpl(config& cfg) const
 	//		{GUI__CHAT_WIDGET}
 	// [/column]
 	std::string id = unit::extract_from_widget_tpl(widget_.first);
-	const config& tpl_cfg = controller_.core_config().find_child("widget_template", "id", id);
+	const config& tpl_cfg = controller_.core_config().find_child("tpl_widget", "id", id);
 	cfg[noise_config_key("widget")] = tpl_cfg["widget"].str();
 
 	controller_.insert_used_widget_tpl(tpl_cfg);
@@ -1383,7 +1389,7 @@ std::pair<unit*, int> unit::tchild::find_layer(const std::string& id) const
 bool unit::from_widget_tpl(const config& cfg)
 {
 	std::string tpl_id = extract_from_tpl_widget_id(cell_.id);
-	const config& tpl_cfg = controller_.core_config().find_child("widget_template", "id", tpl_id);
+	const config& tpl_cfg = controller_.core_config().find_child("tpl_widget", "id", tpl_id);
 	if (!tpl_cfg) {
 		return false;
 	}
@@ -1650,11 +1656,14 @@ void unit::erase_adjust(const tmode& mode, int type)
 	}
 }
 
-void unit::adjust_clear_rect_cfg()
+void unit::adjust_clear_rect_cfg(const tmode* mode)
 {
 	for (std::vector<tadjust>::iterator it = adjusts_.begin(); it != adjusts_.end(); ++ it) {
 		tadjust& adjust = *it;
 		if (adjust.type != tadjust::CHANGE) {
+			continue;
+		}
+		if (mode && adjust.mode != *mode) {
 			continue;
 		}
 		adjust.pure_change_fields(false);

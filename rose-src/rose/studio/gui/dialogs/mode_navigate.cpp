@@ -75,23 +75,26 @@ tmode_navigate::tmode_navigate(mkwin_controller& controller, display& disp)
 {
 }
 
-void tmode_navigate::pre_show(ttabbar& navigate, twindow& window, const std::string& id)
+treport* tmode_navigate::pre_show(twindow& window, const std::string& id)
 {
-	navigate.set_report(find_widget<treport>(&window, id, false, true));
-	reload_navigate(navigate, window);
+	treport* report = find_widget<treport>(&window, id, false, true);
+	report->tabbar_init(true, "tab");
+	reload_navigate(*report, window);
+
+	return report;
 }
 
-void tmode_navigate::reload_tab_label(ttabbar& navigate) const
+void tmode_navigate::reload_tab_label(treport& navigate) const
 {
-	const tgrid::tchild* children = navigate.report()->content_grid()->children();
-	int childs = ttabbar::front_childs + navigate.childs();
-	for (int i = ttabbar::front_childs; i < childs; i ++) {
+	const tgrid::tchild* children = navigate.child_begin();
+	int childs = navigate.childs();
+	for (int i = 0; i < childs; i ++) {
 		tcontrol* widget = dynamic_cast<tcontrol*>(children[i].widget_);
-		widget->set_label(form_tab_label(navigate, i - ttabbar::front_childs));
+		widget->set_label(form_tab_label(navigate, i));
 	}
 }
 
-void tmode_navigate::reload_navigate(ttabbar& navigate, twindow& window)
+void tmode_navigate::reload_navigate(treport& navigate, twindow& window)
 {
 	navigate.erase_children();
 
@@ -100,7 +103,7 @@ void tmode_navigate::reload_navigate(ttabbar& navigate, twindow& window)
 	std::stringstream ss;
 	int index = 0;
 	for (std::vector<tmode>::const_iterator it = modes.begin(); it != modes.end(); ++ it) {
-		tcontrol* widget = navigate.create_child(null_str, null_str, NULL, null_str);
+		tcontrol* widget = navigate.create_child(null_str, null_str, NULL);
 		widget->set_label(form_tab_label(navigate, index));
 		widget->set_cookie(reinterpret_cast<void*>(index ++));
 		navigate.insert_child(*widget);
@@ -109,7 +112,7 @@ void tmode_navigate::reload_navigate(ttabbar& navigate, twindow& window)
 	navigate.replacement_children();
 }
 
-void tmode_navigate::append_patch(ttabbar& navigate, twindow& window)
+void tmode_navigate::append_patch(treport& navigate, twindow& window)
 {
 	gui2::tedit_box::tparam param(_("New patch"), null_str, _("ID"), "_untitled");
 	{
@@ -133,7 +136,7 @@ void tmode_navigate::append_patch(ttabbar& navigate, twindow& window)
 	std::vector<tmode>::const_iterator it = modes.begin();
 	std::advance(it, original_size);
 	for (int index = original_size; it != modes.end(); ++ it) {
-		tcontrol* widget = navigate.create_child(null_str, null_str, NULL, null_str);
+		tcontrol* widget = navigate.create_child(null_str, null_str, NULL);
 		widget->set_label(form_tab_label(navigate, index));
 		widget->set_cookie(reinterpret_cast<void*>(index ++));
 		navigate.insert_child(*widget);
@@ -141,7 +144,7 @@ void tmode_navigate::append_patch(ttabbar& navigate, twindow& window)
 	navigate.replacement_children();
 }
 
-void tmode_navigate::rename_patch(ttabbar& navigate, twindow& window, int at)
+void tmode_navigate::rename_patch(treport& navigate, twindow& window, int at)
 {
 	const std::vector<tmode>& modes = controller_.modes();
 	const tmode& mode = modes[at];
@@ -175,7 +178,7 @@ void tmode_navigate::rename_patch(ttabbar& navigate, twindow& window, int at)
 	reload_tab_label(navigate);
 }
 
-void tmode_navigate::erase_patch(ttabbar& navigate, twindow& window, int at)
+void tmode_navigate::erase_patch(treport& navigate, twindow& window, int at)
 {
 	const std::vector<tmode>& modes = controller_.modes();
 	at -= at % tmode::res_count;

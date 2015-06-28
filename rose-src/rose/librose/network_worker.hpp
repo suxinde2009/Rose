@@ -65,7 +65,7 @@ void queue_file(TCPsocket sock, const std::string&);
 
 size_t queue_data(TCPsocket sock, const config& buf, const std::string& packet_type);
 bool is_locked(const TCPsocket sock);
-bool close_socket(TCPsocket sock);
+void close_socket(TCPsocket sock);
 TCPsocket detect_error();
 
 std::pair<network::statistics, network::statistics> get_current_transfer_stats(TCPsocket sock);

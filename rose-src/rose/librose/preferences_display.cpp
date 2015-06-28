@@ -57,7 +57,9 @@ void set_fullscreen(display& disp, const bool ison)
 		int bpp = video.modePossible(res.first, res.second, 32, flags);
 		VALIDATE(bpp > 0, "bpp must be large than 0!");
 
-		video.setMode(res.first, res.second,bpp, flags);
+		// gui2::tpoint orientation_size = gui2::twidget::toggle_orientation_size(res.first, res.second);
+
+		video.setMode(res.first, res.second, bpp, flags);
 		display::require_change_resolution = true;
 	}
 }
@@ -67,7 +69,7 @@ void set_scroll_to_action(bool ison)
 	_set_scroll_to_action(ison);
 }
 
-bool set_resolution(display& disp, const unsigned width, const unsigned height)
+bool set_resolution(display& disp, const unsigned width, const unsigned height, bool theme)
 {
 	// - Ayin: disabled the following code. Why would one want to enforce that?
 	// Some 16:9, or laptop screens, may have resolutions which do not
@@ -83,7 +85,10 @@ bool set_resolution(display& disp, const unsigned width, const unsigned height)
 	if (rect.w == width && rect.h == height) {
 		return true;
 	}
-	if (width < 480 || height < 320) {
+
+	gui2::tpoint landscape_size = gui2::twidget::toggle_orientation_size(width, height);
+
+	if (landscape_size.x < 480 || landscape_size.y < 320) {
 		return false;
 	}
 
@@ -93,11 +98,13 @@ bool set_resolution(display& disp, const unsigned width, const unsigned height)
 	VALIDATE(bpp > 0, "bpp must be large than 0!");
 
 	video.setMode(width, height, bpp, flags);
-	display::require_change_resolution = true;
+	if (theme) {
+		display::require_change_resolution = true;
+	}
 
 	const std::string postfix = fullscreen() ? "resolution" : "windowsize";
-	preferences::set('x' + postfix, lexical_cast<std::string>(width));
-	preferences::set('y' + postfix, lexical_cast<std::string>(height));
+	preferences::set('x' + postfix, lexical_cast<std::string>(landscape_size.x));
+	preferences::set('y' + postfix, lexical_cast<std::string>(landscape_size.y));
 	
 	return true;
 }
@@ -164,7 +171,8 @@ bool show_video_mode_dialog(display& disp)
 		return false;
 	}
 
-	const std::pair<int,int> current_res(video.getSurface()->w, video.getSurface()->h);
+	gui2::tpoint landscape_size = gui2::twidget::toggle_orientation_size(video.getSurface()->w, video.getSurface()->h);
+	const std::pair<int,int> current_res(landscape_size.x, landscape_size.y);
 	resolutions.push_back(current_res);
 	if (!fullScreen) {
 		resolutions.push_back(std::make_pair(480, 320));
@@ -208,7 +216,9 @@ bool show_video_mode_dialog(display& disp)
 	}
 
 	std::pair<int, int>& res = resolutions[static_cast<size_t>(choice)];
-	set_resolution(disp, res.first, res.second);
+
+	gui2::tpoint normal_size = gui2::twidget::toggle_orientation_size(res.first, res.second);
+	set_resolution(disp, normal_size.x, normal_size.y);
 	return true;
 }
 

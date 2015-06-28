@@ -18,7 +18,6 @@
 
 #include "display.hpp"
 #include "gui/auxiliary/widget_definition.hpp"
-#include "gui/widgets/report.hpp"
 
 class mkwin_controller;
 class unit_map;
@@ -85,7 +84,7 @@ private:
 	mkwin_controller& controller_;
 	unit_map& units_;
 	gui2::treport* widget_palette_;
-	gui2::ttabbar scroll_header_;
+	gui2::treport* scroll_header_;
 
 	std::string current_widget_type_;
 	std::pair<std::string, gui2::tcontrol_definition_ptr> selected_widget_;

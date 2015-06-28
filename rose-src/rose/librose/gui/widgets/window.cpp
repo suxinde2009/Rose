@@ -29,7 +29,6 @@
 #include "gui/auxiliary/event/message.hpp"
 #include "gui/auxiliary/log.hpp"
 #include "gui/auxiliary/window_builder/control.hpp"
-#include "gui/dialogs/tip.hpp"
 #include "gui/widgets/button.hpp"
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/listbox.hpp"
@@ -265,6 +264,42 @@ twindow* tmanager::window(const unsigned id)
 
 } // namespace
 
+bool twindow::set_orientation_resolution()
+{
+	SDL_Rect rect = screen_area();
+
+	if (!orientation_effect_resolution(rect.w, rect.h)) {
+		return false;
+	}
+	int swapped_width = rect.h;
+	int swapped_height = rect.w;
+	preferences::set_resolution(*display::get_singleton(), swapped_width, swapped_height, false);
+	// update_screen_size();
+
+		rect = screen_area();
+		settings::screen_width = rect.w;
+		settings::screen_height = rect.h;
+
+	return true;
+}
+
+void twindow::enter_orientation(torientation orientation)
+{
+	bool original_landscape = current_landscape;
+	current_landscape = landscape_from_orientation(orientation, current_landscape);
+	if (current_landscape != original_landscape) {
+		set_orientation_resolution();
+	}
+}
+
+void twindow::recover_landscape(bool original_landscape)
+{
+	if (current_landscape != original_landscape) {
+		current_landscape = original_landscape;
+		set_orientation_resolution();
+	}
+}
+
 twindow::twindow(CVideo& video,
 		tformula<unsigned>x,
 		tformula<unsigned>y,
@@ -277,6 +312,7 @@ twindow::twindow(CVideo& video,
 		const unsigned maximum_height,
 		const std::string& definition,
 		const bool theme,
+		const torientation orientation,
 		const twindow_builder::tresolution::ttip& tooltip,
 		const twindow_builder::tresolution::ttip& helptip)
 	: tpanel()
@@ -310,12 +346,19 @@ twindow::twindow(CVideo& video,
 	, dirty_list_()
 	, bg_opaque_(t_unset)
 	, fix_coordinate_(theme)
+	, orientation_(orientation)
+	, original_landscape_(current_landscape)
+	, tip_rect_(empty_rect)
 #ifdef DEBUG_WINDOW_LAYOUT_GRAPHS
 	, debug_layout_(new tdebug_layout_graph(this))
 #endif
 	, event_distributor_(new event::tdistributor(
 			*this, event::tdispatcher::front_child))
 {
+	if (!is_theme()) {
+		enter_orientation(orientation_);
+	}
+	
 	// We load the config in here as exception.
 	// Our caller did update the screen size so no need for us to do that again.
 	set_definition(definition);
@@ -365,15 +408,6 @@ twindow::twindow(CVideo& video,
 				, _5)
 			, event::tdispatcher::back_pre_child);
 
-	connect_signal<event::MESSAGE_SHOW_HELPTIP>(
-			  boost::bind(
-				  &twindow::signal_handler_message_show_helptip
-				, this
-				, _2
-				, _3
-				, _5)
-			, event::tdispatcher::back_pre_child);
-
 	connect_signal<event::REQUEST_PLACEMENT>(
 			  boost::bind(
 				  &twindow::signal_handler_request_placement
@@ -407,9 +441,7 @@ twindow::~twindow()
 	 * Another issue is that on smallgui and an MP game the tooltip not
 	 * unrendered properly can capture the mouse and make playing impossible.
 	 */
-	if(show_mode_ == modal) {
-		tip::remove();
-	}
+	remove_tip();
 
 	tmanager::instance().remove(*this);
 
@@ -419,6 +451,10 @@ twindow::~twindow()
 
 #endif
 	delete event_distributor_;
+
+	if (!is_theme()) {
+		recover_landscape(original_landscape_);
+	}
 }
 
 twindow* twindow::window_instance(const unsigned handle)
@@ -434,19 +470,6 @@ void twindow::update_screen_size()
 		const SDL_Rect rect = screen_area();
 		settings::screen_width = rect.w;
 		settings::screen_height = rect.h;
-
-		settings::gamemap_width = settings::screen_width;
-		settings::gamemap_height = settings::screen_height;
-
-		display* disp = display::get_singleton();
-		if (disp) {
-			const unsigned w = disp->map_outside_area().w;
-			const unsigned h = disp->map_outside_area().h;
-			if(w && h) {
-				settings::gamemap_width = w;
-				settings::gamemap_height = h;
-			}
-		}
 	}
 }
 
@@ -519,12 +542,6 @@ void twindow::show_non_modal(/*const unsigned auto_close_timeout*/)
 
 int twindow::show(const bool restore, const unsigned auto_close_timeout)
 {
-	/*
-	 * Removes the old tip if one shown. The show_tip doesn't remove
-	 * the tip, since it's the tip.
-	 */
-	tip::remove();
-
 	show_mode_ = modal;
 
 	/**
@@ -687,7 +704,7 @@ void twindow::draw()
 		populate_dirty_list(*this, call_stack);
 	}
 
-	if (dirty_list_.empty()) {
+	if (!has_tip() && dirty_list_.empty()) {
 		if (preferences::use_color_cursors() || sunset_) {
 			surface frame_buffer = get_video_surface();
 
@@ -799,6 +816,7 @@ void twindow::draw()
 	}
 
 	dirty_list_.clear();
+
 /*
 	std::vector<twidget*> call_stack;
 	populate_dirty_list(*this, call_stack);
@@ -948,21 +966,23 @@ void twindow::layout()
 	if (size.x > static_cast<int>(maximum_width) || size.y > static_cast<int>(maximum_height)) {
 		// @todo implement the scrollbars on777777 the window.
 
-		std::stringstream sstr;
-		sstr << __FILE__ << ":" << __LINE__ << " in function '" << __func__
-				<< "' found the following problem: Failed to size window;"
+		std::stringstream err;
+
+		err << _("Failed to show a dialog, which doesn't fit on the screen.") << "\n";
+/*
+		err << "'Found the following problem: Failed to size window;"
 				<< " wanted size " << get_best_size()
 				<< " available size "
 				<< maximum_width << ',' << maximum_height
 				<< " screen size "
 				<< settings::screen_width << ',' << settings::screen_height
 				<< '.';
+*/
+		err << " wanted size " << get_best_size() << "\n";
+		err << " available size " << maximum_width << ',' << maximum_height << "\n";
+		err << " screen size " << settings::screen_width << ',' << settings::screen_height;
 
-		// std::string user_msg = generate_layout_str(0);
-		// throw twml_exception(user_msg, sstr.str());
-
-		throw twml_exception(tintegrate::generate_format(id(), "yellow") + _("Failed to show a dialog, "
-				"which doesn't fit on the screen."), sstr.str());
+		throw tlayout_exception(*this, err.str());
 	}
 
 	tpoint origin(0, 0);
@@ -1121,6 +1141,94 @@ bool twindow::click_dismiss()
 		return true;
 	}
 	return false;
+}
+
+void twindow::insert_tip(const std::string& msg, const twidget& widget)
+{
+	if (msg.empty()) {
+		return;
+	}
+
+	std::map<std::string, ttip_definition>::iterator it = settings::tip_cfgs.find("default");
+	if (it == settings::tip_cfgs.end()) {
+		return;
+	}
+	const ttip_definition& definition = it->second;
+	const SDL_Rect location = widget.get_rect();
+
+	int maximum_width = twidget::w_ * 6 / 10; // maximum 60%
+	tpoint size = font::get_rendered_text_size(msg, maximum_width, definition.text_font_size, font::NORMAL_COLOR, false);
+
+	// constrict tip message inside current window.
+	int w = size.x + definition.text_extra_width;
+	int h = size.y + definition.text_extra_height;
+
+	int x = location.x + location.w;
+	if (x + w > (int)(twidget::x_ + twidget::w_)) {
+		x = twidget::x_ + twidget::w_ - w;
+	}
+	if (x < (int)twidget::x_) {
+		x = twidget::x_;
+	}
+
+	int y = location.y + location.h + definition.vertical_gap;
+	if (y + h > (int)(twidget::y_ + twidget::h_)) {
+		y = location.y - h - definition.vertical_gap;
+	}
+	if (y < (int)twidget::y_) {
+		y = twidget::y_;
+	}
+
+	tip_rect_ = ::create_rect(x, y, w, h);
+	tip_surf_.assign(create_neutral_surface(w, h));
+	tip_buf_.assign(create_neutral_surface(w, h));
+
+	tcanvas& _canvas = canvas(1);
+	_canvas.set_variable("tip_width", variant(w));
+	_canvas.set_variable("tip_height", variant(h));
+	_canvas.set_variable("tip_text_maximum_width", variant(maximum_width));
+	_canvas.set_variable("tip", variant(msg));
+
+	std::vector<tcanvas::tshape_ptr> tip;
+	tcanvas::parse_cfg(definition.cfg, tip);
+	for (std::vector<tcanvas::tshape_ptr>::iterator it = tip.begin(); it != tip.end(); ++ it) {
+		(*it)->draw(tip_surf_, _canvas.variables());
+	}
+}
+
+void twindow::draw_tip(surface& screen)
+{
+	if (tip_surf_) {
+		// Save the screen area where the cursor is being drawn onto the back buffer
+		SDL_Rect rect = tip_rect_;
+		sdl_blit(screen, &rect, tip_buf_, NULL);
+
+		sdl_blit(tip_surf_, NULL, screen, &rect);
+	}
+}
+
+void twindow::undraw_tip(surface& screen)
+{
+	if (tip_surf_) {
+		SDL_Rect rect = tip_rect_;
+		sdl_blit(tip_buf_, NULL, screen, &rect);
+	}
+}
+
+void twindow::remove_tip()
+{
+	if (has_tip()) {
+		display* disp = display::get_singleton();
+        surface frame_buffer = disp->video().getSurface();
+		disp->invalidate_locations_in_rect(tip_rect_);
+		undraw_tip(frame_buffer);
+
+		set_dirty();
+
+		tip_rect_ = empty_rect;
+		tip_surf_ = NULL;
+		tip_buf_ = NULL;
+	}
 }
 
 const std::string& twindow::get_control_type() const
@@ -1284,13 +1392,6 @@ void twindow::signal_handler_sdl_video_resize(
 {
 	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
 
-	if (new_size.x < preferences::min_allowed_width()
-			|| new_size.y < preferences::min_allowed_height()) {
-
-		DBG_GUI_E << LOG_HEADER << " resize aborted, too small.\n";
-		return;
-	}
-
 	if (new_size.x == static_cast<int>(settings::screen_width)
 			&& new_size.y == static_cast<int>(settings::screen_height)) {
 
@@ -1307,8 +1408,6 @@ void twindow::signal_handler_sdl_video_resize(
 		return;
 	}
 
-	settings::gamemap_width += new_size.x - settings::screen_width ;
-	settings::gamemap_height += new_size.y - settings::screen_height ;
 	settings::screen_width = new_size.x;
 	settings::screen_height = new_size.y;
 	invalidate_layout();
@@ -1352,22 +1451,7 @@ void twindow::signal_handler_message_show_tooltip(
 	event::tmessage_show_tooltip& request =
 			dynamic_cast<event::tmessage_show_tooltip&>(message);
 
-	tip::show(video_, tooltip_.id, request.message, request.location);
-
-	handled = true;
-}
-
-void twindow::signal_handler_message_show_helptip(
-		  const event::tevent event
-		, bool& handled
-		, event::tmessage& message)
-{
-	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
-
-	event::tmessage_show_helptip& request =
-			dynamic_cast<event::tmessage_show_helptip&>(message);
-
-	tip::show(video_, helptip_.id, request.message, request.location);
+	insert_tip(request.message, request.widget);
 
 	handled = true;
 }

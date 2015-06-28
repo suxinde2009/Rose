@@ -40,26 +40,9 @@ extern void handle_app_event(Uint32 type);
 
 int cached_draw_events = 0;
 
-int revise_screen_width(int width)
-{
-	if (width < preferences::min_allowed_width()) {
-		return preferences::min_allowed_width();
-	}
-	return width;
-}
-
-int revise_screen_height(int height)
-{
-	if (height < preferences::min_allowed_height()) {
-		return preferences::min_allowed_height();
-	}
-	return height;
-}
-
 namespace events
 {
 
-void raise_help_string_event(int mousex, int mousey);
 bool ignore_finger_event;
 
 struct context
@@ -397,8 +380,7 @@ void pump()
 					// if the window must be redrawn, update the entire screen
 
 				} else if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-					info.resize_dimensions.first = revise_screen_width(event.window.data1);
-					info.resize_dimensions.second = revise_screen_height(event.window.data2);
+					
 				}
 				break;
 
@@ -406,7 +388,6 @@ void pump()
 				//always make sure a cursor is displayed if the
 				//mouse moves or if the user clicks
 				cursor::set_focus(true);
-				raise_help_string_event(event.motion.x,event.motion.y);
 				break;
 			}
 
@@ -488,46 +469,6 @@ void raise_draw_event()
 		// so we must use indexes instead of iterators here.
 		for (size_t i1 = 0, i2 = event_handlers.size(); i1 != i2 && i1 < event_handlers.size(); ++i1) {
 			event_handlers[i1]->draw();
-		}
-	}
-}
-
-void raise_volatile_draw_event()
-{
-	if(event_contexts.empty() == false) {
-
-		const std::vector<handler*>& event_handlers = event_contexts.back().handlers;
-
-		//events may cause more event handlers to be added and/or removed,
-		//so we must use indexes instead of iterators here.
-		for(size_t i1 = 0, i2 = event_handlers.size(); i1 != i2 && i1 < event_handlers.size(); ++i1) {
-			event_handlers[i1]->volatile_draw();
-		}
-	}
-}
-
-void raise_volatile_undraw_event()
-{
-	if(event_contexts.empty() == false) {
-
-		const std::vector<handler*>& event_handlers = event_contexts.back().handlers;
-
-		//events may cause more event handlers to be added and/or removed,
-		//so we must use indexes instead of iterators here.
-		for(size_t i1 = 0, i2 = event_handlers.size(); i1 != i2 && i1 < event_handlers.size(); ++i1) {
-			event_handlers[i1]->volatile_undraw();
-		}
-	}
-}
-
-void raise_help_string_event(int mousex, int mousey)
-{
-	if(event_contexts.empty() == false) {
-
-		const std::vector<handler*>& event_handlers = event_contexts.back().handlers;
-
-		for(size_t i1 = 0, i2 = event_handlers.size(); i1 != i2 && i1 < event_handlers.size(); ++i1) {
-			event_handlers[i1]->process_help_string(mousex,mousey);
 		}
 	}
 }

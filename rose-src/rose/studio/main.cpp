@@ -32,53 +32,11 @@ void set_zoom_to_default(int zoom)
 	image::set_zoom(display::default_zoom_);
 }
 
-namespace help {
-std::vector<topic> generate_topics(const bool sort_generated, const std::string &generator)
-{
-	std::vector<topic> res;
-	return res;
-}
-
-void generate_sections(const config *help_cfg, const std::string &generator, section &sec, int level)
-{
-	return;
-}
-}
-
 namespace http {
 bool register_user(display& disp, hero_map& heros, bool check_exist)
 {
 	return true;
 }
-}
-
-// anim_area
-int app_fill_anim_tags(std::map<const std::string, int>& tags)
-{
-	int index = area_anim::MAX_ROSE_ANIM;
-	tags.insert(std::make_pair("card", index ++));
-	tags.insert(std::make_pair("pass_scenario", index ++));
-	tags.insert(std::make_pair("blade", index ++));
-	tags.insert(std::make_pair("pierce", index ++));
-	tags.insert(std::make_pair("impact", index ++));
-	tags.insert(std::make_pair("archery", index ++));
-	tags.insert(std::make_pair("collapse", index ++));
-	tags.insert(std::make_pair("arcane", index ++));
-	tags.insert(std::make_pair("fire", index ++));
-	tags.insert(std::make_pair("cold", index ++));
-	tags.insert(std::make_pair("strike", index ++));
-	tags.insert(std::make_pair("magic", index ++));
-	tags.insert(std::make_pair("heal", index ++));
-	tags.insert(std::make_pair("destruct", index ++));
-	tags.insert(std::make_pair("formation_defend", index ++));
-	tags.insert(std::make_pair("income", index ++));
-
-	return tags.size() - 1;
-	// return area_anim::MAX_ROSE_ANIM;
-}
-
-void app_fill_anim(int type, const config& cfg)
-{
 }
 
 bool hero::check_valid() const
@@ -91,33 +49,12 @@ bool hero::confirm_carry_to(hero& h2, int carry_to)
 	return true;
 }
 
-
-void title_screen_finish(animation* anim)
-{
-}
-
-int start_title_screen_anim()
-{
-	display& disp = *display::get_singleton();
-	float_animation* anim = start_float_anim_th(disp, area_anim::UPGRADE);
-	anim->set_scale(800, 600, true, false);
-	anim->set_callback_finish(title_screen_finish);
-
-	std::stringstream strstr;
-	anim->replace_image_name("__bg.png", "tactic/bg-single-increase.png");
-	anim->replace_image_name("__id.png", "hero-256/116.png");
-	anim->replace_static_text("__formation_name", "");
-	anim->replace_static_text("__formation_description", "Upgrade");
-
-	start_float_anim_bh(*anim);
-
-	return 0;
-}
-
 class game_instance: public base_instance
 {
 public:
 	game_instance(int argc, char** argv);
+
+	void fill_anim_tags(std::map<const std::string, int>& tags);
 
 	void start_mkwin(bool theme);
 };
@@ -125,6 +62,41 @@ public:
 game_instance::game_instance(int argc, char** argv)
 	: base_instance(argc, argv)
 {
+}
+
+void game_instance::fill_anim_tags(std::map<const std::string, int>& tags)
+{
+	// although don't use below animation, but pass program verify, define them still.
+	int at = anim2::MIN_APP_ANIM;
+	tags.insert(std::make_pair("reinforce", at ++));
+	tags.insert(std::make_pair("individuality", at ++));
+	tags.insert(std::make_pair("tactic", at ++));
+	tags.insert(std::make_pair("formation_attack", at ++));
+	tags.insert(std::make_pair("perfect", at ++));
+	tags.insert(std::make_pair("stratagem_up", at ++));
+	tags.insert(std::make_pair("stratagem_down", at ++));
+	tags.insert(std::make_pair("load_scenario", at ++));
+	tags.insert(std::make_pair("flags", at ++));
+	tags.insert(std::make_pair("text", at ++));
+	tags.insert(std::make_pair("place", at ++));
+	tags.insert(std::make_pair("upgrade", at ++));
+	tags.insert(std::make_pair("card", at ++));
+	tags.insert(std::make_pair("pass_scenario", at ++));
+
+	tags.insert(std::make_pair("blade", at ++));
+	tags.insert(std::make_pair("pierce", at ++));
+	tags.insert(std::make_pair("impact", at ++));
+	tags.insert(std::make_pair("archery", at ++));
+	tags.insert(std::make_pair("collapse", at ++));
+	tags.insert(std::make_pair("arcane", at ++));
+	tags.insert(std::make_pair("fire", at ++));
+	tags.insert(std::make_pair("cold", at ++));
+	tags.insert(std::make_pair("strike", at ++));
+	tags.insert(std::make_pair("magic", at ++));
+	tags.insert(std::make_pair("heal", at ++));
+	tags.insert(std::make_pair("destruct", at ++));
+	tags.insert(std::make_pair("formation_defend", at ++));
+	tags.insert(std::make_pair("income", at ++));
 }
 
 void game_instance::start_mkwin(bool theme)
@@ -168,9 +140,8 @@ static int do_gameloop(int argc, char** argv)
 #endif
 
 	// modify some game_config variable
-	game_config::app = "studio";
-	game_config::app_msgid = "Rose";
-	game_config::app_channel = "#rose";
+	game_config::init("studio", "Rose", "#rose");
+	gui2::twidget::current_landscape = true;
 	game_config::wesnoth_program_dir = directory_name(argv[0]);
 	game_config::version = game_config::rose_version;
 	game_config::wesnoth_version = version_info(game_config::version);
@@ -307,8 +278,11 @@ static int do_gameloop(int argc, char** argv)
 	} catch (twml_exception& e) {
 		e.show(game.disp());
 
-	} catch(game_logic::formula_error& e) {
+	} catch (game_logic::formula_error& e) {
 		gui2::show_error_message(game.disp().video(), e.what());
+
+	} catch (type_error& e) {
+		gui2::show_error_message(game.disp().video(), std::string("formula type error: ") + e.message);
 	}
 
 	return 0;

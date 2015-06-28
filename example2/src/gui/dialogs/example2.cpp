@@ -1,4 +1,4 @@
-/* Require Rose v0.0.6 or above. $ */
+/* Require Rose v0.0.7 or above. $ */
 
 #define GETTEXT_DOMAIN "wesnoth-lib"
 
@@ -19,6 +19,7 @@
 #include "gui/widgets/scroll_text_box.hpp"
 #include "gui/widgets/toggle_button.hpp"
 #include "gui/widgets/stacked_widget.hpp"
+#include "gui/widgets/report.hpp"
 
 #include <boost/bind.hpp>
 
@@ -30,7 +31,7 @@ texample2::texample2(display& disp, bool first)
 	: tchat_(disp, CHAT_PAGE)
 	, disp_(disp)
 	, start_page_(first? CHAT_PAGE: PREFERENCES_PAGE)
-	, navigate_(true, false, "dusk_tab")
+	, navigate_(NULL)
 {
 }
 
@@ -44,16 +45,17 @@ void texample2::pre_show(CVideo& /*video*/, twindow& window)
 	labels.push_back(_("Chat"));
 	labels.push_back(_("Preferences"));
 
-	navigate_.set_report(find_widget<treport>(&window, "navigate", false, true));
-	navigate_.set_boddy(find_widget<twidget>(&window, "main_panel", false, true));
+	navigate_ = find_widget<treport>(&window, "navigate", false, true);
+	navigate_->tabbar_init(true, "dusk_tab");
+	navigate_->set_boddy(find_widget<twidget>(&window, "main_panel", false, true));
 	int index = 0;
 	for (std::vector<std::string>::const_iterator it = labels.begin(); it != labels.end(); ++ it) {
-		tcontrol* widget = navigate_.create_child(null_str, null_str, reinterpret_cast<void*>(index ++), null_str);
+		tcontrol* widget = navigate_->create_child(null_str, null_str, reinterpret_cast<void*>(index ++));
 		widget->set_label(*it);
-		navigate_.insert_child(*widget);
+		navigate_->insert_child(*widget);
 	}
-	navigate_.select(start_page_);
-	navigate_.replacement_children();
+	navigate_->select(start_page_);
+	navigate_->replacement_children();
 
 	page_panel_ = find_widget<tstacked_widget>(&window, "main_layers", false, true);
 	swap_page(window, start_page_, false);
@@ -86,18 +88,18 @@ void texample2::pre_show(CVideo& /*video*/, twindow& window)
 				, (int)CHANGE_LANGUAGE));
 }
 
-void texample2::toggle_tabbar(twidget* widget)
+void texample2::toggle_report(twidget* widget)
 {
-	ttabbar* tabbar = ttabbar::get_tabbar(widget);
-	if (tabbar != &navigate_) {
+	treport* report = treport::get_report(widget);
+	if (report != navigate_) {
 		// tchat_ has private tabbar, let tchat_ process them.
-		tchat_::toggle_tabbar(widget);
+		tchat_::toggle_report(widget);
 		return;
 	}
 	int page = (int)reinterpret_cast<long>(widget->cookie());
 	swap_page(*widget->get_window(), page, true);
 
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
 }
 
 void texample2::fullscreen_toggled(twidget* widget)

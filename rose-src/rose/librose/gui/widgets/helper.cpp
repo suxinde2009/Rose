@@ -121,8 +121,8 @@ void get_screen_size_variables(game_logic::map_formula_callable& variable)
 {
 	variable.add("screen_width", variant(settings::screen_width));
 	variable.add("screen_height", variant(settings::screen_height));
-	variable.add("gamemap_width", variant(settings::gamemap_width));
-	variable.add("gamemap_height", variant(settings::gamemap_height));
+	// variable.add("gamemap_width", variant(settings::gamemap_width));
+	// variable.add("gamemap_height", variant(settings::gamemap_height));
 	variable.add("default_gui", variant(!game_config::tiny_gui));
 	variable.add("vga", variant((settings::screen_width >= 640 && settings::screen_height >= 480)? true: false));
 }

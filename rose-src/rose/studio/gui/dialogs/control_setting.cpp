@@ -30,6 +30,7 @@
 #include "gui/widgets/scroll_text_box.hpp"
 #include "gui/widgets/toggle_button.hpp"
 #include "gui/widgets/stacked_widget.hpp"
+#include "gui/widgets/report.hpp"
 #include "gui/dialogs/combo_box.hpp"
 #include "gui/dialogs/message.hpp"
 #include "gui/dialogs/theme.hpp"
@@ -184,10 +185,10 @@ tcontrol_setting::tcontrol_setting(display& disp, mkwin_controller& controller, 
 	, u_(u)
 	, textdomains_(textdomains)
 	, linkeds_(linkeds)
-	, bar_(true, false, "dusk_tab")
-	, rect_navigate_(true, false, "tab")
+	, bar_(NULL)
+	, rect_navigate_(NULL)
 	, rect_current_tab_(0)
-	, advanced_navigate_(true, false, "tab")
+	, advanced_navigate_(NULL)
 	, advanced_current_tab_(0)
 	, must_use_rect_(controller.in_theme_top())
 	, current_rect_cfg_()
@@ -245,16 +246,17 @@ void tcontrol_setting::pre_show(CVideo& /*video*/, twindow& window)
 	labels.push_back(_("Size"));
 	labels.push_back(_("Advanced"));
 
-	bar_.set_report(find_widget<treport>(&window, "bar", false, true));
-	bar_.set_boddy(find_widget<twidget>(&window, "bar_panel", false, true));
+	bar_ = find_widget<treport>(&window, "bar", false, true);
+	bar_->tabbar_init(true, "dusk_tab");
+	bar_->set_boddy(find_widget<twidget>(&window, "bar_panel", false, true));
 	int index = 0;
 	for (std::vector<std::string>::const_iterator it = labels.begin(); it != labels.end(); ++ it) {
-		tcontrol* widget = bar_.create_child(null_str, null_str, reinterpret_cast<void*>(index ++), null_str);
+		tcontrol* widget = bar_->create_child(null_str, null_str, reinterpret_cast<void*>(index ++));
 		widget->set_label(*it);
-		bar_.insert_child(*widget);
+		bar_->insert_child(*widget);
 	}
-	bar_.select(BASE_PAGE);
-	bar_.replacement_children();
+	bar_->select(BASE_PAGE);
+	bar_->replacement_children();
 
 	page_panel_ = find_widget<tstacked_widget>(&window, "panel", false, true);
 	page_panel_->set_radio_layer(BASE_PAGE);
@@ -264,19 +266,19 @@ void tcontrol_setting::pre_show(CVideo& /*video*/, twindow& window)
 	if (controller_.theme()) {
 		pre_rect(window);
 	} else {
-		bar_.set_visible(RECT_PAGE, false);
+		bar_->set_child_visible(RECT_PAGE, false);
 	}
 
 	if (u_.has_size()) {
 		pre_size(window);
 	} else {
-		bar_.set_visible(SIZE_PAGE, false);
+		bar_->set_child_visible(SIZE_PAGE, false);
 	}
 
 	if (u_.widget().second.get()) {
 		pre_advanced(window);
 	} else {
-		bar_.set_visible(ADVANCED_PAGE, false);
+		bar_->set_child_visible(ADVANCED_PAGE, false);
 	}
 
 	connect_signal_mouse_left_click(
@@ -418,8 +420,10 @@ void tcontrol_setting::pre_rect(twindow& window)
 
 	rect_coor_ops_.resize(4);
 
-	tmode_navigate::pre_show(rect_navigate_, window, "rect_navigate");
-	rect_navigate_.set_boddy(find_widget<twidget>(&window, "rect_panel", false, true));
+	// require_show_flag require rect_navigate_ valid.
+	rect_navigate_ = find_widget<treport>(&window, "rect_navigate", false, true);
+	tmode_navigate::pre_show(window, "rect_navigate");
+	rect_navigate_->set_boddy(find_widget<twidget>(&window, "rect_panel", false, true));
 
 	bool toggled = must_use_rect_ || u_.fix_rect();
 	ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "rect", false, true);
@@ -431,6 +435,10 @@ void tcontrol_setting::pre_rect(twindow& window)
 	if (!toggled) {
 		rect_toggled(toggle);
 	}
+
+	toggle = find_widget<ttoggle_button>(&window, "custom_rect", false, true);
+	toggle->set_visible(twidget::INVISIBLE);
+	toggle->set_callback_state_change(boost::bind(&tcontrol_setting::custom_rect_toggled, this, _1));
 
 	connect_signal_mouse_left_click(
 			  find_widget<tbutton>(&window, "set_ref", false)
@@ -481,10 +489,10 @@ void tcontrol_setting::pre_size(twindow& window)
 
 void tcontrol_setting::pre_advanced(twindow& window)
 {
-	tmode_navigate::pre_show(advanced_navigate_, window, "advanced_navigate");
-	advanced_navigate_.set_boddy(find_widget<twidget>(&window, "advanced_panel", false, true));
+	advanced_navigate_ = tmode_navigate::pre_show(window, "advanced_navigate");
+	advanced_navigate_->set_boddy(find_widget<twidget>(&window, "advanced_panel", false, true));
 	if (!controller_.theme()) {
-		advanced_navigate_.report()->set_visible(twidget::INVISIBLE);
+		advanced_navigate_->set_visible(twidget::INVISIBLE);
 
 		ttoggle_button* remove = find_widget<ttoggle_button>(&window, "remove", false, true);
 		remove->set_visible(twidget::INVISIBLE);
@@ -540,21 +548,17 @@ void tcontrol_setting::pre_advanced(twindow& window)
 				, this
 				, boost::ref(window)));
 
-	if (u_.is_report()) {
-		find_widget<tbutton>(&window, "_set_horizontal_mode", false).set_active(false);
-	}
-
 	current_advanced_cfg_ = u_.generate2_change2_cfg(cell_);
 	switch_advanced_cfg(window, current_advanced_cfg_, true);
 }
 
 bool tcontrol_setting::pre_toggle_tabbar(twidget* widget, twidget* previous)
 {
-	ttabbar* tabbar = ttabbar::get_tabbar(widget);
-	if (tabbar == &rect_navigate_) {
+	treport* report = treport::get_report(widget);
+	if (report == rect_navigate_) {
 		return rect_pre_toggle_tabbar(widget, previous);
 
-	} else if (tabbar == &advanced_navigate_) {
+	} else if (report == advanced_navigate_) {
 		return advanced_pre_toggle_tabbar(widget, previous);
 	} 
 
@@ -573,26 +577,26 @@ bool tcontrol_setting::pre_toggle_tabbar(twidget* widget, twidget* previous)
 	return ret;
 }
 
-void tcontrol_setting::toggle_tabbar(twidget* widget)
+void tcontrol_setting::toggle_report(twidget* widget)
 {
-	ttabbar* tabbar = ttabbar::get_tabbar(widget);
-	if (tabbar == &rect_navigate_) {
+	treport* report = treport::get_report(widget);
+	if (report == rect_navigate_) {
 		rect_toggle_tabbar(widget);
 		return;
-	} else if (tabbar == &advanced_navigate_) {
+	} else if (report == advanced_navigate_) {
 		advanced_toggle_tabbar(widget);
 		return;
 	} 
 	int page = (int)reinterpret_cast<long>(widget->cookie());
 	page_panel_->set_radio_layer(page);
 
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
 }
 
 void tcontrol_setting::save(twindow& window, bool& handled, bool& halt)
 {
 	bool ret = true;
-	int current_page = (int)reinterpret_cast<long>(bar_.cursel()->cookie());
+	int current_page = (int)reinterpret_cast<long>(bar_->cursel()->cookie());
 	if (current_page == BASE_PAGE) {
 		ret = save_base(window);
 	} else if (current_page == RECT_PAGE) {
@@ -664,10 +668,15 @@ bool tcontrol_setting::save_base(twindow& window)
 bool tcontrol_setting::save_rect(twindow& window)
 {
 	ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "rect", false, true);
-
 	if (!toggle->get_value()) {
 		return true;
 	}
+
+	toggle = find_widget<ttoggle_button>(&window, "custom_rect", false, true);
+	if (rect_current_tab_ && !toggle->get_value()) {
+		return true;
+	}
+
 	std::stringstream ss;
 	std::string val = calculate_rect_coor(window, 0);
 	if (val.empty()) {
@@ -703,7 +712,7 @@ bool tcontrol_setting::save_rect(twindow& window)
 		cell_.rect_cfg = current_rect_cfg_;
 	}
 
-	reload_tab_label(rect_navigate_);
+	reload_tab_label(*rect_navigate_);
 	return true;
 }
 
@@ -776,7 +785,7 @@ bool tcontrol_setting::save_advanced(twindow& window)
 		}
 	}
 
-	reload_tab_label(advanced_navigate_);
+	reload_tab_label(*advanced_navigate_);
 	return true;
 }
 
@@ -964,6 +973,8 @@ void tcontrol_setting::rect_toggled(twidget* widget)
 {
 	VALIDATE(!rect_current_tab_, null_str);
 
+	const tmode& current_mode = controller_.mode(rect_current_tab_);
+
 	ttoggle_button* toggle = dynamic_cast<ttoggle_button*>(widget);
 	twindow* window = toggle->get_window();
 
@@ -972,6 +983,12 @@ void tcontrol_setting::rect_toggled(twidget* widget)
 	grid->set_visible(active? twidget::VISIBLE: twidget::INVISIBLE);
 
 	if (active) {
+		// ttoggle_button* toggle = find_widget<ttoggle_button>(window, "custom_rect", false, true);
+		// toggle->set_visible(twidget::VISIBLE);
+		// toggle->set_active(true);
+
+		grid->set_visible(twidget::VISIBLE);
+
 		current_rect_cfg_ = tadjust::generate_empty_rect_cfg();
 		switch_rect_cfg(*window, current_rect_cfg_);
 
@@ -979,8 +996,34 @@ void tcontrol_setting::rect_toggled(twidget* widget)
 		current_rect_cfg_.clear();
 		cell_.rect_cfg = current_rect_cfg_;
 		// clear all rect change.
-		u_.adjust_clear_rect_cfg();
-		reload_tab_label(rect_navigate_);
+		u_.adjust_clear_rect_cfg(NULL);
+		reload_tab_label(*rect_navigate_);
+	}
+}
+
+void tcontrol_setting::custom_rect_toggled(twidget* widget)
+{
+	VALIDATE(rect_current_tab_, null_str);
+
+	ttoggle_button* toggle = dynamic_cast<ttoggle_button*>(widget);
+	twindow* window = toggle->get_window();
+
+	bool active = toggle->get_value();
+	tgrid* grid = find_widget<tgrid>(window, "grid_set_rect2", false, true);
+	grid->set_visible(active? twidget::VISIBLE: twidget::INVISIBLE);
+
+	if (active) {
+		current_rect_cfg_ = get_derived_res_change_cfg(rect_current_tab_, true);
+		switch_rect_cfg(*window, current_rect_cfg_);
+
+	} else {
+		// current_rect_cfg_.clear();
+		// cell_.rect_cfg = current_rect_cfg_;
+
+		// clear current mode's rect change.
+		const tmode& current_mode = controller_.mode(rect_current_tab_);
+		u_.adjust_clear_rect_cfg(&current_mode);
+		reload_tab_label(*rect_navigate_);
 	}
 }
 
@@ -1318,11 +1361,28 @@ void tcontrol_setting::rect_toggle_tabbar(twidget* widget)
 {
 	twindow* window = widget->get_window();
 	rect_current_tab_ = (int)reinterpret_cast<long>(widget->cookie());
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
+
+	const tmode& current_mode = controller_.mode(rect_current_tab_);
 
 	ttoggle_button* toggle = find_widget<ttoggle_button>(window, "rect", false, true);
 	toggle->set_active(!must_use_rect_ && !rect_current_tab_);
 	if (!toggle->get_value()) {
+		return;
+	}
+
+	bool has_rect = true;
+
+	toggle = find_widget<ttoggle_button>(window, "custom_rect", false, true);
+	toggle->set_visible(rect_current_tab_? twidget::VISIBLE: twidget::INVISIBLE);
+	if (rect_current_tab_) {
+		has_rect = tadjust::cfg_has_rect_fields(u_.adjust(current_mode, tadjust::CHANGE).cfg);
+		toggle->set_value(has_rect);
+	}
+
+	tgrid* grid = find_widget<tgrid>(window, "grid_set_rect2", false, true);
+	grid->set_visible(has_rect? twidget::VISIBLE: twidget::INVISIBLE);
+	if (!has_rect) {
 		return;
 	}
 
@@ -1361,7 +1421,7 @@ config tcontrol_setting::get_derived_res_change_cfg(int current_tab, bool rect) 
 	return result;
 }
 
-std::string tcontrol_setting::form_tab_label(ttabbar& navigate, int at) const
+std::string tcontrol_setting::form_tab_label(treport& navigate, int at) const
 {
 	const tmode& mode = controller_.mode(at);
 
@@ -1374,7 +1434,7 @@ std::string tcontrol_setting::form_tab_label(ttabbar& navigate, int at) const
 	return ss.str();
 }
 
-bool tcontrol_setting::require_show_flag(ttabbar& navigate, int index) const
+bool tcontrol_setting::require_show_flag(treport& navigate, int index) const
 {
 	if (!index) {
 		return false;
@@ -1384,7 +1444,7 @@ bool tcontrol_setting::require_show_flag(ttabbar& navigate, int index) const
 	if (!adjust.valid()) {
 		return false;
 	}
-	if (&navigate == &rect_navigate_) {
+	if (&navigate == rect_navigate_) {
 		return adjust.different_change_cfg(u_.get_base_change_cfg(mode, true, cell_.rect_cfg), t_true);
 	} else {
 		return adjust.different_change_cfg(u_.get_base_change_cfg(mode, false, u_.generate2_change2_cfg(cell_)), t_false);
@@ -1412,7 +1472,7 @@ void tcontrol_setting::advanced_toggle_tabbar(twidget* widget)
 {
 	twindow* window = widget->get_window();
 	advanced_current_tab_ = (int)reinterpret_cast<long>(widget->cookie());
-	tdialog::toggle_tabbar(widget);
+	tdialog::toggle_report(widget);
 
 	if (!advanced_current_tab_) {
 		current_advanced_cfg_ = u_.generate2_change2_cfg(cell_);

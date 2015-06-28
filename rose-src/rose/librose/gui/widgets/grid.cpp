@@ -195,12 +195,17 @@ void tgrid::resize_children(int size)
 	}
 }
 
-void tgrid::init_report(int unit_w, int unit_h, int gap, bool extendable)
+int tgrid::children_vsize() const
+{
+	return children_vsize_ - stuff_size_;
+}
+
+void tgrid::report_create_stuff(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols)
 {
 	static const std::string report_stuff_id = "_stuff";
 
-	VALIDATE(!children_vsize_, "Must no child in report!");
-	VALIDATE(rows_ == 1, "Must one row in report!");
+	VALIDATE(!stuff_size_, "Must no stuff widget in report!");
+	// VALIDATE(rows_ == 1, "Must one row in report!");
 
 	std::stringstream ss;
 
@@ -213,33 +218,83 @@ void tgrid::init_report(int unit_w, int unit_h, int gap, bool extendable)
 		 * width >= n * (unit_w + gap_w) - gap_w;
 		 * n < width + gap_w / (unit_w + gap_w);
 		*/
-		cols = (w_ + gap) / (unit_w + gap);
+		if (fixed_cols == npos) {
+			cols = (w_ + gap) / (unit_w + gap);
+		} else {
+			cols = fixed_cols;
+		}
 	}
 
-	// although rows_ = 1, if tgrid::calcuate_best_size don't called, row_height_ is empty
-	if (row_height_.empty()) {
-		row_height_.push_back(0);
-	}
-	row_height_[0] = unit_h;
 	for (int n = 0; n < cols; n ++) {
 		ss.str("");
 		ss << report_stuff_id << n;
 		tspacer* spacer = create_spacer(ss.str());
-		insert_child(unit_w, unit_h, *spacer, -1, false);
+		insert_child(unit_w, unit_h, *spacer, npos);
 		stuff_widget_.push_back(spacer);
 	}
-	stuff_size_ = cols_;
+	stuff_size_ = cols;
 }
 
-int tgrid::children_vsize() const
+void tgrid::calculate_grid_params(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols)
 {
-	return children_vsize_ - stuff_size_;
+	if (stuff_widget_.empty()) {
+		if (extendable) {
+			// multi-report must use fixed size.
+			// in order to calculate cols, first require know w_, h_
+			VALIDATE(w_ >= (unsigned)(unit_w + gap + unit_w), "Width of report must not less than 2*unit_w + gap_w!");
+		}
+		report_create_stuff(unit_w, unit_h, gap, extendable, fixed_cols);
+	}
+
+	// cols_, rows_, row_height_, col_width_
+	int vsize = children_vsize_ - stuff_size_;
+
+	if (!extendable) {
+		rows_ = 1;
+		row_grow_factor_.resize(rows_, 0);
+		row_height_.resize(rows_, unit_h);
+
+		cols_ = vsize + 1;
+		// last is stuff. it's grow factor is 1, fill when replacement.
+		col_grow_factor_.resize(cols_, 0);
+		// if unit_w == 0, col_width_ will update when replacement.
+		col_width_.resize(cols_, unit_w);
+
+	} else {
+		const int cols = fixed_cols == npos? (w_ + gap) / (unit_w + gap): fixed_cols;
+		int quotient = vsize / cols;
+		int remainder = vsize % cols;
+
+		VALIDATE((int)cols == stuff_widget_.size(), "Must create equal size stuff!");
+
+		rows_ = quotient + (remainder? 1: 0);
+		cols_ = cols;
+		row_grow_factor_.resize(rows_, 0);
+		col_grow_factor_.resize(cols_, 0);
+
+		row_height_.resize(rows_, unit_h);
+		col_width_.resize(cols_, unit_w);
+
+		if (remainder) {
+			stuff_size_ = cols - remainder;
+		} else {
+			stuff_size_ = 0;
+		}
+		children_vsize_ = vsize + stuff_size_;
+
+		int at = 0;
+		for (at = 0; at < stuff_size_; at ++) {
+			children_[vsize + at].widget_ = stuff_widget_[at];
+		}
+		at = children_vsize_;
+		while (at < children_size_ && children_[at].widget_) {
+			children_[at ++].widget_ = NULL;
+		}
+	}
 }
 
-void tgrid::insert_child(int unit_w, int unit_h, twidget& widget, int at, bool extendable)
+void tgrid::insert_child(int unit_w, int unit_h, twidget& widget, int at)
 {
-	size_t max_cols = stuff_widget_.size();
-
 	// make sure the new child is valid before deferring
 	widget.set_parent(this);
 	if (at == npos || at > children_vsize_ - stuff_size_) {
@@ -247,45 +302,17 @@ void tgrid::insert_child(int unit_w, int unit_h, twidget& widget, int at, bool e
 	}
 
 	// below memmove require children_size_ are large than children_vsize_!
-	// resize_children require large than exactly rows_*cols_. because children_vsize_ maybe equal it.
-	if (extendable) {
-		if (stuff_size_ != 1) {
-			memmove(&(children_[at + 1]), &(children_[at]), (children_vsize_ - at) * sizeof(tchild));
-			stuff_size_ --;
+	resize_children(children_vsize_ + 1);
 
-		} else {
-			rows_ ++;
-			row_height_.push_back(unit_h);
-			// append all stuff widget
-			resize_children((rows_ * cols_) + 1);
-			for (std::vector<tspacer*>::const_iterator it = stuff_widget_.begin(); it != stuff_widget_.end(); ++ it) {
-				children_[children_vsize_ ++].widget_ = *it;
-			}
-			stuff_size_ = max_cols;
-		}
-	} else {
-		// i think, all grow factor is 0. except last stuff.
-		if (cols_ > 0) {
-			// last is stuff. it's grow factor is 1.
-			col_grow_factor_[cols_ - 1] = 0;
-		}
-		col_grow_factor_.push_back(0);
-		cols_ ++;
-		col_width_.push_back(unit_w);
-	
-		resize_children((rows_ * cols_) + 1);
-		if (children_vsize_ - at) {
-			memmove(&(children_[at + 1]), &(children_[at]), (children_vsize_ - at) * sizeof(tchild));
-		}
+	if (children_vsize_ - at) {
+		memmove(&(children_[at + 1]), &(children_[at]), (children_vsize_ - at) * sizeof(tchild));
 	}
 
 	children_[at].widget_ = &widget;
-	if (!extendable) {
-		children_vsize_ ++;
-	}
+	children_vsize_ ++;
 }
 
-void tgrid::erase_child(int at, bool extendable)
+void tgrid::erase_child(int at)
 {
 	if (stuff_widget_.empty()) {
 		return;
@@ -300,40 +327,15 @@ void tgrid::erase_child(int at, bool extendable)
 		memcpy(&(children_[at]), &(children_[at + 1]), (children_vsize_ - at - 1) * sizeof(tchild));
 	}
 	children_[children_vsize_ - 1].widget_ = NULL;
-
-	size_t max_cols = stuff_widget_.size();
-	if (extendable) {
-		if (stuff_size_ != max_cols) {
-			children_[children_vsize_ - 1].widget_ = stuff_widget_[stuff_size_];
-			stuff_size_ ++;
-
-		} else {
-			row_height_.pop_back();
-			rows_ --;
-			children_vsize_ -= max_cols;
-			stuff_size_ = 1;
-		}
-
-	} else {
-		children_vsize_ --;
-
-		cols_ = children_vsize_;
-		col_grow_factor_.resize(cols_);
-		col_width_.pop_back();
-	}
+	children_vsize_ --;
 }
 
-void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendable)
+void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols, const tspacer& content)
 {
-	if (stuff_widget_.empty()) {
-		return;
-	}
+	calculate_grid_params(unit_w, unit_h, gap, extendable, fixed_cols);
 	
 	tpoint origin(x_, y_);
 	tpoint size(unit_w, unit_h);
-
-	// for variable-size, should recalculte size. 
-	row_height_[0] = unit_h;
 
 	size_t max_cols = stuff_widget_.size();
 	size_t n = 0, row = 0, col = 0;
@@ -343,6 +345,7 @@ void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendabl
 	} else {
 		end = children_vsize_ - stuff_size_;
 	}
+	int multiline_max_width = 0;
 	for (n = 0; n < end; n ++) {
 		tchild& child = children_[n];
 		twidget* widget2 = child.widget_;
@@ -396,6 +399,9 @@ void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendabl
 
 		col ++;
 		if (extendable) {
+			if (origin.x > multiline_max_width) {
+				multiline_max_width = origin.x;
+			}
 			if (col == max_cols) {
 				origin.x = x_;
 				origin.y += unit_h;
@@ -415,11 +421,16 @@ void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendabl
 			}
 		}
 
-		int h = parent()->get_height();
+		int w = content.get_width();
+		if (multiline_max_width > w) {
+			w = multiline_max_width;
+		}
+		int h = content.get_height();
 		if (origin.y - y_ > h) {
 			h = origin.y - y_;
 		}
-		set_fix_rect(::create_rect(x_, y_, w_, h));
+		set_fix_rect(::create_rect(x_, y_, w, h));
+		w_ = w;
 		h_ = h;
 
 	} else {
@@ -443,7 +454,7 @@ void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendabl
 	}
 }
 
-void tgrid::erase_children(int unit_w, int unit_h, int gap, bool extendable)
+void tgrid::erase_children(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols, const tspacer& content)
 {
 	if (stuff_widget_.empty()) {
 		return;
@@ -465,12 +476,12 @@ void tgrid::erase_children(int unit_w, int unit_h, int gap, bool extendable)
 	if (!extendable) {
 		col_width_.resize(cols_);
 	}
-	replacement_children(unit_w, unit_h, gap, extendable);
+	replacement_children(unit_w, unit_h, gap, extendable, fixed_cols, content);
 
 	set_dirty();
 }
 
-void tgrid::hide_children(int unit_w, int unit_h, int gap, bool extendable)
+void tgrid::hide_children(int unit_w, int unit_h, int gap, bool extendable, int fixed_cols, const tspacer& content)
 {
 	if (stuff_widget_.empty()) {
 		return;
@@ -479,7 +490,7 @@ void tgrid::hide_children(int unit_w, int unit_h, int gap, bool extendable)
 	for (int n = 0; n < children_vsize_ - stuff_size_; n ++) {
 		children_[n].widget_->set_visible(twidget::INVISIBLE);
 	}
-	replacement_children(unit_w, unit_h, gap, extendable);
+	replacement_children(unit_w, unit_h, gap, extendable, fixed_cols, content);
 }
 
 void tgrid::update_last_draw_end()
@@ -1310,6 +1321,12 @@ void tgrid::impl_draw_children(
 		widget->draw_foreground(frame_buffer, x_offset, y_offset);
 		widget->set_dirty(false);
 	}
+}
+
+const std::string& tgrid::get_control_type() const
+{
+	static const std::string type = "grid";
+	return type;
 }
 
 void set_single_child(tgrid& grid, twidget* widget)

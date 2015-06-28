@@ -60,6 +60,21 @@ class twindow
 
 public:
 
+	static bool set_orientation_resolution();
+	static void enter_orientation(torientation orientation);
+	static void recover_landscape(bool original_landscape);
+
+	struct tlayout_exception 
+	{
+		tlayout_exception(const twindow& target, const std::string& reason) 
+			: target(target)
+			, reason(reason)
+		{}
+
+		const twindow& target;
+		const std::string reason;
+	};
+
 	twindow(CVideo& video,
 		tformula<unsigned>x,
 		tformula<unsigned>y,
@@ -72,6 +87,7 @@ public:
 		const unsigned maximum_height,
 		const std::string& definition,
 		const bool theme,
+		const torientation orientation,
 		const twindow_builder::tresolution::ttip& tooltip,
 		const twindow_builder::tresolution::ttip& helptip);
 
@@ -284,27 +300,6 @@ public:
 	const twidget* find(const std::string& id,
 			const bool must_be_active) const
 		{ return tcontainer_::find(id, must_be_active); }
-#if 0
-	/** @todo Implement these functions. */
-	/**
-	 * Register a widget that prevents easy closing.
-	 *
-	 * Duplicate registration are ignored. See click_dismiss_ for more info.
-	 *
-	 * @param id                  The id of the widget to register.
-	 */
-	void add_click_dismiss_blocker(const std::string& id);
-
-	/**
-	 * Unregister a widget the prevents easy closing.
-	 *
-	 * Removing a non registered id is allowed but will do nothing. See
-	 * click_dismiss_ for more info.
-	 *
-	 * @param id                  The id of the widget to register.
-	 */
-	void remove_click_dismiss_blocker(const std::string& id);
-#endif
 
 	/**
 	 * Does the window close easily?
@@ -426,6 +421,8 @@ public:
 	const SDL_Rect& keep_rect() const { return keep_rect_; }
 	std::vector<twidget*> set_fix_coordinate(const SDL_Rect& map_area);
 	bool is_theme() const { return fix_coordinate_; }
+	torientation get_orientation() const { return orientation_; }
+
 	/**
 	 * Layouts the linked widgets.
 	 *
@@ -445,6 +442,13 @@ public:
 	 * @see layout_algorithm for more information.
 	 */
 	void layout();
+
+	void insert_tip(const std::string& msg, const twidget& widget);
+	void draw_tip(surface& screen);
+	void undraw_tip(surface& screen);
+	void remove_tip();
+	const SDL_Rect& tip_rect() const { return tip_rect_; }
+	bool has_tip() const { return !!tip_surf_; }
 
 private:
 
@@ -630,6 +634,13 @@ private:
 
 	tristate bg_opaque_;
 	bool fix_coordinate_;
+	torientation orientation_;
+	bool original_landscape_;
+
+	SDL_Rect tip_rect_;
+	surface tip_surf_;
+	surface tip_buf_;
+
 	/**
 	 * Finishes the initialization of the grid.
 	 *
@@ -693,11 +704,6 @@ private:
 			const event::tevent event, bool& handled, const SDLKey key);
 
 	void signal_handler_message_show_tooltip(
-			  const event::tevent event
-			, bool& handled
-			, event::tmessage& message);
-
-	void signal_handler_message_show_helptip(
 			  const event::tevent event
 			, bool& handled
 			, event::tmessage& message);

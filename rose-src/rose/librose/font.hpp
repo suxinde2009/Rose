@@ -105,8 +105,6 @@ SDL_Rect line_size(const std::string& line, int font_size, int style=TTF_STYLE_N
 std::string make_text_ellipsis(const std::string& text, int font_size, int max_width, int style = TTF_STYLE_NORMAL);
 std::string make_text_ellipsis(const std::string& text, size_t max_count);
 
-std::string make_text_hide(const std::string& text, bool always, size_t front_should_hide_width, size_t hiden_width, int font_size, int max_showable_width, bool with_tags, bool parse_for_style);
-
 /// structure which will hide all current floating labels, and cause floating labels
 /// instantiated after it is created to be displayed
 struct floating_label_context

@@ -84,6 +84,7 @@ twindow *build(CVideo &video, const twindow_builder::tresolution *definition)
 			, definition->maximum_height
 			, definition->definition
 			, definition->theme
+			, definition->orientation
 			, definition->tooltip
 			, definition->helptip);
 	assert(window);
@@ -162,10 +163,10 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 				, boost::function<tbuilder_widget_ptr(config)> >
 			thack;
 	BOOST_FOREACH(const thack& item, builder_widget_lookup()) {
-		if(item.first == "window" || item.first == "tooltip") {
+		if (item.first == "window" || item.first == "tooltip") {
 			continue;
 		}
-		if(const config &c = cfg.child(item.first)) {
+		if (const config& c = cfg.child(item.first)) {
 			return item.second(c);
 		}
 	}
@@ -213,6 +214,14 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 
 	std::cerr << cfg;
 	ERROR_LOG(false);
+}
+
+tbuilder_widget_ptr create_builder_widget2(const std::string& type, const config& cfg)
+{
+	std::map<std::string, boost::function<tbuilder_widget_ptr(config)> >::const_iterator it =
+		builder_widget_lookup().find(type);
+	VALIDATE(it != builder_widget_lookup().end(), "Unknown widget!");
+	return it->second(cfg);
 }
 
 const std::string& twindow_builder::read(const config& cfg)
@@ -274,6 +283,7 @@ twindow_builder::tresolution::tresolution(const config& cfg) :
 	click_dismiss(cfg["click_dismiss"].to_bool()),
 	definition(cfg["definition"]),
 	theme(cfg["theme"].to_bool()),
+	orientation(implementation::get_orientation(cfg["orientation"])),
 	linked_groups(),
 	tooltip(cfg.child_or_empty("tooltip")),
 	helptip(cfg.child_or_empty("helptip")),
@@ -571,7 +581,17 @@ tgrid* tbuilder_grid::build (tgrid* grid) const
 
 			DBG_GUI_G << "Window builder: adding child at " << x << ',' << y << ".\n";
 
-			twidget* widget = widgets[x * cols + y]->build();
+			tbuilder_widget_ptr ptr = widgets[x * cols + y];
+			twidget* widget = NULL;
+			if (twidget::is_tpl_widget_id(ptr->id) && twidget::orientation_effect_resolution(settings::screen_width, settings::screen_height)) {
+				std::map<std::string, tbuilder_widget_ptr>::const_iterator it = settings::portraits.find(ptr->id);
+				if (it != settings::portraits.end()) {
+					widget = it->second->build();
+				}
+			}
+			if (!widget) {
+				widget = widgets[x * cols + y]->build();
+			}
 			grid->set_child(widget, x, y, flags[x * cols + y],  border_size[x * cols + y]);
 		}
 	}

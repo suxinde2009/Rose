@@ -333,24 +333,25 @@ int min_allowed_height()
 
 std::pair<int,int> resolution()
 {
+	int width, height;
 	const std::string postfix = fullscreen() ? "resolution" : "windowsize";
 	std::string x = prefs['x' + postfix], y = prefs['y' + postfix];
 	if (!x.empty() && !y.empty()) {
-		std::pair<int,int> res(std::max(atoi(x.c_str()), min_allowed_width()),
-		                       std::max(atoi(y.c_str()), min_allowed_height()));
+		width = std::max(atoi(x.c_str()), min_allowed_width());
+		height = std::max(atoi(y.c_str()), min_allowed_height());
 
-		// Make sure resolutions are always divisible by 4
-		//res.first &= ~3;
-		//res.second &= ~3;
-		return res;
 	} else {
 #if defined(__APPLE__) && TARGET_OS_IPHONE
-		return std::pair<int, int>(480, 320);
+		width = 480;
+		height = 320;
 #else
-		// return std::pair<int, int>(1024, 768);
-		return std::pair<int, int>(800, 600);
+		width = 800;
+		height = 600;
 #endif
 	}
+
+	gui2::tpoint landscape_size = gui2::twidget::toggle_orientation_size(width, height);
+	return std::make_pair(landscape_size.x, landscape_size.y);
 }
 
 int noble()

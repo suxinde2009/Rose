@@ -141,11 +141,6 @@ private:
 			  const event::tevent event
 			, bool& handled
 			, const tpoint& coordinate);
-
-	void signal_handler_show_helptip(
-			  const event::tevent event
-			, bool& handled
-			, const tpoint& coordinate);
 };
 
 /***** ***** ***** ***** tmouse_button ***** ***** ***** ***** *****/

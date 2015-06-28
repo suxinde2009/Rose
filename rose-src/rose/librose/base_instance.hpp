@@ -25,6 +25,8 @@
 #include "serialization/preprocessor.hpp"
 #include "config_cache.hpp"
 
+class animation;
+
 class base_instance
 {
 public:
@@ -44,6 +46,13 @@ public:
 
 	virtual void regenerate_heros(hero_map& heros, bool allow_empty);
 	hero_map& heros() { return heros_; }
+
+	virtual void fill_anim_tags(std::map<const std::string, int>& tags) {};
+	virtual void fill_anim(int at, const std::string& id, bool area, bool tpl, const config& cfg);
+
+	void clear_anims();
+	const std::multimap<std::string, const config>& utype_anim_tpls() const { return utype_anim_tpls_; }
+	const animation* anim(int at) const;
 
 protected:
 	void init_locale();
@@ -72,6 +81,9 @@ protected:
 	config game_config_core_;
 	preproc_map old_defines_map_;
 	game_config::config_cache& cache_;
+
+	std::map<int, animation*> anims_;
+	std::multimap<std::string, const config> utype_anim_tpls_;
 };
 
 extern base_instance* instance;

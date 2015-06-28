@@ -86,6 +86,8 @@ static lg::log_domain log_network("network");
 #define LOG_NW LOG_STREAM(info, log_network)
 #define ERR_NW LOG_STREAM(err, log_network)
 
+extern int dbg_error_no;
+
 // namespace {
 struct _TCPsocket {
 	int ready;
@@ -372,6 +374,7 @@ static SOCKET_STATE send_buffer(tsock& info, std::vector<char>& buf, int size)
 			// check if the socket is still locked
 			const threading::lock lock(*shard_mutexes[shard]);
 			if (sockets_locked[shard][sock] != SOCKET_LOCKED) {
+				dbg_error_no = 9;
 				return SOCKET_ERRORED;
 			}
 		}
@@ -437,6 +440,7 @@ static SOCKET_STATE send_buffer(tsock& info, std::vector<char>& buf, int size)
 #endif
 		}
 
+		dbg_error_no = 10;
 		return SOCKET_ERRORED;
 	}
 }
@@ -637,6 +641,7 @@ static int process_queue(void* shard_num)
 							info.msg_send_time = now;
 						}
 */
+
 						lock_it->second = SOCKET_LOCKED;
 						sent_buf = *itor;
 						sock = sent_buf->sock;
@@ -998,31 +1003,30 @@ bool is_locked(const TCPsocket sock) {
 	return (lock_it->second == SOCKET_LOCKED);
 }
 
-bool close_socket(TCPsocket sock)
+void close_socket(TCPsocket sock)
 {
-	{
+	// make sure remove sock, before exit it!
+	while (true) {
 		const size_t shard = get_shard(sock);
 		const threading::lock lock(*shard_mutexes[shard]);
 
 		pending_receives[shard].erase(std::remove(pending_receives[shard].begin(),pending_receives[shard].end(),sock),pending_receives[shard].end());
 
 		const socket_state_map::iterator lock_it = sockets_locked[shard].find(sock);
-		if(lock_it == sockets_locked[shard].end()) {
+		if (lock_it == sockets_locked[shard].end()) {
 			remove_buffers(sock);
-			return true;
+			break;
 		}
 		if (!(lock_it->second == SOCKET_LOCKED || lock_it->second == SOCKET_INTERRUPT)) {
 			sockets_locked[shard].erase(lock_it);
 			remove_buffers(sock);
-			return true;
+			break;
 		} else {
 			lock_it->second = SOCKET_INTERRUPT;
-			return false;
+			// xmit thread LOCKED this sock, reqruie that thread process sock.
+			SDL_Delay(2);
 		}
-
 	}
-
-
 }
 
 TCPsocket detect_error()

@@ -152,7 +152,7 @@ BOOL On_DlgDDescInitDialog(HWND hdlgP, HWND hwndFocus, LPARAM lParam)
 
 bool is_app_res(const std::string& folder)
 {
-	const std::string file = folder + "/data/campaigns.cfg";
+	const std::string file = folder + CAMPAIGNS_CFG_PATH;
 	return file_exists(file);
 }
 
@@ -345,7 +345,7 @@ void On_DlgDDescCommand(HWND hdlgP, int id, HWND hwndCtrl, UINT codeNotify)
 		strstr.str("");
 		str = gdmgr._menu_text;
 		strstr << str.substr(0, str.rfind("\\xwml"));
-		strstr << "\\data\\campaigns\\" << offextname(basename(gdmgr._menu_text));
+		strstr << "\\data\\app-kingdom\\campaigns\\" << offextname(basename(gdmgr._menu_text));
 		str = strstr.str();
 
 		symbols["file"] = gdmgr._menu_text;

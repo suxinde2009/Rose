@@ -50,6 +50,8 @@ public:
 	int gety() const;
 	SDL_Rect bound() const;
 
+	void sdl_set_window_size(int width, int height);
+
 	//blits a surface with black as alpha
 	void blit_surface(int x, int y, surface surf, SDL_Rect* srcrect=NULL, SDL_Rect* clip_rect=NULL);
 	void flip();

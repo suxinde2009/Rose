@@ -25,6 +25,7 @@
 #include "exceptions.hpp"
 #include "gettext.hpp"
 #include "gui/dialogs/transient_message.hpp"
+#include "gui/dialogs/book.hpp"
 #include "marked-up_text.hpp"
 #include "log.hpp"
 #include "sound.hpp"
@@ -992,7 +993,7 @@ bool topic_is_referenced(const std::string &topic_id, const config &cfg)
 	return false;
 }
 
-void parse_config_internal(const config *help_cfg, const config *section_cfg,
+void parse_config_internal(gui2::tbook* book, const config *help_cfg, const config *section_cfg,
 						   section &sec, int level)
 {
 	if (level > max_section_level) {
@@ -1019,7 +1020,7 @@ void parse_config_internal(const config *help_cfg, const config *section_cfg,
 			if (const config &child_cfg = help_cfg->find_child("section", "id", *it))
 			{
 				section child_section;
-				parse_config_internal(help_cfg, &child_cfg, child_section, level + 1);
+				parse_config_internal(book, help_cfg, &child_cfg, child_section, level + 1);
 				sec.add_section(child_section);
 			}
 			else {
@@ -1030,7 +1031,9 @@ void parse_config_internal(const config *help_cfg, const config *section_cfg,
 			}
 		}
 
-		generate_sections(help_cfg, (*section_cfg)["sections_generator"], sec, level);
+		if (book) {
+			book->generate_sections(help_cfg, (*section_cfg)["sections_generator"], sec, level);
+		}
 		//TODO: harmonize topics/sections sorting
 		if ((*section_cfg)["sort_sections"] == "yes") {
 			std::sort(sec.sections.begin(),sec.sections.end(), section_less());
@@ -1054,8 +1057,10 @@ void parse_config_internal(const config *help_cfg, const config *section_cfg,
 		  throw help::parse_error(ss.str());
 		}
 
-		std::vector<topic> generated_topics =
-		generate_topics(sort_generated,(*section_cfg)["generator"]);
+		std::vector<topic> generated_topics;
+		if (book) {
+			generated_topics = book->generate_topics(sort_generated,(*section_cfg)["generator"]);
+		}
 
 		const std::vector<std::string> topics_id = utils::quoted_split((*section_cfg)["topics"]);
 		std::vector<topic> topics;
@@ -1100,17 +1105,17 @@ void parse_config_internal(const config *help_cfg, const config *section_cfg,
 	}
 }
 
-section parse_config(const config *cfg)
+section parse_config(gui2::tbook* book, const config *cfg)
 {
 	section sec;
 	if (cfg != NULL) {
 		config const &toplevel_cfg = cfg->child("toplevel");
-		parse_config_internal(cfg, toplevel_cfg ? &toplevel_cfg : NULL, sec);
+		parse_config_internal(book, cfg, toplevel_cfg ? &toplevel_cfg : NULL, sec);
 	}
 	return sec;
 }
 
-void generate_contents(const std::string& tag, section& toplevel)
+void generate_contents(gui2::tbook* book, const std::string& tag, section& toplevel)
 {
 	toplevel.clear();
 	hidden_sections.clear();
@@ -1120,7 +1125,7 @@ void generate_contents(const std::string& tag, section& toplevel)
 		help_config = &dummy_cfg;
 	}
 	try {
-		toplevel = parse_config(help_config);
+		toplevel = parse_config(book, help_config);
 		// Create a config object that contains everything that is
 		// not referenced from the toplevel element. Read this
 		// config and save these sections and topics so that they
@@ -1163,7 +1168,7 @@ void generate_contents(const std::string& tag, section& toplevel)
 		// Change the toplevel to our new, custom built one.
 		hidden_cfg.clear_children("toplevel");
 		hidden_cfg.add_child("toplevel", hidden_toplevel);
-		hidden_sections = parse_config(&hidden_cfg);
+		hidden_sections = parse_config(book, &hidden_cfg);
 	}
 	catch (help::parse_error e) {
 		std::stringstream msg;

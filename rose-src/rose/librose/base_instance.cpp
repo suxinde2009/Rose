@@ -217,6 +217,8 @@ base_instance::~base_instance()
 	}
 	terrain_builder::release_heap();
 	sound::close_sound();
+
+	clear_anims();
 }
 
 /**
@@ -282,28 +284,11 @@ bool base_instance::init_video()
 	// video_flags = SDL_WINDOW_FULLSCREEN;
 
 #else
-
-	bool found_matching = preferences::detect_video_settings(video_, resolution, bpp, video_flags);
+	video_flags = preferences::fullscreen() ? SDL_WINDOW_FULLSCREEN: 0;
+	resolution = preferences::resolution();
+	bpp = 32;
     
 
-	if (force_bpp_ > 0) {
-		bpp = force_bpp_;
-	}
-
-	if (!found_matching) {
-		std::cerr << "Video mode " << resolution.first << 'x'
-			<< resolution.second << 'x' << bpp
-			<< " is not supported.\n";
-
-		if ((video_flags & SDL_WINDOW_FULLSCREEN)) {
-			std::cerr << "Try running the program with the --windowed option "
-				<< "using a " << bpp << "bpp setting for your display adapter.\n";
-		} else {
-			std::cerr << "Try running the program with the --fullscreen option.\n";
-		}
-
-		return false;
-	}
 #endif
 
     std::cerr << "setting mode to " << resolution.first << "x" << resolution.second << "x" << bpp << "\n";
@@ -389,7 +374,7 @@ void base_instance::load_game_cfg(const bool force)
 		// set_unit_data(game_config_.child("units"));
 		// game_config_.clear_children("units");
 
-		area_anim::fill_anims(game_config_.child("units"));
+		anim2::fill_anims(game_config_.child("units"));
 	
 
 		const config::const_child_itors& terrains = game_config_.child_range("terrain_type");
@@ -513,4 +498,37 @@ int base_instance::show_preferences_dialog(display& disp, bool first)
 
 	return dlg.selected_val();
 #endif
+}
+
+void base_instance::fill_anim(int at, const std::string& id, bool area, bool tpl, const config& cfg)
+{
+	if (area) {
+		anims_.insert(std::make_pair(at, new animation(cfg)));
+	} else {
+		if (tpl) {
+			utype_anim_tpls_.insert(std::make_pair(id, cfg));
+		} else {
+			anims_.insert(std::make_pair(at, new animation(cfg)));
+		}
+	}
+}
+
+void base_instance::clear_anims()
+{
+	utype_anim_tpls_.clear();
+
+	for (std::map<int, animation*>::const_iterator it = anims_.begin(); it != anims_.end(); ++ it) {
+		animation* anim = it->second;
+		delete anim;
+	}
+	anims_.clear();
+}
+
+const animation* base_instance::anim(int at) const
+{
+	std::map<int, animation*>::const_iterator i = anims_.find(at);
+	if (i != anims_.end()) {
+		return i->second;
+	}
+	return NULL;
 }

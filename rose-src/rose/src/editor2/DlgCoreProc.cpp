@@ -19,6 +19,7 @@
 #include "map.hpp"
 #include "builder.hpp"
 #include "area_anim.hpp"
+#include "wml_exception.hpp"
 
 BOOL CALLBACK DlgTreasureEditProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -1035,7 +1036,7 @@ void tcore::refresh_builder(HWND hdlgP)
 
 void tcore::refresh_anim(HWND hdlgP)
 {
-	update_to_ui_anim(hdlgP);
+	update_to_ui_anim(hdlgP, 0);
 }
 
 void tcore::refresh_book(HWND hdlgP)
@@ -1498,17 +1499,15 @@ void tcore::init_cache()
 		fill_param_area_anim(tanim::anim_types.back());
 	}
 
-	const config::const_child_itors& utype_anims = editor_config::data_cfg.child("units").child_range("utype_anim");
+	anim_apps_.clear();
+	const config::const_child_itors& utype_anims = editor_config::data_cfg.child("units").child_range("animation");
 	BOOST_FOREACH (const config &cfg, utype_anims) {
 		tanim anim;
-		anim.from_config(cfg, false);
+		anim.from_config(cfg);
 		anims_from_cfg_.push_back(anim);
-	}
-	const config::const_child_itors& area_anims = editor_config::data_cfg.child("units").child_range("area_anim");
-	BOOST_FOREACH (const config &cfg, area_anims) {
-		tanim anim;
-		anim.from_config(cfg, true);
-		anims_from_cfg_.push_back(anim);
+		if (anim_apps_.find(anim.app_) == anim_apps_.end()) {
+			anim_apps_.insert(anim.app_);
+		}
 	}
 
 	anims_updating_ = anims_from_cfg_;
@@ -2062,52 +2061,64 @@ void tcore::generate_terrain_graphics_cfg() const
 	posix_fclose(tpl);
 }
 
-std::pair<std::string, std::string> tcore::anims_cfg(bool absolute) const
+std::string tcore::anims_cfg(const std::string& app, bool absolute) const
 {
-	std::stringstream rose_ss, app_ss;
+	std::stringstream ss;
 	if (absolute) {
-		rose_ss << game_config::path << "\\data\\core\\units-internal\\animation.cfg";
-		app_ss << game_config::path << "\\data\\core\\units-internal\\app_animation.cfg";
+		if (app.empty()) {
+			ss << game_config::path << "\\data\\core\\units-internal\\animation.cfg";
+		} else {
+			ss << game_config::path << "\\data\\core\\app-" << app << "\\units-internal\\animation.cfg";
+		}
 	} else {
-		rose_ss << "data/core/units-internal/animation.cfg";
-		app_ss << "data/core/units-internal/app_animation.cfg";
+		if (app.empty()) {
+			ss << "data/core/units-internal/animation.cfg";
+		} else {
+			ss << "data/core/app-" << app << "/units-internal/animation.cfg";
+		}
 	}
-	return std::make_pair(rose_ss.str(), app_ss.str());
+	return ss.str();
 }
 
 void tcore::generate_anims_cfg() const
 {
-	std::stringstream rose_ss, app_ss;
+	std::stringstream fp_ss;
 	uint32_t bytertd;
 
-	std::pair<std::string, std::string> file_name = anims_cfg(true);
-	posix_file_t rose_fp = INVALID_FILE;
-	posix_file_t app_fp = INVALID_FILE;
-	posix_fopen(file_name.first.c_str(), GENERIC_WRITE, CREATE_ALWAYS, rose_fp);
-	if (rose_fp == INVALID_FILE) {
-		return;
-	}
-	posix_fopen(file_name.second.c_str(), GENERIC_WRITE, CREATE_ALWAYS, app_fp);
-	if (app_fp == INVALID_FILE) {
-		posix_fclose(rose_fp);
-		return;
-	}
-
+	std::map<std::string, std::vector<const tanim*> > apps;
 	for (std::vector<tanim>::const_iterator it = anims_updating_.begin(); it != anims_updating_.end(); ++ it) {
 		const tanim& anim = *it;
-		int type = area_anim::find(anim.id_);
-		std::stringstream& ss = anim.screen_mode_ && type != area_anim::NONE && type <= area_anim::MAX_ROSE_ANIM? rose_ss: app_ss;
-		if (!ss.str().empty()) {
-			ss << "\n";
+		std::map<std::string, std::vector<const tanim*> >::iterator it2 = apps.find(anim.app_);
+		if (it2 == apps.end()) {
+			it2 = apps.insert(std::make_pair(anim.app_, std::vector<const tanim*>(1, &anim))).first;
+		} else {
+			it2->second.push_back(&anim);
 		}
-		ss << anim.generate();
 	}
 
-	posix_fwrite(rose_fp, rose_ss.str().c_str(), rose_ss.str().length(), bytertd);
-	posix_fwrite(app_fp, app_ss.str().c_str(), app_ss.str().length(), bytertd);
+	for (std::map<std::string, std::vector<const tanim*> >::const_iterator it = apps.begin(); it != apps.end(); ++ it) {
+		const std::string& app = it->first;
+		const std::vector<const tanim*>& v = it->second;
 
-	posix_fclose(rose_fp);
-	posix_fclose(app_fp);
+		fp_ss.str("");
+		for (std::vector<const tanim*>::const_iterator it2 = v.begin(); it2 != v.end(); ++ it2) {
+			const tanim& anim = **it2;
+			
+			if (!fp_ss.str().empty()) {
+				fp_ss << "\n";
+			}
+			fp_ss << anim.generate();
+		}
+
+		const std::string file_name = anims_cfg(app, true);
+		posix_file_t fp = INVALID_FILE;
+		if (!fp_ss.str().empty()) {
+			posix_fopen(file_name.c_str(), GENERIC_WRITE, CREATE_ALWAYS, fp);
+			VALIDATE(fp != INVALID_FILE, null_str);
+			posix_fwrite(fp, fp_ss.str().c_str(), fp_ss.str().length(), bytertd);
+			posix_fclose(fp);
+		}
+	}
 }
 
 std::string tcore::config_cfg(bool absolute) const

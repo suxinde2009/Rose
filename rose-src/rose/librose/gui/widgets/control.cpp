@@ -22,7 +22,6 @@
 #include "gui/auxiliary/iterator/walker_widget.hpp"
 #include "gui/auxiliary/log.hpp"
 #include "gui/auxiliary/event/message.hpp"
-#include "gui/dialogs/tip.hpp"
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/window.hpp"
 #include "gui/auxiliary/window_builder/control.hpp"
@@ -67,13 +66,6 @@ tcontrol::tcontrol(const unsigned canvas_count)
 			, _3
 			, _5));
 
-	connect_signal<event::SHOW_HELPTIP>(boost::bind(
-			  &tcontrol::signal_handler_show_helptip
-			, this
-			, _2
-			, _3
-			, _5));
-
 	connect_signal<event::NOTIFY_REMOVE_TOOLTIP>(boost::bind(
 			  &tcontrol::signal_handler_notify_remove_tooltip
 			, this
@@ -106,13 +98,6 @@ tcontrol::tcontrol(
 
 	connect_signal<event::SHOW_TOOLTIP>(boost::bind(
 			  &tcontrol::signal_handler_show_tooltip
-			, this
-			, _2
-			, _3
-			, _5));
-
-	connect_signal<event::SHOW_HELPTIP>(boost::bind(
-			  &tcontrol::signal_handler_show_helptip
 			, this
 			, _2
 			, _3
@@ -356,10 +341,6 @@ void tcontrol::set_definition(const std::string& definition)
 	definition_ = definition;
 	load_config();
 	assert(config());
-
-#ifdef GUI2_EXPERIMENTAL_LISTBOX
-	init();
-#endif
 }
 
 void tcontrol::clear_label_size_cache()
@@ -483,7 +464,7 @@ void tcontrol::erase_animation(int id)
 void tcontrol::set_canvas_variable(const std::string& name, const variant& value)
 {
 	BOOST_FOREACH(tcanvas& canvas, canvas_) {
-		canvas.set_variable("border", value);
+		canvas.set_variable(name, value);
 	}
 	set_dirty();
 }
@@ -609,21 +590,8 @@ void tcontrol::signal_handler_show_tooltip(
 					, &symbols);
 		}
 
-		event::tmessage_show_tooltip message(tip, location);
+		event::tmessage_show_tooltip message(tip, *this, location);
 		handled = fire(event::MESSAGE_SHOW_TOOLTIP, *this, message);
-	}
-}
-
-void tcontrol::signal_handler_show_helptip(
-		  const event::tevent event
-		, bool& handled
-		, const tpoint& location)
-{
-	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
-
-	if(!help_message_.empty()) {
-		event::tmessage_show_helptip message(help_message_, location);
-		handled = fire(event::MESSAGE_SHOW_HELPTIP, *this, message);
 	}
 }
 
@@ -638,7 +606,8 @@ void tcontrol::signal_handler_notify_remove_tooltip(
 	 * alternative is to add a message to the window to remove the tip.
 	 * Might be done later.
 	 */
-	tip::remove();
+	get_window()->remove_tip();
+	// tip::remove();
 
 	handled = true;
 }

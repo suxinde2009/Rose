@@ -78,18 +78,11 @@ static void check_error()
 	// const TCPsocket sock = network_worker_pool::detect_error();
 
 	TCPsocket sock = network_worker_pool::detect_error();
-/*
-	if (!sock) {
-		int ii = 0;
-		if (lobby->chat.state() == tsock::s_consult) {
-			sock = lobby->chat.sock();
-		}
-	}
-*/
+
 	if (sock) {
 		const tsock& info = lobby->get_connection_details2(sock);
 		if (info.valid()) {
-			throw network::error(_("Client disconnected"), info.conn());
+			throw network::error("Client disconnected", info.conn());
 		}
 	}
 }
@@ -552,7 +545,7 @@ connection accept_connection_pending(std::vector<TCPsocket>& pending_sockets,
 		ERR_NW << "SDLNet_GetError() is " << SDLNet_GetError() << "\n";
 		SDLNet_TCP_Close(psock);
 
-		throw network::error(_("Could not add socket to socket set"));
+		throw network::error("Could not add socket to socket set");
 	}
 
 	lobby->insert_accept_sock(psock);
@@ -565,7 +558,7 @@ connection accept_connection_pending(std::vector<TCPsocket>& pending_sockets,
 		SDLNet_TCP_DelSocket(socket_set,psock);
 		SDLNet_TCP_Close(psock);
 		lobby->disconnect_connection(connect);
-		throw network::error(_("Could not send initial handshake"));
+		throw network::error("Could not send initial handshake");
 	}
 */
 
@@ -574,13 +567,13 @@ connection accept_connection_pending(std::vector<TCPsocket>& pending_sockets,
 		ERR_NW << "SDLNet_GetError() is " << SDLNet_GetError() << "\n";
 		SDLNet_TCP_Close(psock);
 
-		throw network::error(_("Could not add socket to socket set"));
+		throw network::error("Could not add socket to socket set");
 	}
 
 	if (!lobby->insert_accept_sock(psock)) {
 		SDLNet_TCP_DelSocket(socket_set,psock);
 		SDLNet_TCP_Close(psock);
-		throw network::error(_("Could not send initial handshake"));
+		throw network::error("Could not send initial handshake");
 	}
 	const connection connect = lobby->get_connection_details2(psock).conn();
 
@@ -663,9 +656,7 @@ bool disconnect(connection s)
 			return true;
 		}
 		info.pre_disconnect();
-		if (!network_worker_pool::close_socket(info.sock())) {
-			return false;
-		}
+		network_worker_pool::close_socket(info.sock());
 	}
 
 	bad_sockets.erase(s);

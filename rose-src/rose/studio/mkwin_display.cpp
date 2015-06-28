@@ -21,6 +21,7 @@
 #include "gui/dialogs/message.hpp"
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/toggle_button.hpp"
+#include "gui/widgets/report.hpp"
 #include "game_config.hpp"
 #include "formula_string_utils.hpp"
 
@@ -63,7 +64,7 @@ mkwin_display::mkwin_display(mkwin_controller& controller, unit_map& units, CVid
 	, controller_(controller)
 	, units_(units)
 	, current_widget_type_()
-	, scroll_header_(true, false, "image_tab")
+	, scroll_header_(NULL)
 {
 	min_zoom_ = 48;
 	max_zoom_ = 144;
@@ -86,11 +87,12 @@ mkwin_display::mkwin_display(mkwin_controller& controller, unit_map& units, CVid
 	toggle_panel = std::make_pair("toggle_panel", it->second);
 
 	widget_palette_ = dynamic_cast<gui2::treport*>(get_theme_object("widget-palette"));
+	widget_palette_->multiline_init(false, "surface");
 	reload_widget_palette();
 
-	gui2::treport* report = dynamic_cast<gui2::treport*>(get_theme_object("scroll-header"));
-	scroll_header_.set_report(report);
-	scroll_header_.set_boddy(dynamic_cast<gui2::twidget*>(get_theme_object("palette_panel")));
+	scroll_header_ = dynamic_cast<gui2::treport*>(get_theme_object("scroll-header"));
+	scroll_header_->tabbar_init(true, "image_tab");
+	scroll_header_->set_boddy(dynamic_cast<gui2::twidget*>(get_theme_object("palette_panel")));
 	reload_scroll_header();
 
 	click_widget(spacer.first, spacer.second->id);
@@ -121,11 +123,12 @@ void mkwin_display::pre_change_resolution(std::map<const std::string, bool>& act
 void mkwin_display::post_change_resolution(const std::map<const std::string, bool>& actives)
 {
 	widget_palette_ = dynamic_cast<gui2::treport*>(get_theme_object("widget-palette"));
+	widget_palette_->multiline_init(false, "surface");
 	reload_widget_palette();
 
-	gui2::treport* report = dynamic_cast<gui2::treport*>(get_theme_object("scroll-header"));
-	scroll_header_.set_report(report);
-	scroll_header_.set_boddy(dynamic_cast<gui2::twidget*>(get_theme_object("palette_panel")));
+	scroll_header_ = dynamic_cast<gui2::treport*>(get_theme_object("scroll-header"));
+	scroll_header_->tabbar_init(true, "image_tab");
+	scroll_header_->set_boddy(dynamic_cast<gui2::twidget*>(get_theme_object("palette_panel")));
 	reload_scroll_header();
 
 	controller_.post_change_resolution();
@@ -218,7 +221,7 @@ void mkwin_display::reload_widget_palette()
 	}
 
 	const config& core_config = controller_.core_config();
-	BOOST_FOREACH (const config& tpl, core_config.child_range("widget_template")) {
+	BOOST_FOREACH (const config& tpl, core_config.child_range("tpl_widget")) {
 		const std::string& id = tpl["id"].str();
 		const std::string filename = unit::form_widget_png(unit::tpl_type, id);
 		surface surf(image::get_image(filename));
@@ -248,7 +251,7 @@ gui2::ttoggle_button* create_sheet_button(mkwin_controller& controller, const t_
 
 gui2::ttoggle_button* mkwin_display::scroll_header_widget(int index) const
 {
-	const gui2::tgrid::tchild* children = scroll_header_.report()->content_grid()->children();
+	const gui2::tgrid::tchild* children = scroll_header_->content_grid()->children();
 	return dynamic_cast<gui2::ttoggle_button*>(children[index].widget_);
 }
 
@@ -258,18 +261,18 @@ void mkwin_display::reload_scroll_header()
 	images.push_back("buttons/widget-palette.png");
 	images.push_back("buttons/object-list.png");
 
-	scroll_header_.erase_children();
+	scroll_header_->erase_children();
 	
 	int index = 0;
 	for (std::vector<std::string>::const_iterator it = images.begin(); it != images.end(); ++ it, index ++) {
-		gui2::tcontrol* widget = scroll_header_.create_child(null_str, null_str, reinterpret_cast<void*>(index), null_str);
+		gui2::tcontrol* widget = scroll_header_->create_child(null_str, null_str, reinterpret_cast<void*>(index));
 		widget->set_label(*it);
-		scroll_header_.insert_child(*widget, index);
+		scroll_header_->insert_child(*widget, index);
 
 	}
-	scroll_header_.select(0);
+	scroll_header_->select(0);
 
-	scroll_header_.replacement_children();
+	scroll_header_->replacement_children();
 }
 
 void mkwin_display::scroll_top(gui2::treport& widget)
@@ -509,7 +512,7 @@ void mkwin_display::redraw_units(const std::vector<map_location>& invalidated_un
 		}
 
 		it->second->update_last_draw_time();
-		area_anim::rt.type = it->second->type();
+		anim2::rt.type = it->second->type();
 		it->second->redraw(screen_.getSurface(), empty_rect);
 	}
 }

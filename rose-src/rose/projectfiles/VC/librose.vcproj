@@ -408,10 +408,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\librose\tooltips.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\librose\tstring.cpp"
 				>
 			</File>
@@ -3375,6 +3371,30 @@
 				Name="dialogs"
 				>
 				<File
+					RelativePath="..\..\librose\gui\dialogs\book.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\gui\dialogs\"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\book.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\librose\gui\dialogs\browse.cpp"
 					>
 					<FileConfiguration
@@ -3627,30 +3647,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\librose\gui\dialogs\popup.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\dialogs\popup.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\librose\gui\dialogs\simple_item_selector.cpp"
 					>
 					<FileConfiguration
@@ -3723,30 +3719,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\librose\gui\dialogs\tip.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							ObjectFile="$(IntDir)\gui\dialogs\"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\librose\gui\dialogs\tip.hpp"
-					>
-				</File>
-				<File
 					RelativePath="..\..\librose\gui\dialogs\transient_message.cpp"
 					>
 					<FileConfiguration
@@ -3768,6 +3740,14 @@
 				</File>
 				<File
 					RelativePath="..\..\librose\gui\dialogs\transient_message.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\visual_layout.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\librose\gui\dialogs\visual_layout.hpp"
 					>
 				</File>
 			</Filter>

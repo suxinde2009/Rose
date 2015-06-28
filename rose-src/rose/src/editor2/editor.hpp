@@ -18,6 +18,7 @@ typedef enum {
 } mgr_action_t;
 
 enum {BIN_WML, BIN_BUILDINGRULE};
+#define CAMPAIGNS_CFG_PATH		"/data/app-kingdom/campaigns.cfg"
 
 namespace editor_config
 {

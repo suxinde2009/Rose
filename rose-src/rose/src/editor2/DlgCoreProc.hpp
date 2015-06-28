@@ -783,10 +783,11 @@ public:
 	void generate_terrain_graphics_cfg() const;
 	
 	// section: anim
-	void update_to_ui_anim(HWND hdlgP);
+	void update_to_ui_anim(HWND hdlgP, int cursel);
 	bool anims_dirty() const;
-	std::pair<std::string, std::string> anims_cfg(bool absolute = false) const;
+	std::string anims_cfg(const std::string& app, bool absolute = false) const;
 	void generate_anims_cfg() const;
+	void update_anim_according_app(HWND hdlgP, int cursel) const;
 
 	// game config
 	void update_to_ui_config(HWND hdlgP);
@@ -850,6 +851,7 @@ public:
 
 	std::vector<tanim> anims_from_cfg_;
 	std::vector<tanim> anims_updating_;
+	std::set<std::string> anim_apps_;
 
 	HTREEITEM htvroot_utype_;
 	HTREEITEM htvroot_technology_;

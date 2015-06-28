@@ -223,7 +223,7 @@ void trose::pre_show(CVideo& video, twindow& window)
 	tlobby::thandler::join();
 
 	config cfg;
-	cfg["id"] = area_anim::rfind(area_anim::TITLE_SCREEN);
+	cfg["id"] = anim2::rfind(anim2::TITLE_SCREEN);
 	cfg["width"] = 1600;
 	cfg["height"] = 900;
 	window.insert_animation(cfg, false);
@@ -254,6 +254,7 @@ bool trose::handle(int tag, tsock::ttype type, const config& data)
 
 void trose::set_retval(twindow& window, int retval)
 {
+
 	window.set_retval(retval);
 }
 

@@ -27,13 +27,13 @@
 #include "filesystem.hpp"
 #include "gettext.hpp"
 #include "gui/auxiliary/log.hpp"
-// #include "gui/auxiliary/tips.hpp"
 #include "gui/widgets/window.hpp"
 #include "serialization/parser.hpp"
 #include "serialization/preprocessor.hpp"
 #include "formula_string_utils.hpp"
 #include "game_config.hpp"
 #include "loadscreen.hpp"
+#include "font.hpp"
 
 #include <boost/foreach.hpp>
 
@@ -41,13 +41,20 @@ namespace gui2 {
 
 bool new_widgets = false;
 
+void ttip_definition::read(const config& _cfg)
+{
+	text_extra_width = _cfg["text_extra_width"].to_int();
+	text_extra_height = _cfg["text_extra_height"].to_int();
+	text_font_size = _cfg["text_font_size"].to_int(font::SIZE_NORMAL);
+	vertical_gap = _cfg["vertical_gap"].to_int();
+
+	cfg = _cfg;
+}
+
 namespace settings {
 	unsigned screen_width = 0;
 	unsigned screen_height = 0;
 	unsigned keyboard_height = 0;
-
-	unsigned gamemap_width = 0;
-	unsigned gamemap_height = 0;
 
 	unsigned popup_show_delay = 0;
 	unsigned popup_show_time = 0;
@@ -62,13 +69,8 @@ namespace settings {
 
 	t_string has_helptip_message;
 
-	std::map<std::string, config> bubbles;
-	std::vector<ttip> tips;
-
-	std::vector<ttip> get_tips()
-	{
-		return tips::shuffle(tips);
-	}
+	std::map<std::string, tbuilder_widget_ptr> portraits;
+	std::map<std::string, ttip_definition> tip_cfgs;
 
 } // namespace settings
 
@@ -350,10 +352,22 @@ const std::string& tgui_definition::read(const config& cfg)
 	VALIDATE(!has_helptip_message_.empty(),
 			missing_mandatory_wml_key("[settings]", "has_helptip_message"));
 
-	BOOST_FOREACH(const config& bubble, cfg.child_range("bubble")) {
-		bubbles_.insert(std::make_pair(bubble["id"].str(), bubble));
+	// require portraits valid before build window.
+	BOOST_FOREACH(const config& portrait, cfg.child_range("portrait")) {
+		std::string id;
+		std::string type;
+		BOOST_FOREACH (const config::any_child& v, portrait.all_children_range()) {
+			id = v.cfg["id"].str();
+			type = v.key;
+			VALIDATE(!id.empty(), "portrait cfg of tpl_widget must define id!");
+			portraits_.insert(std::make_pair(id, create_builder_widget2(type, v.cfg)));
+		}
 	}
-	tips_ = tips::load(cfg);
+	BOOST_FOREACH(const config& tip, cfg.child_range("tip_definition")) {
+		std::pair<std::map<std::string, ttip_definition>::iterator, bool> ins = tip_cfgs_.insert(std::make_pair(tip["id"].str(), ttip_definition()));
+		VALIDATE(ins.second, "define tip duplicated!");
+		ins.first->second.read(tip);
+	}
 
 	return id;
 }
@@ -370,8 +384,8 @@ void tgui_definition::activate() const
 	settings::sound_toggle_panel_click = sound_toggle_panel_click_;
 	settings::sound_slider_adjust = sound_slider_adjust_;
 	settings::has_helptip_message = has_helptip_message_;
-	settings::bubbles = bubbles_;
-	settings::tips = tips_;
+	settings::portraits = portraits_;
+	settings::tip_cfgs = tip_cfgs_;
 }
 
 void tgui_definition::load_widget_definitions(
@@ -520,39 +534,32 @@ tresolution_definition_ptr get_control(
 		const std::string& control_type, const std::string& definition)
 {
 	const tgui_definition::tcontrol_definition_map::const_iterator
-#ifdef GUI2_EXPERIMENTAL_LISTBOX
-		control_definition = (control_type == "list")
-				? current_gui->second.control_definition.find("listbox")
-				: current_gui->second.control_definition.find(control_type);
-#else
-		control_definition =
-				current_gui->second.control_definition.find(control_type);
-#endif
+	control_definition = current_gui->second.control_definition.find(control_type);
 
 	ASSERT_LOG(control_definition != current_gui->second.control_definition.end(),
 			"Type '" << control_type << "' is unknown.");
 
-
 	std::map<std::string, tcontrol_definition_ptr>::const_iterator
 		control = control_definition->second.find(definition);
 
-	if(control == control_definition->second.end()) {
+	if (control == control_definition->second.end()) {
 		LOG_GUI_G << "Control: type '" << control_type << "' definition '"
 			<< definition << "' not found, falling back to 'default'.\n";
 		control = control_definition->second.find("default");
 		VALIDATE(control != control_definition->second.end(), "Cannot find defnition, failling back to default!");
 	}
 
-	for(std::vector<tresolution_definition_ptr>::const_iterator
+	tpoint landscape_size = twidget::toggle_orientation_size(settings::screen_width, settings::screen_height);
+
+	for (std::vector<tresolution_definition_ptr>::const_iterator
 			itor = (*control->second).resolutions.begin(),
 			end = (*control->second).resolutions.end();
 			itor != end;
 			++itor) {
 
-		if(settings::screen_width <= (**itor).window_width ||
-				settings::screen_height <= (**itor).window_height) {
-
+		if (landscape_size.x <= (int)(**itor).window_width || landscape_size.y <= (int)(**itor).window_height) {
 			return *itor;
+
 		} else if (itor == end - 1) {
 			return *itor;
 		}
@@ -569,24 +576,21 @@ std::vector<twindow_builder::tresolution>::const_iterator get_window_builder(
 	std::map<std::string, twindow_builder>::const_iterator
 		window = current_gui->second.window_types.find(type);
 
-	if(true) { // FIXME Test for default gui.
-		if(window == current_gui->second.window_types.end()) {
-			throw twindow_builder_invalid_id();
-		}
-	} else {
-		// FIXME Get the definition in the default gui and do an assertion test.
+	if (window == current_gui->second.window_types.end()) {
+		throw twindow_builder_invalid_id();
 	}
 
-	for(std::vector<twindow_builder::tresolution>::const_iterator
+	tpoint landscape_size = twidget::toggle_orientation_size(settings::screen_width, settings::screen_height);
+
+	for (std::vector<twindow_builder::tresolution>::const_iterator
 			itor = window->second.resolutions.begin(),
 			end = window->second.resolutions.end();
 			itor != end;
 			++itor) {
 
-		if(settings::screen_width <= itor->window_width &&
-				settings::screen_height <= itor->window_height) {
-
+		if (landscape_size.x <= (int)itor->window_width || landscape_size.y <= (int)itor->window_height) {
 			return itor;
+
 		} else if (itor == end - 1) {
 			return itor;
 		}
@@ -635,6 +639,14 @@ void reload_test_window(const std::string& type, const config& cfg)
 	
 	twindow::update_screen_size();
 	window->second.read(cfg);
+}
+
+bool valid_control_definition(const std::string& type, const std::string& definition)
+{
+	const tgui_definition::tcontrol_definition_map& controls = current_gui->second.control_definition;
+	const std::map<std::string, tcontrol_definition_ptr>& map = controls.find(type)->second;
+
+	return map.find(definition) != map.end();
 }
 
 /*WIKI

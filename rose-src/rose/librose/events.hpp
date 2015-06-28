@@ -54,12 +54,7 @@ public:
 	virtual void process_event() {}
 	virtual void draw() {}
 
-	virtual void volatile_draw() {}
-	virtual void volatile_undraw() {}
-
 	virtual bool requires_event_focus(const SDL_Event * = NULL) const { return false; }
-
-	virtual void process_help_string(int /*mousex*/, int /*mousey*/) {}
 
 	virtual void join(); /*joins the current event context*/
 	virtual void leave(); /*leave the event context*/
@@ -97,9 +92,9 @@ struct event_context
 //causes events to be dispatched to all handler objects.
 void pump();
 
-struct pump_info {
-	pump_info() : resize_dimensions(), ticks_(0) {}
-	std::pair<int,int> resize_dimensions;
+struct pump_info 
+{
+	pump_info() : ticks_(0) {}
 	int ticks(unsigned *refresh_counter=NULL, unsigned refresh_rate=1);
 private:
 	int ticks_; //0 if not calculated
@@ -120,9 +115,6 @@ int discard(Uint32 event_mask_min, Uint32 event_mask_max);
 
 void raise_process_event();
 void raise_draw_event();
-void raise_volatile_draw_event();
-void raise_volatile_undraw_event();
-void raise_help_string_event(int mousex, int mousey);
 
 extern bool ignore_finger_event;
 }

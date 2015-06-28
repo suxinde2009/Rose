@@ -393,7 +393,7 @@ void tbook::switch_to(HWND hdlgP)
 	help::clear_book();
 	help::init_book(&editor_config::data_cfg, NULL, true);
 	if (toplevel_.is_null()) {
-		help::generate_contents(id_, toplevel_);
+		help::generate_contents(NULL, id_, toplevel_);
 		// first read,
 		book_from_cfg_.toplevel_ = toplevel_;
 	}

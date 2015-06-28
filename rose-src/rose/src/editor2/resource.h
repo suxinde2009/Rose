@@ -418,6 +418,7 @@
 #define IDC_CMB_EVENTRENAME_NUMBER      1291
 #define IDC_CMB_BOOKS                   1291
 #define IDC_CMB_INTEGRATE_FORMATER      1291
+#define IDC_CMB_ANIM_APP                1291
 #define IDC_ET_NEWCAMP_DESC             1292
 #define IDC_CMB_CAMPMAIN_FIRSTSCENARIO  1292
 #define IDC_CMB_UTYPEEDIT_LEVEL         1292

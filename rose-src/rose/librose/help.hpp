@@ -28,6 +28,10 @@ class config;
 
 class display;
 
+namespace gui2 {
+class tbook;
+}
+
 namespace help {
 
 /// Thrown when the help system fails to parse something.
@@ -258,15 +262,12 @@ std::string extract_section_topic(const std::string& id);
 
 void init_book(const config* game_cfg, gamemap* map, bool editor);
 void clear_book();
-void generate_contents(const std::string& tag, section& toplevel);
-void parse_config_internal(const config *help_cfg, const config *section_cfg, section &sec, int level = 0);
+void generate_contents(gui2::tbook* book, const std::string& tag, section& toplevel);
+void parse_config_internal(gui2::tbook* book, const config *help_cfg, const config *section_cfg, section &sec, int level = 0);
 
-section* find_section(section &sec, const std::string &id);
-topic* find_topic(section &sec, const std::string &id);
+section* find_section(section& sec, const std::string &id);
+topic* find_topic(section& sec, const std::string &id);
 std::pair<section*, int> find_parent(section& sec, const std::string& id);
-
-std::vector<topic> generate_topics(const bool sort_generated, const std::string &generator);
-void generate_sections(const config *help_cfg, const std::string &generator, section &sec, int level);
 
 } // End namespace help.
 

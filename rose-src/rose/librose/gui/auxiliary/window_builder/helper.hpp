@@ -45,6 +45,8 @@ unsigned get_v_align(const std::string& v_align);
  */
 unsigned get_h_align(const std::string& h_align);
 
+twidget::torientation get_orientation(const std::string& orientation);
+
 /**
  * Returns the border flags.
  *

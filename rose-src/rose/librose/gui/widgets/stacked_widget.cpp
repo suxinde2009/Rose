@@ -189,6 +189,13 @@ void tstacked_widget::tgrid2::place(const tpoint& origin, const tpoint& size)
 
 	for (int i = 0; i < childs; ++ i) {
 		tgrid* grid = dynamic_cast<tgrid*>(children_[i].widget_);
+
+		if (grid->get_visible() != VISIBLE) {
+			// normal, it should continue.
+			// but set_radio_layer don't trigger place, if continue here, will result place fail.
+			// of course, don't continue will increase cpu load.
+			// continue;
+		}
 		grid->place(origin, size);
 	}
 }
