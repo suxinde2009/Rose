@@ -443,21 +443,12 @@ public:
 	 */
 	void layout();
 
-<<<<<<< HEAD
 	void insert_tooltip(const std::string& msg, const twidget& widget);
 	void draw_tooltip(surface& screen);
 	void undraw_tooltip(surface& screen);
 	void remove_tooltip();
 	const SDL_Rect& tooltip_rect() const { return tooltip_rect_; }
 	bool has_tooltip() const { return !!tooltip_surf_; }
-=======
-	void insert_tip(const std::string& msg, const twidget& widget);
-	void draw_tip(surface& screen);
-	void undraw_tip(surface& screen);
-	void remove_tip();
-	const SDL_Rect& tip_rect() const { return tip_rect_; }
-	bool has_tip() const { return !!tip_surf_; }
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 
 private:
 
@@ -646,15 +637,9 @@ private:
 	torientation orientation_;
 	bool original_landscape_;
 
-<<<<<<< HEAD
 	SDL_Rect tooltip_rect_;
 	surface tooltip_surf_;
 	surface tooltip_buf_;
-=======
-	SDL_Rect tip_rect_;
-	surface tip_surf_;
-	surface tip_buf_;
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 
 	/**
 	 * Finishes the initialization of the grid.

@@ -1,8 +1,4 @@
-<<<<<<< HEAD:rose-src/rose/studio/main_example1.cpp
 /* Require Rose v0.0.8 or above. $ */
-=======
-/* Require Rose v0.0.7 or above. $ */
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b:rose-src/rose/studio/main_example1.cpp
 
 #define GETTEXT_DOMAIN "wesnoth-lib"
 
@@ -31,15 +27,6 @@
 /*
  * rose require callback
  */
-<<<<<<< HEAD:rose-src/rose/studio/main_example1.cpp
-=======
-void set_zoom_to_default(int zoom)
-{
-	display::default_zoom_ = zoom;
-	image::set_zoom(display::default_zoom_);
-}
-
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b:rose-src/rose/studio/main_example1.cpp
 namespace http {
 bool register_user(display& disp, hero_map& heros, bool check_exist)
 {
@@ -101,11 +88,7 @@ static int do_gameloop(int argc, char** argv)
 #endif
 
 	// modify some game_config variable
-<<<<<<< HEAD:rose-src/rose/studio/main_example1.cpp
 	game_config::init("studio", "Rose", "#rose", true);
-=======
-	game_config::init("studio", "Rose", "#rose");
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b:rose-src/rose/studio/main_example1.cpp
 	game_config::wesnoth_program_dir = directory_name(argv[0]);
 	game_config::version = game_config::rose_version;
 	game_config::wesnoth_version = version_info(game_config::version);
@@ -175,15 +158,9 @@ static int do_gameloop(int argc, char** argv)
 
 		loadscreen_manager.reset();
 		const font::floating_label_context label_manager(game.disp().video().getSurface());
-<<<<<<< HEAD:rose-src/rose/studio/main_example1.cpp
 
 		cursor::set(cursor::NORMAL);
 
-=======
-
-		cursor::set(cursor::NORMAL);
-
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b:rose-src/rose/studio/main_example1.cpp
 		gui2::tchat2 dlg(game.disp());
 		dlg.show(game.disp().video());
 

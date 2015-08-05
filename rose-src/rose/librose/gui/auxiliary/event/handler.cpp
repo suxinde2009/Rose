@@ -481,13 +481,8 @@ void thandler::handle_event(const SDL_Event& event)
 				mouse_button_up(tpoint(twidget::npos, twidget::npos), SDL_BUTTON_LEFT);
 			}
 
-<<<<<<< HEAD
 		} else if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
 			// draw(true);
-=======
-			} else if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-				video_resize(revise_screen_size(event.window.data1, event.window.data2));
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 
 		} else if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
 			video_resize(revise_screen_size(event.window.data1, event.window.data2));
@@ -643,11 +638,7 @@ void thandler::draw(const bool force)
 		surface frame_buffer = video.getSurface();
 
 		// tip's buff will used to other place, require remember first.
-<<<<<<< HEAD
 		window->draw_tooltip(frame_buffer);
-=======
-		window->draw_tip(frame_buffer);
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 		disp->draw_float_anim();
 		cursor::draw(frame_buffer);
 
@@ -655,11 +646,7 @@ void thandler::draw(const bool force)
 
 		cursor::undraw(frame_buffer);
 		disp->undraw_float_anim();
-<<<<<<< HEAD
 		window->undraw_tooltip(frame_buffer);
-=======
-		window->undraw_tip(frame_buffer);
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	}
 }
 

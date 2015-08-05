@@ -298,10 +298,6 @@ bool base_instance::init_video()
 	resolution = preferences::resolution();
 	bpp = 32;
     
-<<<<<<< HEAD
-=======
-
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 #endif
 
     std::cerr << "setting mode to " << resolution.first << "x" << resolution.second << "x" << bpp << "\n";

@@ -745,11 +745,7 @@ void tlistbox::handle_key_up_arrow(SDLMod modifier, bool& handled)
 		show_content_rect(rect);
 
 		if (callback_value_changed_) {
-<<<<<<< HEAD
 			callback_value_changed_(this, drag_none);
-=======
-			callback_value_changed_(this);
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 		}
 	} else {
 		// Inherited.

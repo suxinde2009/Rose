@@ -109,7 +109,7 @@ void base_finger::process_event(const SDL_Event& event)
 		break;
 
 	case SDL_FINGERUP:
-		for (std::vector<tfinger>::iterator it = fingers_.begin(); it != fingers_.end(); ) {
+		for (std::vector<tfinger>::const_iterator it = fingers_.begin(); it != fingers_.end(); ) {
 			const tfinger& finger = *it;
 			if (finger.fingerId == event.tfinger.fingerId) {
 				it = fingers_.erase(it);

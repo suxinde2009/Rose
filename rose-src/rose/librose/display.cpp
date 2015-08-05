@@ -1051,12 +1051,8 @@ void display::flip()
 		fill_rect_alpha(r, color, 1, frameBuffer);
 	}
 
-<<<<<<< HEAD
 	theme_->get_window()->draw_tooltip(frameBuffer);
 	draw_floating(frameBuffer);
-=======
-	theme_->get_window()->draw_tip(frameBuffer);
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	font::draw_floating_labels(frameBuffer);
 	cursor::draw(frameBuffer);
 
@@ -1064,12 +1060,8 @@ void display::flip()
 
 	cursor::undraw(frameBuffer);
 	font::undraw_floating_labels(frameBuffer);
-<<<<<<< HEAD
 	undraw_floating(frameBuffer);
 	theme_->get_window()->undraw_tooltip(frameBuffer);
-=======
-	theme_->get_window()->undraw_tip(frameBuffer);
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 }
 
 void display::update_display()
@@ -2483,13 +2475,8 @@ void display::invalidate_theme()
 		}
 	}
 	gui2::twindow* window = theme_->get_window();
-<<<<<<< HEAD
 	if (window->has_tooltip()) {
 		rects.push_back(window->tooltip_rect());
-=======
-	if (window->has_tip()) {
-		rects.push_back(window->tip_rect());
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	}
 
 	rect_of_hexes underlying_hex;

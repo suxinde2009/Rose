@@ -122,15 +122,6 @@ protected:
 	map_location::DIRECTION facing_;
 	STATE state_;
 
-	// Animations:
-	animation* anim_;
-	int next_idling_;
-	int frame_begin_time_;
-
-	bool draw_bars_;
-	map_location::DIRECTION facing_;
-	STATE state_;
-
 private:
 	base_map& units_;
 };

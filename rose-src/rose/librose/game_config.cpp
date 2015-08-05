@@ -60,11 +60,7 @@ namespace game_config
 	unsigned lobby_network_timer = 100;
 	unsigned lobby_refresh = 4000;
 	const int gold_carryover_percentage = 80;
-<<<<<<< HEAD
 	const std::string rose_version = "0.0.8";
-=======
-	const std::string rose_version = "0.0.7";
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	std::string version = "1.0.31";
 	version_info wesnoth_version(version);
 	int reside_troop_increase_loyalty = 50;
@@ -324,19 +320,12 @@ namespace game_config
 	std::vector<server_info> server_list;
 	bbs_server_info bbs_server;
 
-<<<<<<< HEAD
 	void init(const std::string& _app, const std::string& msgid, const std::string& channel, bool landscape)
-=======
-	void init(const std::string& _app, const std::string& msgid, const std::string& channel)
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	{
 		app = _app;
 		app_msgid = msgid;
 		app_channel = channel;
-<<<<<<< HEAD
 		gui2::twidget::current_landscape = landscape;
-=======
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 
 		app_dir = std::string("app-") + app;
 	}

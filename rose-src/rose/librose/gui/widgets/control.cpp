@@ -735,11 +735,7 @@ void tcontrol::signal_handler_notify_remove_tooltip(
 	 * alternative is to add a message to the window to remove the tip.
 	 * Might be done later.
 	 */
-<<<<<<< HEAD
 	get_window()->remove_tooltip();
-=======
-	get_window()->remove_tip();
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	// tip::remove();
 
 	handled = true;

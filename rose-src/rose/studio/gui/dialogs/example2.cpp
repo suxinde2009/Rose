@@ -1,4 +1,4 @@
-/* Require Rose v0.0.7 or above. $ */
+/* Require Rose v0.0.6 or above. $ */
 
 #define GETTEXT_DOMAIN "wesnoth-lib"
 

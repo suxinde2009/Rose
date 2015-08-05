@@ -48,11 +48,7 @@ bool tdialog::show(CVideo& video, const unsigned auto_close_time)
 
 	std::vector<twindow*> vstr = gui2::connectd_window();
 	if (!vstr.empty()) {
-<<<<<<< HEAD
 		vstr.back()->remove_tooltip();
-=======
-		vstr.back()->remove_tip();
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	}
 
 	{

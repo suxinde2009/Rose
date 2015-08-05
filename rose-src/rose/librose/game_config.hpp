@@ -280,11 +280,7 @@ namespace game_config
 				menu_expand, menu_contract, menu_select;
 	}
 
-<<<<<<< HEAD
 	void init(const std::string& _app, const std::string& msgid, const std::string& channel, bool landscape);
-=======
-	void init(const std::string& _app, const std::string& msgid, const std::string& channel);
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	void load_config(const config* cfg);
 
 	bool is_reserve_player(const std::string& player);

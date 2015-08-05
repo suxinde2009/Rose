@@ -79,11 +79,8 @@ public:
 	static bool orientation_effect_resolution(const int width, const int height);
 	static tpoint toggle_orientation_size(int width, int height);
 
-<<<<<<< HEAD
 	enum tdrag_direction { drag_none, drag_left = 0x1, drag_right = 0x2, drag_up = 0x4, drag_down = 0x8};
 
-=======
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	/** @deprecated use the second overload. */
 	twidget();
 

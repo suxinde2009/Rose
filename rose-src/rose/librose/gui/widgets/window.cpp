@@ -348,11 +348,7 @@ twindow::twindow(CVideo& video,
 	, fix_coordinate_(theme)
 	, orientation_(orientation)
 	, original_landscape_(current_landscape)
-<<<<<<< HEAD
 	, tooltip_rect_(empty_rect)
-=======
-	, tip_rect_(empty_rect)
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 #ifdef DEBUG_WINDOW_LAYOUT_GRAPHS
 	, debug_layout_(new tdebug_layout_graph(this))
 #endif
@@ -445,11 +441,7 @@ twindow::~twindow()
 	 * Another issue is that on smallgui and an MP game the tooltip not
 	 * unrendered properly can capture the mouse and make playing impossible.
 	 */
-<<<<<<< HEAD
 	remove_tooltip();
-=======
-	remove_tip();
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 
 	tmanager::instance().remove(*this);
 
@@ -712,11 +704,7 @@ void twindow::draw()
 		populate_dirty_list(*this, call_stack);
 	}
 
-<<<<<<< HEAD
 	if (!has_tooltip() && dirty_list_.empty()) {
-=======
-	if (!has_tip() && dirty_list_.empty()) {
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 		if (preferences::use_color_cursors() || sunset_) {
 			surface frame_buffer = get_video_surface();
 
@@ -1155,11 +1143,7 @@ bool twindow::click_dismiss()
 	return false;
 }
 
-<<<<<<< HEAD
 void twindow::insert_tooltip(const std::string& msg, const twidget& widget)
-=======
-void twindow::insert_tip(const std::string& msg, const twidget& widget)
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 {
 	if (msg.empty()) {
 		return;
@@ -1195,15 +1179,9 @@ void twindow::insert_tip(const std::string& msg, const twidget& widget)
 		y = twidget::y_;
 	}
 
-<<<<<<< HEAD
 	tooltip_rect_ = ::create_rect(x, y, w, h);
 	tooltip_surf_.assign(create_neutral_surface(w, h));
 	tooltip_buf_.assign(create_neutral_surface(w, h));
-=======
-	tip_rect_ = ::create_rect(x, y, w, h);
-	tip_surf_.assign(create_neutral_surface(w, h));
-	tip_buf_.assign(create_neutral_surface(w, h));
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 
 	tcanvas& _canvas = canvas(1);
 	_canvas.set_variable("tip_width", variant(w));
@@ -1214,7 +1192,6 @@ void twindow::insert_tip(const std::string& msg, const twidget& widget)
 	std::vector<tcanvas::tshape_ptr> tip;
 	tcanvas::parse_cfg(definition.cfg, tip);
 	for (std::vector<tcanvas::tshape_ptr>::iterator it = tip.begin(); it != tip.end(); ++ it) {
-<<<<<<< HEAD
 		(*it)->draw(tooltip_surf_, _canvas.variables());
 	}
 }
@@ -1251,44 +1228,6 @@ void twindow::remove_tooltip()
 		tooltip_rect_ = empty_rect;
 		tooltip_surf_ = NULL;
 		tooltip_buf_ = NULL;
-=======
-		(*it)->draw(tip_surf_, _canvas.variables());
-	}
-}
-
-void twindow::draw_tip(surface& screen)
-{
-	if (tip_surf_) {
-		// Save the screen area where the cursor is being drawn onto the back buffer
-		SDL_Rect rect = tip_rect_;
-		sdl_blit(screen, &rect, tip_buf_, NULL);
-
-		sdl_blit(tip_surf_, NULL, screen, &rect);
-	}
-}
-
-void twindow::undraw_tip(surface& screen)
-{
-	if (tip_surf_) {
-		SDL_Rect rect = tip_rect_;
-		sdl_blit(tip_buf_, NULL, screen, &rect);
-	}
-}
-
-void twindow::remove_tip()
-{
-	if (has_tip()) {
-		display* disp = display::get_singleton();
-        surface frame_buffer = disp->video().getSurface();
-		disp->invalidate_locations_in_rect(tip_rect_);
-		undraw_tip(frame_buffer);
-
-		set_dirty();
-
-		tip_rect_ = empty_rect;
-		tip_surf_ = NULL;
-		tip_buf_ = NULL;
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	}
 }
 
@@ -1512,11 +1451,7 @@ void twindow::signal_handler_message_show_tooltip(
 	event::tmessage_show_tooltip& request =
 			dynamic_cast<event::tmessage_show_tooltip&>(message);
 
-<<<<<<< HEAD
 	insert_tooltip(request.message, request.widget);
-=======
-	insert_tip(request.message, request.widget);
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 
 	handled = true;
 }

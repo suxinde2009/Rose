@@ -72,7 +72,6 @@ twidget::torientation get_orientation(const std::string& orientation)
 	}
 }
 
-<<<<<<< HEAD
 twidget::tdrag_direction get_drag_direction(const std::string& pan)
 {
 	if (pan == "left") {
@@ -132,8 +131,6 @@ std::string form_drag_str(unsigned flags)
 	return ss.str();
 }
 
-=======
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 unsigned get_border(const std::vector<std::string>& border)
 {
 	unsigned result = 0;

@@ -26,15 +26,6 @@
 /*
  * rose require callback
  */
-<<<<<<< HEAD
-=======
-void set_zoom_to_default(int zoom)
-{
-	display::default_zoom_ = zoom;
-	image::set_zoom(display::default_zoom_);
-}
-
->>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 namespace http {
 bool register_user(display& disp, hero_map& heros, bool check_exist)
 {
