@@ -38,6 +38,8 @@ namespace iterator {
 	class twalker_;
 } // namespace iterator
 
+#define is_fault_coordinate(x, y)	((x) == twidget::npos && (y) == twidget::npos)
+
 typedef std::map< std::string, t_string > string_map;
 
 /**
@@ -77,6 +79,11 @@ public:
 	static bool orientation_effect_resolution(const int width, const int height);
 	static tpoint toggle_orientation_size(int width, int height);
 
+<<<<<<< HEAD
+	enum tdrag_direction { drag_none, drag_left = 0x1, drag_right = 0x2, drag_up = 0x4, drag_down = 0x8};
+
+=======
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	/** @deprecated use the second overload. */
 	twidget();
 
@@ -537,6 +544,9 @@ public:
 
 	virtual tpoint request_reduce_width(const unsigned maximum_width) { return tpoint(0, 0); }
 
+	void set_drag(unsigned drag) { drag_ = drag; };
+	unsigned drag() const { return drag_; }
+
 private:
 
 	/**
@@ -593,6 +603,9 @@ protected:
 	twidget* parent_;
 
 	void* cookie_;
+
+	unsigned drag_;
+
 private:
 
 	/**

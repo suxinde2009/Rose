@@ -24,6 +24,8 @@ class display;
 
 namespace gui2 {
 
+class tlistbox;
+
 class tlinked_group2: public tdialog
 {
 public:
@@ -43,7 +45,7 @@ private:
 	void reload_linked_group_table(twindow& window, int cursel);
 	void map_linked_group_to(twindow& window, int index);
 
-	void item_selected(twindow& window);
+	void item_selected(twindow& window, tlistbox& listobx, const int type);
 	void append(twindow& window);
 	void modify(twindow& window);
 	void erase(twindow& window);

@@ -58,8 +58,7 @@ tbuilder_listbox::tbuilder_listbox(const config& cfg)
 	VALIDATE(l, _("No list defined."));
 	list_builder = new tbuilder_grid(l);
 	assert(list_builder);
-	VALIDATE(list_builder->rows == 1
-			, _("A 'list_definition' should contain one row."));
+	VALIDATE(list_builder->rows <= 2, _("A 'list_definition' should contain one or tow row."));
 
 	const config &data = cfg.child("list_data");
 	if (!data) {

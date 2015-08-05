@@ -102,6 +102,7 @@ twidget::twidget()
 	, cookie_(NULL)
 	, layout_size_(tpoint(0,0))
 	, linked_group_()
+	, drag_(drag_none)
 	, debug_border_mode_(0)
 	, debug_border_color_(0)
 #ifdef DEBUG_WINDOW_LAYOUT_GRAPHS
@@ -127,6 +128,7 @@ twidget::twidget(const tbuilder_widget& builder)
 	, cookie_(NULL)
 	, layout_size_(tpoint(0,0))
 	, linked_group_(builder.linked_group)
+	, drag_(drag_none)
 	, debug_border_mode_(builder.debug_border_mode)
 	, debug_border_color_(builder.debug_border_color)
 #ifdef DEBUG_WINDOW_LAYOUT_GRAPHS
@@ -140,7 +142,7 @@ twidget::~twidget()
 {
 	twidget* p = parent();
 	while (p) {
-		fire(event::NOTIFY_REMOVAL, *p, NULL);
+		fire2(event::NOTIFY_REMOVAL, *p);
 		p = p->parent();
 	}
 
@@ -161,7 +163,6 @@ void twidget::set_id(const std::string& id)
 {
 	id_ = id;
 }
-
 
 void twidget::layout_init(const bool /*full_initialization*/)
 {
@@ -221,14 +222,12 @@ void twidget::set_size(const tpoint& size)
 	set_dirty();
 }
 
-twidget* twidget::find_at(const tpoint& coordinate,
-		const bool must_be_active)
+twidget* twidget::find_at(const tpoint& coordinate, const bool must_be_active)
 {
 	return is_at(coordinate, must_be_active) ? this : NULL;
 }
 
-const twidget* twidget::find_at(const tpoint& coordinate,
-		const bool must_be_active) const
+const twidget* twidget::find_at(const tpoint& coordinate, const bool must_be_active) const
 {
 	return is_at(coordinate, must_be_active) ? this : NULL;
 }

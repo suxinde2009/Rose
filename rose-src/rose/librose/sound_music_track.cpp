@@ -70,7 +70,15 @@ void music_track::resolve()
 		return;
 	}
 
-	file_path_ = get_binary_file_location("music", id_);
+#ifdef _WIN32
+	if (id_.size() >= 2 && id_.c_str()[1] == ':') {
+#else
+	if (id_.c_str()[0] == '/') {
+#endif
+		file_path_ = id_;
+	} else {
+		file_path_ = get_binary_file_location("music", id_);
+	}
 
 	if (file_path_.empty()) {
 		ERR_AUDIO << "could not find track '" << id_ << "'\n";

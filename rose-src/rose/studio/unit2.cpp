@@ -140,6 +140,9 @@ void unit2::generate_window(config& cfg) const
 {
 	cfg["name"] = cell_.id;
 	cfg["description"] = t_string(cell_.window.description, cell_.window.textdomain);
+	if (cell_.window.orientation != gui2::twidget::auto_orientation) {
+		cfg["orientation"] = gui2::orientations.find(cell_.window.orientation)->second.id;
+	}
 
 	config& res_cfg = cfg.add_child("resolution");
 	res_cfg["id"] = "1024x768";
@@ -203,6 +206,8 @@ void unit2::from_window(const config& cfg)
 	cell_.id = cfg["name"].str();
 	t_string description = cfg["description"].t_str();
 	split_t_string(description, cell_.window.textdomain, cell_.window.description);
+
+	cell_.window.orientation = gui2::implementation::get_orientation(cfg["orientation"]);
 
 	const config& main_map_cfg = cfg.child("resolution").child("main_map_border");
 	cell_.window.tile_shape = main_map_cfg["tile_shape"].str();

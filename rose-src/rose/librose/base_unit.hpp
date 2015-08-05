@@ -65,7 +65,9 @@ public:
 	bool consistent() const { return !rect_.w || !rect_.h; }
 	const SDL_Rect& get_rect() const { return rect_; }
 	virtual void set_rect(const SDL_Rect& rect);
-	void set_rect2(const SDL_Rect& rect);
+	
+	bool hidden() const { return hidden_; }
+	void set_hidden(bool val);
 
 	int get_map_index() const { return map_index_; }
 	void set_map_index(int index) { map_index_ = index; }
@@ -109,6 +111,16 @@ protected:
 	size_t redraw_counter_;
 
 	SDL_Rect rect_;
+	bool hidden_;
+
+	// Animations:
+	animation* anim_;
+	int next_idling_;
+	int frame_begin_time_;
+
+	bool draw_bars_;
+	map_location::DIRECTION facing_;
+	STATE state_;
 
 	// Animations:
 	animation* anim_;

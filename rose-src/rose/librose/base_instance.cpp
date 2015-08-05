@@ -73,7 +73,7 @@ void base_instance::regenerate_heros(hero_map& heros, bool allow_empty)
 	other_group.clear();
 }
 
-base_instance::base_instance(int argc, char** argv)
+base_instance::base_instance(int argc, char** argv, int sample_rate, size_t sound_buffer_size)
 	: thread_manager()
 	, icon_()
 	, video_()
@@ -91,6 +91,15 @@ base_instance::base_instance(int argc, char** argv)
 	, old_defines_map_()
 	, cache_(game_config::config_cache::instance())
 {
+	// Sounds don't sound good on Windows unless the buffer size is 4k,
+	// but this seems to cause crashes on other systems...
+#ifndef _WIN32
+	if (sound_buffer_size == 4096) {
+		sound_buffer_size = 1024;
+	}
+#endif
+	sound::set_play_params(sample_rate, sound_buffer_size);
+
 	bool no_music = false;
 	bool no_sound = false;
 
@@ -278,7 +287,8 @@ bool base_instance::init_video()
 
 #if (defined(__APPLE__) && TARGET_OS_IPHONE) || defined(ANDROID)
     SDL_Rect rc = video_.bound();
-	resolution = std::make_pair(rc.w, rc.h);
+	gui2::tpoint normal_size = gui2::twidget::toggle_orientation_size(rc.w, rc.h);
+	resolution = std::make_pair(normal_size.x, normal_size.y);
 	bpp = 32;
 	// on iphone/ipad, don't set SDL_WINDOW_FULLSCREEN, it will result cannot find orientation.
 	// video_flags = SDL_WINDOW_FULLSCREEN;
@@ -288,7 +298,10 @@ bool base_instance::init_video()
 	resolution = preferences::resolution();
 	bpp = 32;
     
+<<<<<<< HEAD
+=======
 
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 #endif
 
     std::cerr << "setting mode to " << resolution.first << "x" << resolution.second << "x" << bpp << "\n";

@@ -671,36 +671,6 @@ void _set_zoom(int value)
 	preferences::set("zoom", display::adjust_zoom(value));
 }
 
-size_t sound_buffer_size()
-{
-	// Sounds don't sound good on Windows unless the buffer size is 4k,
-	// but this seems to cause crashes on other systems...
-	#ifdef _WIN32
-		const size_t buf_size = 4096;
-	#else
-		const size_t buf_size = 1024;
-	#endif
-
-	return prefs["sound_buffer_size"].to_int(buf_size);
-}
-
-void save_sound_buffer_size(const size_t size)
-{
-	#ifdef _WIN32
-		const char* buf_size = "4096";
-	#else
-		const char* buf_size = "1024";
-	#endif
-
-	const std::string new_size = lexical_cast_default<std::string>(size, buf_size);
-	if (get("sound_buffer_size") == new_size)
-		return;
-
-	preferences::set("sound_buffer_size", new_size);
-
-	sound::reset_sound();
-}
-
 int music_volume()
 {
 	return prefs["music_volume"].to_int(100);
@@ -969,22 +939,6 @@ void add_alias(const std::string &alias, const std::string &command)
 const config &get_alias()
 {
 	return get_child("alias");
-}
-
-unsigned int sample_rate()
-{
-	return prefs["sample_rate"].to_int(44100);
-}
-
-void save_sample_rate(const unsigned int rate)
-{
-	if (sample_rate() == rate)
-		return;
-
-	prefs["sample_rate"] = int(rate);
-
-	// If audio is open, we have to re set sample rate
-	sound::reset_sound();
 }
 
 } // end namespace preferences

@@ -154,6 +154,14 @@ void twindow_setting::pre_base(twindow& window)
 				, this
 				, boost::ref(window)));
 
+	set_orientation_label(window);
+	connect_signal_mouse_left_click(
+			  find_widget<tbutton>(&window, "orientation", false)
+			, boost::bind(
+				&twindow_setting::set_orientation
+				, this
+				, boost::ref(window)));
+
 	if (controller_.theme()) {
 		find_widget<tgrid>(&window, "grid_base_dialog", false).set_visible(twidget::INVISIBLE);
 
@@ -259,7 +267,7 @@ void twindow_setting::pre_context_menu(twindow& window)
 
 
 	tlistbox& list = find_widget<tlistbox>(&window, "menu", false);
-	list.set_callback_value_change(dialog_callback2<twindow_setting, tlistbox, &twindow_setting::item_selected>);
+	list.set_callback_value_change(dialog_callback3<twindow_setting, tlistbox, &twindow_setting::item_selected>);
 
 	submenu_navigate_ = find_widget<treport>(&window, "submenu_navigate", false, true);
 	submenu_navigate_->tabbar_init(true, "tab");
@@ -585,6 +593,38 @@ void twindow_setting::set_textdomain_label(twindow& window)
 	button->set_label(ss.str());
 }
 
+void twindow_setting::set_orientation(twindow& window)
+{
+	std::stringstream ss;
+	std::vector<tval_str> items;
+
+	int def = 0;
+	for (std::map<int, tparam3>::const_iterator it = orientations.begin(); it != orientations.end(); ++ it) {
+		const tparam3& param = it->second;
+		ss.str("");
+		ss << param.description;
+		if (param.val == cell_.window.orientation) {
+			def = param.val;
+		}
+		items.push_back(tval_str(param.val, ss.str()));
+	}
+
+	gui2::tcombo_box dlg(items, def);
+	dlg.show(disp_.video());
+
+	cell_.window.orientation = (twidget::torientation)dlg.selected_val();
+
+	set_orientation_label(window);
+}
+
+void twindow_setting::set_orientation_label(twindow& window)
+{
+	const tparam3& param = orientations.find(cell_.window.orientation)->second;
+
+	tbutton* button = find_widget<tbutton>(&window, "orientation", false, true);
+	button->set_label(param.description);
+}
+
 void twindow_setting::save(twindow& window, bool& handled, bool& halt)
 {
 	bool ret = true;
@@ -884,7 +924,7 @@ void twindow_setting::erase_menu_item(twindow& window)
 	reload_menu_table(menu, window, row);
 }
 
-void twindow_setting::item_selected(twindow& window, tlistbox& list)
+void twindow_setting::item_selected(twindow& window, tlistbox& list, const int type)
 {
 	tmenu2& menu = *current_submenu();
 	int row = list.get_selected_row();

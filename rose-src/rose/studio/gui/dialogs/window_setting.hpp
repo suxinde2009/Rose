@@ -67,6 +67,9 @@ private:
 	void set_textdomain(twindow& window);
 	void set_textdomain_label(twindow& window);
 
+	void set_orientation(twindow& window);
+	void set_orientation_label(twindow& window);
+
 	void set_tile_shape(twindow& window);
 	void set_tile_shape_label(twindow& window);
 
@@ -100,7 +103,7 @@ private:
 	void erase_menu_item(twindow& window);
 
 	void map_menu_item_to(twindow& window, tmenu2& menu, int row);
-	void item_selected(twindow& window, tlistbox& list);
+	void item_selected(twindow& window, tlistbox& list, const int type);
 
 	void refresh_parent_desc(twindow& window, tmenu2& menu);
 

@@ -59,6 +59,11 @@ public:
 			listbox_.list_set_visible_area(area);
 		}
 
+		void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset)
+		{
+			listbox_.list_impl_draw_children(frame_buffer, x_offset, y_offset);
+		}
+
 	private:
 		tlistbox& listbox_;
 	};
@@ -75,6 +80,7 @@ public:
 	 *                            changes the visible state instead.
 	 */
 	tlistbox();
+	~tlistbox();
 
 	/***** ***** ***** ***** Row handling. ***** ***** ****** *****/
 	/**
@@ -187,7 +193,7 @@ public:
 	void scroll_to_row(const unsigned row);
 
 	/** Function to call after the user clicked on a row. */
-	bool list_item_clicked(twidget* caller);
+	bool list_item_clicked(twidget* caller, const int type);
 
 	/** Inherited from tcontainer_. */
 	void set_self_active(const bool /*active*/)  {}
@@ -204,7 +210,7 @@ public:
 	
 	/***** ***** ***** setters / getters for members ***** ****** *****/
 
-	void set_callback_value_change(void (*callback) (twidget* caller))
+	void set_callback_value_change(void (*callback) (twidget* caller, const int type))
 		{ callback_value_changed_ = callback; }
 
 	void set_list_builder(tbuilder_grid_ptr list_builder);
@@ -212,7 +218,19 @@ public:
 	void set_dynamic(bool val) { dynamic_ = val; }
 	bool dynamic() const { return dynamic_; }
 
+	tgrid* left_drag_grid() const { return left_drag_grid_; }
+	void cancel_drag();
+
 protected:
+
+	/** Inherited from tcontainer_. */
+	twidget* find_at(const tpoint& coordinate, const bool must_be_active);
+
+	/** Inherited from tcontainer_. */
+	const twidget* find_at(const tpoint& coordinate, const bool must_be_active) const;
+
+	/** Inherited from tcontainer_. */
+	void child_populate_dirty_list(twindow& caller,	const std::vector<twidget*>& call_stack);
 
 	/***** ***** ***** ***** keyboard functions ***** ***** ***** *****/
 
@@ -257,8 +275,12 @@ private:
 	void list_place(const tpoint& origin, const tpoint& size);
 	void list_set_origin(const tpoint& origin);
 	void list_set_visible_area(const SDL_Rect& area);
+	void list_impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 	ttoggle_panel* next_selectable_row(int start, bool invert) const;
+	void callback_control_drag_detect(tcontrol* control, bool start, const tdrag_direction type);
+	void callback_pre_impl_draw_children(tcontrol* control, surface& frame_buffer, int x_offset, int y_offset);
+	void callback_set_drag_coordinate(tcontrol* control, const tpoint& first, const tpoint& last);
 
 	/**
 	 * Contains a pointer to the generator.
@@ -274,6 +296,10 @@ private:
 
 	bool dynamic_;
 	int cursel_;
+	int drag_at_;
+
+	tgrid* left_drag_grid_;
+	tpoint left_drag_grid_size_;
 
 	/**
 	 * This callback is called when the value in the listbox changes.
@@ -282,7 +308,7 @@ private:
 	 * there might be too many calls. That might happen if an arrow up didn't
 	 * change the selected item.
 	 */
-	void (*callback_value_changed_) (twidget*);
+	void (*callback_value_changed_) (twidget*, const int type);
 
 	/** Inherited from tscrollbar_container. */
 	void place_content_grid(const tpoint& content_origin, const tpoint& content_size, const tpoint& desire_origin);

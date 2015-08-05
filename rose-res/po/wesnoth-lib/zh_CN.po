@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: wesnoth\n"
 "Report-Msgid-Bugs-To: http://bugs.wesnoth.org/\n"
 "POT-Creation-Date: 2010-12-08 18:05+0100\n"
-"PO-Revision-Date: 2015-06-03 23:14+0800\n"
+"PO-Revision-Date: 2015-07-23 15:37+0800\n"
 "Last-Translator: \n"
 "Language-Team: Chinese/Simplified <i18n-translation@lists.linux.net.cn>\n"
 "Language: zh_CN\n"
@@ -5839,6 +5839,33 @@ msgstr "重命名补丁"
 
 msgid "Original ID"
 msgstr "原标识"
+
+msgid "$year|.$month"
+msgstr "$year年$month月份"
+
+msgid "Sesame Sleep"
+msgstr "芝麻睡眠"
+
+msgid "There is no score tonight, let Sesame to accompany you to sleep!"
+msgstr "目前还没有评分，今晚让芝麻陪您一起入眠吧！"
+
+msgid "History Record"
+msgstr "历史记录"
+
+msgid "Sleep Settings"
+msgstr "睡眠设置"
+
+msgid "Wake up time"
+msgstr "唤醒时间"
+
+msgid "Wake up music"
+msgstr "唤醒音乐"
+
+msgid "Total capture time"
+msgstr "此次设置总时长"
+
+msgid "The rest time of wake up"
+msgstr "唤醒剩余时长"
 
 #~ msgid "Setting"
 #~ msgstr "设置"

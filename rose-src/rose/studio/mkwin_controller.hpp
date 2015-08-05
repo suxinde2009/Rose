@@ -172,7 +172,7 @@ public:
 	unit* get_window() const;
 	bool window_has_valid(bool show_error);
 
-	void mouse_motion(int x, int y, const bool browse, bool update);
+	void mouse_motion(int x, int y, const bool browse);
 	bool left_click(int x, int y, const bool browse);
 	bool right_click(int x, int y, const bool browse);
 

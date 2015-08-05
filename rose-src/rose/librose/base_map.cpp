@@ -69,6 +69,7 @@ base_unit* base_map::find_base_unit(const map_location& loc) const
 
 void base_map::create_coor_map(int w, int h)
 {
+	VALIDATE(!map_ && !map_vsize_ && !coor_map_, "Error state!");
 	map_ = (base_unit**)malloc(w * h * sizeof(base_unit*));
 	memset(map_, 0, w * h * sizeof(base_unit*));
 	map_vsize_ = 0;
@@ -258,7 +259,7 @@ base_unit* base_map::unit_clicked_on(const int xclick, const int yclick, const m
 		int min_y = INT_MAX;
 		for (int x = mloc.x; x >= 0; x --) {
 			u = coor_map_[pitch + x].overlay;
-			if (u) {
+			if (u && !u->hidden_) {
 				const SDL_Rect& rect = u->get_rect();
 				if (point_in_rect(xmap, ymap, rect)) {
 					return u;
@@ -276,7 +277,7 @@ base_unit* base_map::unit_clicked_on(const int xclick, const int yclick, const m
 		}
 		for (int x1 = w; x1 < w_; x1 ++) {
 			u = coor_map_[pitch + x1].overlay;
-			if (u) {
+			if (u && !u->hidden_) {
 				const SDL_Rect& rect = u->get_rect();
 				if (point_in_rect(xmap, ymap, rect)) {
 					return u;

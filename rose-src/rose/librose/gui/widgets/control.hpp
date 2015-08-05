@@ -197,6 +197,13 @@ public:
 
 	tpoint request_reduce_width(const unsigned maximum_width);
 
+	bool drag_detect_started() const { return drag_detect_started_; }
+	void control_drag_detect(bool start, int x = npos, int y = npos, const tdrag_direction type = drag_none);
+	void set_drag_coordinate(int x, int y);
+	int drag_satisfied();
+
+	void set_draw_offset(int x, int y) { draw_offset_.x = x; draw_offset_.y = y; }
+
 protected:
 	virtual bool exist_anim();
 	virtual void calculate_integrate();
@@ -323,6 +330,18 @@ public:
 	void set_text_maximum_width(int maximum);
 	void clear_label_size_cache();
 
+	void set_callback_place(boost::function<void (tcontrol*, const SDL_Rect&)> callback)
+		{ callback_place_ = callback; }
+
+	void set_callback_control_drag_detect(boost::function<void (tcontrol*, bool start, const tdrag_direction)> callback)
+		{ callback_control_drag_detect_ = callback; }
+
+	void set_callback_pre_impl_draw_children(boost::function<void (tcontrol*, surface&, int, int)> callback)
+		{ callback_pre_impl_draw_children_ = callback; }
+
+	void set_callback_set_drag_coordinate(boost::function<void (tcontrol*, const tpoint& first, const tpoint& last)> callback)
+		{ callback_set_drag_coordinate_ = callback; }
+
 protected:
 	void set_config(tresolution_definition_ptr config) { config_ = config; }
 
@@ -358,6 +377,14 @@ protected:
 	/** Read only for the label? */
 	bool text_editable_;
 
+	bool drag_detect_started_;
+	tpoint first_drag_coordinate_;
+	tpoint last_drag_coordinate_;
+
+	tpoint draw_offset_;
+
+	boost::function<void (tcontrol*, surface& frame_buffer, int x_offset, int y_offset)> callback_pre_impl_draw_children_;
+
 private:
 	/**
 	 * The definition is the id of that widget class.
@@ -372,6 +399,13 @@ private:
 
 	std::vector<int> pre_anims_;
 	std::vector<int> post_anims_;
+
+	// call when after place.
+	boost::function<void (tcontrol*, const SDL_Rect&)> callback_place_;
+
+	boost::function<void (tcontrol*, bool start, const tdrag_direction type)> callback_control_drag_detect_;
+
+	boost::function<void (tcontrol*, const tpoint& first, const tpoint& last)> callback_set_drag_coordinate_;
 
 	/**
 	 * If the text doesn't fit on the label should the text be used as tooltip?

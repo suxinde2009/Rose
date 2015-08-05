@@ -23,6 +23,7 @@
 #include "sound.hpp"
 #include "sound_music_track.hpp"
 #include "util.hpp"
+#include "wml_exception.hpp"
 
 #include "SDL_mixer.h"
 
@@ -46,7 +47,8 @@ static void play_sound_internal(const std::string& files, channel_group group, u
 }
 
 namespace {
-
+int sample_rate = 0;
+size_t buffer_size = 0;
 bool mix_ok = false;
 int music_start_time = 0;
 unsigned music_refresh = 0;
@@ -284,14 +286,39 @@ static void channel_finished_hook(int channel)
 	channel_ids[channel] = -1;
 }
 
-bool init_sound() {
-	LOG_AUDIO << "Initializing audio...\n";
-	if(SDL_WasInit(SDL_INIT_AUDIO) == 0)
-		if(SDL_InitSubSystem(SDL_INIT_AUDIO) == -1)
-			return false;
+void set_play_params(int sound_sample_rate, size_t sound_buffer_size)
+{
+	if (sample_rate == sound_sample_rate && buffer_size == sound_buffer_size) {
+		return;
+	}
 
-	if(!mix_ok) {
-		if(Mix_OpenAudio(preferences::sample_rate(), MIX_DEFAULT_FORMAT, 2, preferences::sound_buffer_size()) == -1) {
+	bool require_reset = sample_rate? true: false;
+
+	sample_rate = sound_sample_rate;
+	buffer_size = sound_buffer_size;
+
+	if (require_reset) {
+		// If audio is open, we have to re set sample rate
+		reset_sound();
+	}
+}
+size_t get_buffer_size() 
+{
+	return buffer_size;
+}
+
+bool init_sound() 
+{
+	VALIDATE(sample_rate, "must call set_play_params before init_sound!");
+
+	LOG_AUDIO << "Initializing audio...\n";
+	if (SDL_WasInit(SDL_INIT_AUDIO) == 0)
+		if (SDL_InitSubSystem(SDL_INIT_AUDIO) == -1) {
+			return false;
+		}
+
+	if (!mix_ok) {
+		if(Mix_OpenAudio(sample_rate, MIX_DEFAULT_FORMAT, 2, buffer_size) == -1) {
 			mix_ok = false;
 			ERR_AUDIO << "Could not initialize audio: " << Mix_GetError() << "\n";
 			return false;
@@ -325,11 +352,12 @@ bool init_sound() {
 	return true;
 }
 
-void close_sound() {
+void close_sound() 
+{
 	int numtimesopened, frequency, channels;
 	Uint16 format;
 
-	if(mix_ok) {
+	if (mix_ok) {
 		stop_bell();
 		stop_UI_sound();
 		stop_sound();
@@ -346,13 +374,15 @@ void close_sound() {
 			--numtimesopened;
 		}
 	}
-	if(SDL_WasInit(SDL_INIT_AUDIO) != 0)
+	if (SDL_WasInit(SDL_INIT_AUDIO) != 0) {
 		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	}
 
 	LOG_AUDIO << "Audio device released.\n";
 }
 
-void reset_sound() {
+void reset_sound() 
+{
 	bool music = preferences::music_on();
 	bool sound = preferences::sound_on();
 	bool UI_sound = preferences::UI_sound_on();
@@ -374,19 +404,22 @@ void reset_sound() {
 	}
 }
 
-void stop_music() {
-	if(mix_ok) {
+void stop_music()
+{
+	if (mix_ok) {
 		Mix_HaltMusic();
 
 		std::map<std::string,Mix_Music*>::iterator i;
-		for(i = music_cache.begin(); i != music_cache.end(); ++i)
+		for (i = music_cache.begin(); i != music_cache.end(); ++i) {
 			Mix_FreeMusic(i->second);
+		}
 		music_cache.clear();
 	}
 }
 
-void stop_sound() {
-	if(mix_ok) {
+void stop_sound() 
+{
+	if (mix_ok) {
 		Mix_HaltGroup(SOUND_SOURCES);
 		Mix_HaltGroup(SOUND_FX);
 		sound_cache_iterator itor = sound_cache.begin();
@@ -404,8 +437,9 @@ void stop_sound() {
 /*
  * For the purpose of channel manipulation, we treat turn timer the same as bell
  */
-void stop_bell() {
-	if(mix_ok) {
+void stop_bell() 
+{
+	if (mix_ok) {
 		Mix_HaltGroup(SOUND_BELL);
 		Mix_HaltGroup(SOUND_TIMER);
 		sound_cache_iterator itor = sound_cache.begin();
@@ -420,8 +454,9 @@ void stop_bell() {
 	}
 }
 
-void stop_UI_sound() {
-	if(mix_ok) {
+void stop_UI_sound() 
+{
+	if (mix_ok) {
 		Mix_HaltGroup(SOUND_UI);
 		sound_cache_iterator itor = sound_cache.begin();
 		while(itor != sound_cache.end())
@@ -450,10 +485,10 @@ void empty_playlist()
 
 void play_music()
 {
-	music_start_time = 1; //immediate (same as effect as SDL_GetTicks())
-	want_new_music=true;
-	no_fading=false;
-	fadingout_time=current_track.ms_after();
+	music_start_time = 1; // immediate (same as effect as SDL_GetTicks())
+	want_new_music = true;
+	no_fading = false;
+	fadingout_time = current_track.ms_after();
 }
 
 static void play_new_music()
@@ -461,35 +496,33 @@ static void play_new_music()
 	music_start_time = 0; //reset status: no start time
 	want_new_music = true;
 
-	if(!preferences::music_on() || !mix_ok || !current_track.valid()) {
+	if (!preferences::music_on() || !mix_ok || !current_track.valid()) {
 		return;
 	}
 
 	const std::string& filename = current_track.file_path();
 
 	std::map<std::string,Mix_Music*>::const_iterator itor = music_cache.find(filename);
-	if(itor == music_cache.end()) {
+	if (itor == music_cache.end()) {
 		LOG_AUDIO << "attempting to insert track '" << filename << "' into cache\n";
 		Mix_Music* const music = Mix_LoadMUS(filename.c_str());
-		if(music == NULL) {
+		if (music == NULL) {
 			ERR_AUDIO << "Could not load music file '" << filename << "': "
 					  << Mix_GetError() << "\n";
 			return;
 		}
 		itor = music_cache.insert(std::pair<std::string,Mix_Music*>(filename,music)).first;
-		last_track=current_track;
+		last_track = current_track;
 	}
 
 	LOG_AUDIO << "Playing track '" << filename << "'\n";
-	int fading_time=current_track.ms_before();
-	if(no_fading)
-	{
+	int fading_time = current_track.ms_before();
+	if (no_fading) {
 		fading_time=0;
 	}
 
 	const int res = Mix_FadeInMusic(itor->second, 1, fading_time);
-	if(res < 0)
-	{
+	if (res < 0) {
 		ERR_AUDIO << "Could not play music: " << Mix_GetError() << " " << filename <<" \n";
 	}
 
@@ -499,8 +532,9 @@ static void play_new_music()
 void play_music_repeatedly(const std::string &id)
 {
 	// Can happen if scenario doesn't specify.
-	if (id.empty())
+	if (id.empty()) {
 		return;
+	}
 
 	current_track_list.clear();
 	current_track_list.push_back(music_track(id));
@@ -555,22 +589,23 @@ void play_music_config(const config &music_node)
 	}
 }
 
-void music_thinker::process(events::pump_info &info) {
-	if(preferences::music_on()) {
-		if(!music_start_time && !current_track_list.empty() && !Mix_PlayingMusic()) {
+void music_thinker::process(events::pump_info &info) 
+{
+	if (preferences::music_on()) {
+		if (!music_start_time && !current_track_list.empty() && !Mix_PlayingMusic()) {
 			// Pick next track, add ending time to its start time.
 			current_track = choose_track();
 			music_start_time = info.ticks();
-			no_fading=true;
-			fadingout_time=0;
+			no_fading = true;
+			fadingout_time = 0;
 		}
 
-		if(music_start_time && info.ticks(&music_refresh, music_refresh_rate) >= music_start_time - fadingout_time) {
-			want_new_music=true;
+		if (music_start_time && info.ticks(&music_refresh, music_refresh_rate) >= music_start_time - fadingout_time) {
+			want_new_music = true;
 		}
 
-		if(want_new_music) {
-			if(Mix_PlayingMusic()) {
+		if (want_new_music) {
+			if (Mix_PlayingMusic()) {
 				Mix_FadeOutMusic(fadingout_time);
 			}
 			play_new_music();

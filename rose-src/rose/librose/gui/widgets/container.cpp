@@ -186,6 +186,16 @@ void tcontainer_::impl_draw_children(
 	assert(get_visible() == twidget::VISIBLE
 			&& grid_.get_visible() == twidget::VISIBLE);
 
+	if (callback_pre_impl_draw_children_) {
+		callback_pre_impl_draw_children_(this, frame_buffer, x_offset, y_offset);
+	}
+
+	if (drag_detect_started_ && first_drag_coordinate_.x != npos) {
+		x_offset = last_drag_coordinate_.x - first_drag_coordinate_.x;
+	} else {
+		x_offset = draw_offset_.x;
+		y_offset = draw_offset_.y;
+	}
 	grid_.draw_children(frame_buffer, x_offset, y_offset);
 }
 

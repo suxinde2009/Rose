@@ -101,6 +101,20 @@ struct tanchor
 extern std::map<int, tanchor> horizontal_anchor;
 extern std::map<int, tanchor> vertical_anchor;
 
+struct tparam3
+{
+	tparam3(int val, const std::string& id, const std::string& description)
+		: val(val)
+		, id(id)
+		, description(description)
+	{}
+
+	int val;
+	std::string id;
+	std::string description;
+};
+extern std::map<int, tparam3> orientations;
+
 void init_layout_mode();
 
 struct tcell_setting {
@@ -110,6 +124,7 @@ struct tcell_setting {
 		widget.cell.flags_ = gui2::tgrid::HORIZONTAL_ALIGN_CENTER | gui2::tgrid::VERTICAL_ALIGN_CENTER;
 		widget.horizontal_mode = tscrollbar_container::auto_visible;
 		widget.vertical_mode = tscrollbar_container::auto_visible;
+		widget.drag = twidget::drag_none;
 
 		widget.tree_view.indention_step_size = 0;
 		widget.tree_view.node_id = "node";
@@ -121,6 +136,7 @@ struct tcell_setting {
 		window.textdomain = "wesnoth-lib";
 		window.click_dismiss = false;
 		window.definition = "default";
+		window.orientation = twidget::auto_orientation;
 		window.tile_shape = game_config::tile_square;
 		window.automatic_placement = true;
 		window.horizontal_placement = gui2::tgrid::HORIZONTAL_ALIGN_CENTER;
@@ -148,6 +164,7 @@ struct tcell_setting {
 		std::string label_textdomain;
 		std::string tooltip;
 		std::string tooltip_textdomain;
+		unsigned drag;
 
 		tscrollbar_container::tscrollbar_mode horizontal_mode;
 		tscrollbar_container::tscrollbar_mode vertical_mode;
@@ -170,12 +187,19 @@ struct tcell_setting {
 			int unit_height;
 			int gap;
 		} report;
+
+		struct {
+			int minimum_value;
+			int maximum_value;
+			int step_size;
+		} slider;
 	} widget;
 
 	struct {
 		std::string textdomain;
 		std::string description;
 		std::string definition;
+		twidget::torientation orientation;
 		bool click_dismiss;
 		bool automatic_placement;
 		std::string x;

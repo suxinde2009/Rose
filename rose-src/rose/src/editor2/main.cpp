@@ -801,6 +801,7 @@ void prepare_popup_menu()
 	AppendMenu(gdmgr._hpopup_new, MF_STRING, IDM_NEW_EXTRAINSDIST, utf8_2_ansi(_("Extract release package to C:\\kingdom-ins")));
 	AppendMenu(gdmgr._hpopup_new, MF_SEPARATOR, 0, NULL);
 	AppendMenu(gdmgr._hpopup_new, MF_STRING, IDM_NEW_EXTRAROSE, utf8_2_ansi(_("Extract Rose package")));
+	AppendMenu(gdmgr._hpopup_new, MF_STRING, IDM_NEW_EXTRASLEEP, utf8_2_ansi(_("Extract Sleep package")));
 	AppendMenu(gdmgr._hpopup_new, MF_SEPARATOR, 0, NULL);
 	AppendMenu(gdmgr._hpopup_new, MF_STRING, IDM_NEW_CAMPAIGN, dgettext_2_ansi("wesnoth-lib", "Campaign"));
 
@@ -1401,12 +1402,6 @@ BOOL make_run_once(void)
 /*
  * rose require callback
  */
-void set_zoom_to_default(int zoom)
-{
-	display::default_zoom_ = zoom;
-	image::set_zoom(display::default_zoom_);
-}
-
 void handle_app_event(Uint32 type)
 {
 }

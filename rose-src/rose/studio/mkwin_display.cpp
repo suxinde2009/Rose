@@ -189,7 +189,7 @@ void mkwin_display::reload_widget_palette()
 		exclude.insert("window");
 		exclude.insert("horizontal_scrollbar");
 		exclude.insert("vertical_scrollbar");
-		exclude.insert("slider");
+		// exclude.insert("slider");
 	}
 	std::stringstream ss;
 	surface default_surf(image::get_image(unit::widget_prefix + "bg.png"));
@@ -444,7 +444,7 @@ void mkwin_display::draw_minimap_units(surface& screen)
 	}
 }
 
-void mkwin_display::post_zoom()
+void mkwin_display::post_set_zoom(int last_zoom)
 {
 	if (!controller_.in_theme_top()) {
 		return;

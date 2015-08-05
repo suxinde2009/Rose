@@ -29,6 +29,10 @@ base_unit::base_unit(base_map& units)
 	, refreshing_(false)
 	, redraw_counter_(0)
 	, rect_(empty_rect)
+<<<<<<< HEAD
+	, hidden_(false)
+=======
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	, anim_(NULL)
 	, next_idling_(0)
 	, frame_begin_time_(0)
@@ -49,6 +53,10 @@ base_unit::base_unit(const base_unit& that)
 	, refreshing_(that.refreshing_)
 	, redraw_counter_(that.redraw_counter_)
 	, rect_(that.rect_)
+<<<<<<< HEAD
+	, hidden_(that.hidden_)
+=======
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	, anim_(NULL) // important!!
 	, next_idling_(that.next_idling_)
 	, frame_begin_time_(that.frame_begin_time_)
@@ -123,10 +131,15 @@ void base_unit::set_rect(const SDL_Rect& rect)
 	}
 }
 
-void base_unit::set_rect2(const SDL_Rect& rect)
+void base_unit::set_hidden(bool val)
 {
-	// for example, only alterante consistent with non-consistent.
-	rect_ = rect;
+	if (val && val != hidden_) {
+		if (!draw_locs_.empty()) {
+			display& disp = units_.get_controller().get_display();
+			disp.invalidate(draw_locs_);
+		}
+	}
+	hidden_ = val; 
 }
 
 bool base_unit::sort_compare(const base_unit& that) const

@@ -150,7 +150,7 @@ protected:
 		, SDLMod modifier
 		, const Uint16 unicode);
 
-	void find_chan_toggled(twindow& window);
+	void find_chan_toggled(twindow& window, tlistbox& list, const int type = twidget::drag_none);
 
 	void channel2_toggled(twidget* widget);
 	void refresh_channel2_toolbox(const tlobby_user& user);

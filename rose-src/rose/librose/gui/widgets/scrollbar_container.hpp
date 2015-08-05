@@ -142,8 +142,7 @@ public:
 	twidget* find_at(const tpoint& coordinate, const bool must_be_active);
 
 	/** Inherited from tcontainer_. */
-	const twidget* find_at(const tpoint& coordinate,
-			const bool must_be_active) const;
+	const twidget* find_at(const tpoint& coordinate, const bool must_be_active) const;
 
 	/** Inherited from tcontainer_. */
 	twidget* find(const std::string& id, const bool must_be_active);

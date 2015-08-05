@@ -720,8 +720,9 @@ std::vector<surface> const &text_surface::get_surfaces() const
 		font_style_setter const style_setter(ttfont, style_);
 
 		surface s = surface(TTF_RenderUTF8_Blended(ttfont, chunk.text.c_str(), color_));
-		if(!s.null())
+		if (!s.null()) {
 			surfs_.push_back(s);
+		}
 	}
 
 	return surfs_;

@@ -195,7 +195,7 @@ int CVideo::setMode(int x, int y, int bits_per_pixel, int flags)
                           SDL_WINDOWPOS_UNDEFINED,
                           SDL_WINDOWPOS_UNDEFINED,
                           x, y,
-                          flags);
+                          flags | SDL_WINDOW_ALLOW_HIGHDPI);
 
 	int ret_w, ret_h;
 	SDL_GetWindowSize(window, &ret_w, &ret_h);
@@ -219,7 +219,9 @@ int CVideo::setMode(int x, int y, int bits_per_pixel, int flags)
 			game_config::tiny_gui = false;
 		}
 		if (reset_zoom) {
-			set_zoom_to_default(preferences::zoom());
+			int zoom = preferences::zoom();
+			display::initial_zoom = zoom;
+			image::set_zoom(display::initial_zoom);
 		}
 		return bits_per_pixel;
 	} else	{
@@ -272,10 +274,11 @@ void CVideo::flip()
 
 void CVideo::lock_updates(bool value)
 {
-	if(value == true)
-		++updatesLocked_;
-	else
-		--updatesLocked_;
+	if (value == true) {
+		++ updatesLocked_;
+	} else {
+		-- updatesLocked_;
+	}
 }
 
 bool CVideo::update_locked() const

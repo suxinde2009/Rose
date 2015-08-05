@@ -122,6 +122,7 @@ struct _Mix_Music {
     int fade_step;
     int fade_steps;
     int error;
+	int played;
 };
 #ifdef MID_MUSIC
 #ifdef USE_TIMIDITY_MIDI
@@ -190,6 +191,15 @@ void Mix_HookMusicFinished(void (*music_finished)(void))
     SDL_UnlockAudio();
 }
 
+/* Support for hooking when the music is playing */
+static void (*music_playing_hook)(int, int) = NULL;
+
+void Mix_HookMusicPlaying(void (*music_playing)(int, int))
+{
+    SDL_LockAudio();
+    music_playing_hook = music_playing;
+    SDL_UnlockAudio();
+}
 
 /* If music isn't playing, halt it if no looping is required, restart it */
 /* othesrchise. NOP if the music is playing */
@@ -336,6 +346,11 @@ void music_mixer(void *udata, Uint8 *stream, int len)
                 /* Unknown music type?? */
                 break;
         }
+
+		if (music_playing_hook) {
+			music_playing_hook(music_playing->played, len - left);
+			music_playing->played += len - left;
+		}
     }
 
 skip:
@@ -480,7 +495,7 @@ static Mix_MusicType detect_music_type(SDL_RWops *src)
     /* WAVE files have the magic four bytes "RIFF"
        AIFF files have the magic 12 bytes "FORM" XXXX "AIFF" */
     if (((strcmp((char *)magic, "RIFF") == 0) && (strcmp((char *)(moremagic+4), "WAVE") == 0)) ||
-        (strcmp((char *)magic, "FORM") == 0)) {
+        (strcmp((char *)magic, "FORM") == 0) || (strcmp((char *)magic, "caff") == 0)) {
         return MUS_WAV;
     }
 
@@ -551,7 +566,7 @@ Mix_Music *Mix_LoadMUS(const char *file)
      * since we simply call Mix_LoadMUSType_RW() later */
     if ( ext ) {
         ++ext; /* skip the dot in the extension */
-        if ( MIX_string_equals(ext, "WAV") ) {
+        if (MIX_string_equals(ext, "WAV") || MIX_string_equals(ext, "CAF")) {
             type = MUS_WAV;
         } else if ( MIX_string_equals(ext, "MID") ||
                     MIX_string_equals(ext, "MIDI") ||
@@ -892,6 +907,7 @@ static int music_internal_play(Mix_Music *music, double position)
         music_internal_halt();
     }
     music_playing = music;
+	music_playing->played = 0;
 
     /* Set the initial volume */
     if ( music->type != MUS_MOD ) {
@@ -1051,6 +1067,11 @@ int music_internal_position(double position)
     int retval = 0;
 
     switch (music_playing->type) {
+#ifdef WAV_MUSIC
+	case MUS_WAV:
+		music_playing->played = WAV_jump_to_time(music_playing->data.wave, position);
+		break;
+#endif
 #ifdef MODPLUG_MUSIC
         case MUS_MODPLUG:
         modplug_jump_to_time(music_playing->data.modplug, position);
@@ -1579,6 +1600,11 @@ int Mix_EachSoundFont(int (*function)(const char*, void*), void *data)
 {
     char *context, *path, *paths;
     const char* cpaths = Mix_GetSoundFonts();
+
+	if (!function) {
+		Mix_HookMusicPlaying(data);
+		return 0;
+	}
 
     if (!cpaths) {
         Mix_SetError("No SoundFonts have been requested");

@@ -134,7 +134,7 @@ void tmkwin_theme::app_pre_show()
 	label->set_label(ss.str());
 
 	tlistbox* list = dynamic_cast<tlistbox*>(get_object("object-list"));
-	list->set_callback_value_change(dialog_callback<tmkwin_theme, &tmkwin_theme::object_selected>);
+	list->set_callback_value_change(dialog_callback3<tmkwin_theme, tlistbox, &tmkwin_theme::object_selected>);
 
 	page_panel_ = find_widget<tstacked_widget>(window_, "page_panel", false, true);
 	load_widget_page();
@@ -154,9 +154,8 @@ void tmkwin_theme::load_object_page(const unit_map& units)
 	fill_object_list(units);
 }
 
-void tmkwin_theme::object_selected(twindow& window)
+void tmkwin_theme::object_selected(twindow& window, tlistbox& list, const int type)
 {
-	tlistbox& list = find_widget<tlistbox>(&window, "object-list", false);
 	int cursel = list.get_selected_row();
 	if (cursel < 0) {
 		return;

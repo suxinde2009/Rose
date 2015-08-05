@@ -30,7 +30,7 @@ class animation;
 class base_instance
 {
 public:
-	base_instance(int argc, char** argv);
+	base_instance(int argc, char** argv, int sample_rate = 44100, size_t sound_buffer_size = 4096);
 	virtual ~base_instance();
 
 	bool init_language();

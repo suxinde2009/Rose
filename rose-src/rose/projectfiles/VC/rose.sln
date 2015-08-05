@@ -1,17 +1,11 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rose", "rose.vcproj", "{3641E31E-36BF-4E03-8879-DE33ADC07D68}"
-	ProjectSection(ProjectDependencies) = postProject
-		{CD5C07CC-2E4B-4ECB-83E8-498A0624EC5F} = {CD5C07CC-2E4B-4ECB-83E8-498A0624EC5F}
-	EndProjectSection
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rose", "rose.vcxproj", "{3641E31E-36BF-4E03-8879-DE33ADC07D68}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "librose", "librose.vcproj", "{CD5C07CC-2E4B-4ECB-83E8-498A0624EC5F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "librose", "librose.vcxproj", "{CD5C07CC-2E4B-4ECB-83E8-498A0624EC5F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "editor", "editor.vcproj", "{E4CB8F97-7409-4F93-A097-D4D6AF754C9E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{CD5C07CC-2E4B-4ECB-83E8-498A0624EC5F} = {CD5C07CC-2E4B-4ECB-83E8-498A0624EC5F}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "editor", "editor.vcxproj", "{E4CB8F97-7409-4F93-A097-D4D6AF754C9E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

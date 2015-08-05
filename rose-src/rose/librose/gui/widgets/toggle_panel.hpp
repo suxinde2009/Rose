@@ -111,7 +111,7 @@ public:
 	void set_retval(const int retval);
 
 	/** Inherited from tselectable_. */
-	void set_callback_state_pre_change(boost::function<bool (twidget*)> callback)
+	void set_callback_state_pre_change(boost::function<bool (twidget*, const int type)> callback)
 		{ callback_state_pre_change_ = callback; }
 
 	/** Inherited from tselectable_. */
@@ -175,7 +175,7 @@ private:
 	bool frame_;
 
 	/** See tselectable_::set_callback_state_change. */
-	boost::function<bool (twidget*)> callback_state_pre_change_;
+	boost::function<bool (twidget*, const int type)> callback_state_pre_change_;
 
 	/** See tselectable_::set_callback_state_change. */
 	boost::function<void (twidget*)> callback_state_change_;
@@ -193,12 +193,7 @@ private:
 
 	/** Inherited from tpanel. */
 	void impl_draw_foreground(surface& frame_buffer, int x_offset, int y_offset);
-/*	{
-		// We don't have a fore and background and need to draw depending on
-		// our state, like a control. So we use the controls drawing method.
-		tcontrol::impl_draw_foreground(frame_buffer, x_offset, y_offset);
-	}
-*/
+
 	/** Inherited from tpanel. */
 	const std::string& get_control_type() const;
 
@@ -210,8 +205,7 @@ private:
 
 	void signal_handler_pre_left_button_click(const event::tevent event);
 
-	void signal_handler_left_button_click(
-			const event::tevent event, bool& handled);
+	void signal_handler_left_button_click(const event::tevent event, bool& handled, const int type);
 
 	void signal_handler_left_button_double_click(
 			const event::tevent event, bool& handled);

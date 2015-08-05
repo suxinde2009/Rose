@@ -6,7 +6,7 @@ LOCAL_MODULE := SDL2_ttf
 
 FREETYPE_LIBRARY_PATH := external/freetype-2.4.12
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2-2.0.3/include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2-2.0.4/include
 
 LOCAL_SRC_FILES := SDL_ttf.c \
 

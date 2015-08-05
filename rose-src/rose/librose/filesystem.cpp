@@ -297,7 +297,6 @@ std::string get_addon_campaigns_dir()
 
 std::string get_intl_dir()
 {
-	static char* translations = "translations";
 #ifdef _WIN32
 	// return get_cwd() + "/translations";
 	if (!game_config::path.empty()) {
@@ -307,7 +306,7 @@ std::string get_intl_dir()
 	}
 #else
 
-	return game_config::path + "/" + translations;
+	return game_config::path + "/translations";
 #endif
 }
 

@@ -150,7 +150,9 @@ tmouse_motion::~tmouse_motion()
 void tmouse_motion::capture_mouse(//twidget* widget)
 			const bool capture)
 {
-	assert(mouse_focus_);
+	if (capture) {
+		VALIDATE(mouse_focus_, null_str);
+	}
 	mouse_captured_ = capture;
 }
 
@@ -166,32 +168,34 @@ void tmouse_motion::signal_handler_sdl_mouse_motion(
 
 	DBG_GUI_E << LOG_HEADER << event << ".\n";
 
-	if(mouse_captured_) {
-		assert(mouse_focus_);
-		if(!owner_.fire(event, *mouse_focus_, coordinate)) {
+	if (mouse_captured_ && !is_fault_coordinate(coordinate.x, coordinate.y)) {
+		VALIDATE(mouse_focus_, null_str);
+		if (!owner_.fire(event, *mouse_focus_, coordinate)) {
 			mouse_motion(mouse_focus_, coordinate);
 		}
 	} else {
+		mouse_captured_ = false;
+
 		twidget* mouse_over = owner_.find_at(coordinate, false);
-		if(mouse_over) {
+		if (mouse_over) {
 			DBG_GUI_E << LOG_HEADER << "Firing: " << event << ".\n";
-			if(owner_.fire(event, *mouse_over, coordinate)) {
+			if (owner_.fire(event, *mouse_over, coordinate)) {
 				return;
 			}
 		}
 
-		if(!mouse_focus_ && mouse_over) {
+		if (!mouse_focus_ && mouse_over) {
 			mouse_enter(mouse_over);
 		} else if (mouse_focus_ && !mouse_over) {
-			mouse_leave();
-		} else if(mouse_focus_ && mouse_focus_ == mouse_over) {
+			mouse_leave(coordinate);
+		} else if (mouse_focus_ && mouse_focus_ == mouse_over) {
 			mouse_motion(mouse_over, coordinate);
-		} else if(mouse_focus_ && mouse_over) {
+		} else if (mouse_focus_ && mouse_over) {
 			// moved from one widget to the next
-			mouse_leave();
+			mouse_leave(coordinate);
 			mouse_enter(mouse_over);
 		} else {
-			assert(!mouse_focus_ && !mouse_over);
+			VALIDATE(!mouse_focus_ && !mouse_over, null_str);
 		}
 	}
 	handled = true;
@@ -205,7 +209,7 @@ void tmouse_motion::signal_handler_sdl_wheel(
 	DBG_GUI_E << LOG_HEADER << event << ".\n";
 
 	if (mouse_captured_) {
-		assert(mouse_focus_);
+		VALIDATE(mouse_focus_, null_str);
 		owner_.fire(event, *mouse_focus_, coordinate);
 	} else {
 		twidget* mouse_over = owner_.find_at(coordinate, true);
@@ -233,8 +237,14 @@ void tmouse_motion::mouse_motion(twidget* mouse_over, const tpoint& coordinate)
 {
 	DBG_GUI_E << LOG_HEADER << "Firing: " << event::MOUSE_MOTION << ".\n";
 
-	assert(mouse_over);
+	VALIDATE(mouse_over, null_str);
 
+	std::vector<tcontrol*> drags;
+	generate_focus_drags(mouse_over, drags, true);
+	for (std::vector<tcontrol*>::const_iterator it = drags.begin(); it != drags.end(); ++ it) {
+		tcontrol* control =*it;
+		control->set_drag_coordinate(coordinate.x, coordinate.y);
+	}
 	owner_.fire(event::MOUSE_MOTION, *mouse_over, coordinate);
 
 	if(hover_timer_) {
@@ -246,6 +256,23 @@ void tmouse_motion::mouse_motion(twidget* mouse_over, const tpoint& coordinate)
 		}
 	}
 }
+
+void tmouse_motion::generate_focus_drags(twidget* focus, std::vector<tcontrol*>& drags, bool started) const
+{
+	if (!focus) {
+		return;
+	}
+	twidget* temp = focus;
+	do {
+		if (temp->drag()) {
+			tcontrol* control = dynamic_cast<tcontrol*>(temp);
+			if (!started || control->drag_detect_started()) {
+				drags.push_back(control);
+			}
+		}
+	} while (temp = temp->parent());
+}
+
 
 void tmouse_motion::show_tooltip()
 {
@@ -272,16 +299,21 @@ void tmouse_motion::show_tooltip()
 	hover_position_ = tpoint(0, 0);
 }
 
-void tmouse_motion::mouse_leave()
+void tmouse_motion::mouse_leave(const tpoint& coordinate)
 {
 	DBG_GUI_E << LOG_HEADER << "Firing: " << event::MOUSE_LEAVE << ".\n";
 
-	tcontrol* control = dynamic_cast<tcontrol*>(mouse_focus_);
-	// if(!control || control->get_active()) {
-		owner_.fire(event::MOUSE_LEAVE, *mouse_focus_);
-	// }
+	std::vector<tcontrol*> drags;
+	generate_focus_drags(mouse_focus_, drags, true);
+	for (std::vector<tcontrol*>::const_iterator it = drags.begin(); it != drags.end(); ++ it) {
+		tcontrol* control = *it;
+		if (!point_in_rect(coordinate.x, coordinate.y, control->get_rect())) {
+			control->control_drag_detect(false);
+		}
+	}
+	owner_.fire(event::MOUSE_LEAVE, *mouse_focus_);
 
-	owner_.fire(NOTIFY_REMOVE_TOOLTIP, *mouse_focus_, NULL);
+	owner_.fire2(NOTIFY_REMOVE_TOOLTIP, *mouse_focus_);
 
 	mouse_focus_ = NULL;
 
@@ -441,8 +473,8 @@ template<
 	}
 	is_down_ = true;
 
-	if(mouse_captured_) {
-		assert(mouse_focus_);
+	if (mouse_captured_) {
+		VALIDATE(mouse_focus_, null_str);
 		focus_ = mouse_focus_;
 		DBG_GUI_E << LOG_HEADER << "Firing: " << sdl_button_down << ".\n";
 		if(!owner_.fire(sdl_button_down, *focus_, coordinate)) {
@@ -451,11 +483,11 @@ template<
 		}
 	} else {
 		twidget* mouse_over = owner_.find_at(coordinate, true);
-		if(!mouse_over) {
+		if (!mouse_over) {
 			return;
 		}
 
-		if(mouse_over != mouse_focus_) {
+		if (mouse_over != mouse_focus_) {
 			WRN_GUI_E << LOG_HEADER
 					<< ". Mouse down on non focussed widget "
 					<< "and mouse not captured, we missed events.\n";
@@ -464,11 +496,19 @@ template<
 
 		focus_ = mouse_over;
 		DBG_GUI_E << LOG_HEADER << "Firing: " << sdl_button_down << ".\n";
-		if(!owner_.fire(sdl_button_down, *focus_, coordinate)) {
+		if (!owner_.fire(sdl_button_down, *focus_, coordinate)) {
 			DBG_GUI_E << LOG_HEADER << "Firing: " << button_down << ".\n";
 			owner_.fire(button_down, *focus_);
 		}
 	}
+
+	std::vector<tcontrol*> drags;
+	generate_focus_drags(focus_, drags, false);
+	for (std::vector<tcontrol*>::const_iterator it = drags.begin(); it != drags.end(); ++ it) {
+		tcontrol* control = *it;
+		control->control_drag_detect(true, coordinate.x, coordinate.y);
+	}
+
 	handled = true;
 }
 
@@ -515,29 +555,73 @@ template<
 
 	twidget* mouse_over = owner_.find_at(coordinate, true);
 
-	if(mouse_captured_) {
-		const unsigned mask =
-				SDL_BUTTON_LMASK | SDL_BUTTON_MMASK | SDL_BUTTON_RMASK;
+	if (mouse_captured_) {
+		const unsigned mask = SDL_BUTTON_LMASK | SDL_BUTTON_MMASK | SDL_BUTTON_RMASK;
 
-		if((SDL_GetMouseState(NULL, NULL) & mask ) == 0) {
+		if ((SDL_GetMouseState(NULL, NULL) & mask ) == 0) {
 			mouse_captured_ = false;
 		}
 
-		if (mouse_focus_ == mouse_over) {
-			mouse_button_click(mouse_focus_);
-		} else if (!mouse_captured_) {
-			mouse_leave();
+		std::pair<twidget*, twidget*> click_handler = drag_or_click(mouse_focus_, mouse_over);
+		if (click_handler.first || click_handler.second) {
+			mouse_button_click(click_handler.first, click_handler.second);
 
-			if(mouse_over) {
+		} else if (!mouse_captured_) {
+			mouse_leave(tpoint(twidget::npos, twidget::npos));
+
+			if (mouse_over) {
 				mouse_enter(mouse_over);
 			}
 		}
-	} else if(focus_ && focus_ == mouse_over) {
-		mouse_button_click(focus_);
+	} else if (focus_) {
+		std::pair<twidget*, twidget*> click_handler = drag_or_click(focus_, mouse_over);
+		if (click_handler.first || click_handler.second) {
+			mouse_button_click(click_handler.first, click_handler.second);
+		}
+	}
+
+	std::vector<tcontrol*> drags;
+	generate_focus_drags(focus_, drags, true);
+	for (std::vector<tcontrol*>::const_iterator it = drags.begin(); it != drags.end(); ++ it) {
+		tcontrol* control = *it;
+		control->control_drag_detect(false);
 	}
 
 	focus_ = NULL;
 	handled = true;
+}
+
+template<
+		  tevent sdl_button_down
+		, tevent sdl_button_up
+		, tevent button_down
+		, tevent button_up
+		, tevent button_click
+		, tevent button_double_click
+> std::pair<twidget*, twidget*> tmouse_button<
+		  sdl_button_down
+		, sdl_button_up
+		, button_down
+		, button_up
+		, button_click
+		, button_double_click
+>::drag_or_click(twidget* focus, twidget* mouse_over) const
+{
+	twidget* click = focus == mouse_over? focus: NULL;
+	
+	std::vector<tcontrol*> drags;
+	generate_focus_drags(focus, drags, true);
+	if (drags.empty()) {
+		return std::make_pair(reinterpret_cast<twidget*>(NULL), click);
+	}
+	twidget* temp = mouse_over;
+	do {
+		if (temp->drag() && std::find(drags.begin(), drags.end(), temp) != drags.end()) {
+			return std::make_pair(temp, click);
+		}
+	} while (temp = temp->parent());
+
+	return std::make_pair(reinterpret_cast<twidget*>(NULL), click);
 }
 
 template<
@@ -554,26 +638,30 @@ template<
 		, button_up
 		, button_click
 		, button_double_click
->::mouse_button_click(twidget* widget)
+>::mouse_button_click(twidget* drag, twidget* click)
 {
 	Uint32 stamp = SDL_GetTicks();
-	if(last_click_stamp_ + settings::double_click_time >= stamp
-			&& last_clicked_widget_ == widget) {
-
-		DBG_GUI_E << LOG_HEADER << "Firing: "
-				<< button_double_click << ".\n";
-
-		owner_.fire(button_double_click, *widget);
-		last_click_stamp_ = 0;
-		last_clicked_widget_ = NULL;
+	if (last_click_stamp_ + settings::double_click_time >= stamp && last_clicked_widget_ == click) {
+		if (click) {
+			owner_.fire(button_double_click, *click);
+			last_click_stamp_ = 0;
+			last_clicked_widget_ = NULL;
+		}
 
 	} else {
+		int type = twidget::drag_none;
+		tcontrol* control = dynamic_cast<tcontrol*>(drag);
+		if (control) {
+			type = control->drag_satisfied();
+		}
+
+		// 1) drag widget (1: exist drag, 2: click is NULL). 
+		// 2) click widget.
+		twidget* widget = type == twidget::drag_none && click? click: drag;
 
 		last_clicked_widget_ = widget;
-		DBG_GUI_E << LOG_HEADER << "Firing: " << button_click << ".\n";
-		owner_.fire(button_click, *widget);
+		owner_.fire(button_click, *widget, type);
 		last_click_stamp_ = stamp;
-		// last_clicked_widget_ = widget;
 	}
 }
 
@@ -665,7 +753,7 @@ void tdistributor::keyboard_capture(twidget* widget)
 		DBG_GUI_E << LOG_HEADER << "Firing: "
 				<< event::LOSE_KEYBOARD_FOCUS << ".\n";
 
-		owner_.fire(event::LOSE_KEYBOARD_FOCUS, *keyboard_focus_, NULL);
+		owner_.fire2(event::LOSE_KEYBOARD_FOCUS, *keyboard_focus_);
 	}
 
 	keyboard_focus_ = widget;
@@ -674,7 +762,7 @@ void tdistributor::keyboard_capture(twidget* widget)
 		DBG_GUI_E << LOG_HEADER << "Firing: "
 				<< event::RECEIVE_KEYBOARD_FOCUS << ".\n";
 
-		owner_.fire(event::RECEIVE_KEYBOARD_FOCUS, *keyboard_focus_, NULL);
+		owner_.fire2(event::RECEIVE_KEYBOARD_FOCUS, *keyboard_focus_);
 	}
 }
 
@@ -715,8 +803,7 @@ void tdistributor::signal_handler_sdl_key_down(const SDLKey key
 		tcontrol* control = dynamic_cast<tcontrol*>(keyboard_focus_);
 		if(!control || control->get_active()) {
 			DBG_GUI_E << LOG_HEADER << "Firing: " << event::SDL_KEY_DOWN << ".\n";
-			if(owner_.fire(event::SDL_KEY_DOWN
-					, *keyboard_focus_, key, modifier, unicode)) {
+			if(owner_.fire(event::SDL_KEY_DOWN, *keyboard_focus_, key, modifier, unicode)) {
 				return;
 			}
 		}
@@ -754,8 +841,7 @@ void tdistributor::signal_handler_sdl_key_down(const SDLKey key
 		}
 
 		DBG_GUI_E << LOG_HEADER << "Firing: " << event::SDL_KEY_DOWN << ".\n";
-		if(owner_.fire(event::SDL_KEY_DOWN
-				, **ritor, key, modifier, unicode)) {
+		if(owner_.fire(event::SDL_KEY_DOWN, **ritor, key, modifier, unicode)) {
 
 			return;
 		}
@@ -775,8 +861,7 @@ void tdistributor::signal_handler_sdl_text_input(const char* text)
 		tcontrol* control = dynamic_cast<tcontrol*>(keyboard_focus_);
 		if(!control || control->get_active()) {
 			DBG_GUI_E << LOG_HEADER << "Firing: " << event::SDL_TEXT_INPUT << ".\n";
-			if(owner_.fire(event::SDL_TEXT_INPUT
-					, *keyboard_focus_, 0, text)) {
+			if(owner_.fire(event::SDL_TEXT_INPUT, *keyboard_focus_, 0, text)) {
 				return;
 			}
 		}
@@ -814,8 +899,7 @@ void tdistributor::signal_handler_sdl_text_input(const char* text)
 		}
 
 		DBG_GUI_E << LOG_HEADER << "Firing: " << event::SDL_TEXT_INPUT << ".\n";
-		if(owner_.fire(event::SDL_TEXT_INPUT
-				, **ritor, 0, text)) {
+		if(owner_.fire(event::SDL_TEXT_INPUT, **ritor, 0, text)) {
 
 			return;
 		}

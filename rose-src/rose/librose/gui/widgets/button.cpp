@@ -194,6 +194,7 @@ void tbutton::signal_handler_mouse_enter(
 		handled = true;
 		return;
 	}
+
 	set_state(FOCUSSED);
 	handled = true;
 }
@@ -245,7 +246,7 @@ void tbutton::signal_handler_left_button_click(
 	}
 
 	// If a button has a retval do the default handling.
-	if(retval_ != 0) {
+	if (retval_ != 0) {
 		twindow* window = get_window();
 		if(window) {
 			window->set_retval(retval_);

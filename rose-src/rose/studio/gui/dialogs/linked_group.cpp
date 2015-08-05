@@ -88,7 +88,7 @@ void tlinked_group2::pre_show(CVideo& /*video*/, twindow& window)
 	std::map<std::string, string_map> data;
 
 	reload_linked_group_table(window, 0);
-	list.set_callback_value_change(dialog_callback<tlinked_group2, &tlinked_group2::item_selected>);
+	list.set_callback_value_change(dialog_callback3<tlinked_group2, tlistbox, &tlinked_group2::item_selected>);
 
 	connect_signal_mouse_left_click(
 			  find_widget<tbutton>(&window, "append", false)
@@ -260,9 +260,8 @@ void tlinked_group2::erase(twindow& window)
 	reload_linked_group_table(window, row);
 }
 
-void tlinked_group2::item_selected(twindow& window)
+void tlinked_group2::item_selected(twindow& window, tlistbox& list, const int type)
 {
-	tlistbox& list = find_widget<tlistbox>(&window, "default", false);
 	int row = list.get_selected_row();
 	map_linked_group_to(window, row);
 }

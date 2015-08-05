@@ -224,11 +224,13 @@ public:
 	bool is_scrollbar_panel() const { return type_ == WIDGET && widget_.first == "scrollbar_panel"; }
 	bool is_tree_view() const { return type_ == WIDGET && widget_.first == "tree_view"; }
 	bool is_report() const { return type_ == WIDGET && widget_.first == "report"; }
+	bool is_slider() const { return type_ == WIDGET && widget_.first == "slider"; }
 	bool is_scroll() const { return is_listbox() || is_scroll_label() || is_scroll_text_box() || is_scrollbar_panel() || is_tree_view() || is_report(); }
 	bool is_panel() const { return type_ == WIDGET && (widget_.first == "panel" || widget_.first == "toggle_panel"); }
 	bool has_special_setting() const { return is_drawing(); }
 	bool is_image() const { return type_ == WIDGET && widget_.first == "image"; }
 	bool has_size() const { return is_scroll() || is_drawing() || is_spacer() || is_image(); }
+	bool has_drag() const { return widget_.first == "button" || widget_.first == "toggle_panel"; }
 	bool is_main_map() const;
 
 	const tparent& parent() const { return parent_; }
@@ -284,6 +286,7 @@ protected:
 	void generate_scrollbar_panel(config& cfg) const;
 	void generate_tree_view(config& cfg) const;
 	void generate_report(config& cfg) const;
+	void generate_slider(config& cfg) const;
 	void generate_drawing(config& cfg) const;
 	
 	virtual void from_window(const config& cfg);
@@ -297,6 +300,7 @@ protected:
 	void from_scrollbar_panel(const config& cfg);
 	void from_tree_view(const config& cfg);
 	void from_report(const config& cfg);
+	void from_slider(const config& cfg);
 	void from_drawing(const config& cfg);
 
 protected:

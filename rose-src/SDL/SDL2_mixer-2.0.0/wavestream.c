@@ -47,6 +47,8 @@
 /*******************************************/
 #define RIFF        0x46464952      /* "RIFF" */
 #define WAVE        0x45564157      /* "WAVE" */
+#define CAFF        0x66666163      /* "CAFF" */
+#define DESC        0x63736564      /* "DESC" */
 #define FACT        0x74636166      /* "fact" */
 #define LIST        0x5453494c      /* "LIST" */
 #define FMT     0x20746D66      /* "fmt " */
@@ -77,6 +79,25 @@ typedef struct Chunk {
     Uint8 *data;            /* Data includes magic and length */
 } Chunk;
 
+#pragma pack(4)
+/* The general chunk found in the WAVE file */
+typedef struct Chunk64 {
+    Uint32 magic;
+    Uint64 length;
+    Uint8 *data;            /* Data includes magic and length */
+} Chunk64;
+
+typedef struct CAFAudioFormat { 
+	double mSampleRate;
+	Uint32 mFormatID;
+	Uint32 mFormatFlags;
+	Uint32 mBytesPerPacket;
+	Uint32 mFramesPerPacket;
+	Uint32 mChannelsPerFrame;
+	Uint32 mBitsPerChannel;
+} CAFAudioFormat;
+#pragma pack()
+
 /*********************************************/
 /* Define values for AIFF (IFF audio) format */
 /*********************************************/
@@ -97,6 +118,8 @@ static int wavestream_volume = MIX_MAX_VOLUME;
 static SDL_RWops *LoadWAVStream (SDL_RWops *rw, SDL_AudioSpec *spec,
                     long *start, long *stop);
 static SDL_RWops *LoadAIFFStream (SDL_RWops *rw, SDL_AudioSpec *spec,
+                    long *start, long *stop);
+static SDL_RWops *LoadCAFStream (SDL_RWops *rw, SDL_AudioSpec *spec,
                     long *start, long *stop);
 
 /* Initialize the WAVStream player, with the given mixer settings
@@ -135,6 +158,8 @@ WAVStream *WAVStream_LoadSong_RW(SDL_RWops *src, int freesrc)
             wave->src = LoadWAVStream(src, &wavespec, &wave->start, &wave->stop);
         } else if ( magic == FORM ) {
             wave->src = LoadAIFFStream(src, &wavespec, &wave->start, &wave->stop);
+        } else if ( magic == CAFF ) {
+            wave->src = LoadCAFStream(src, &wavespec, &wave->start, &wave->stop);
         } else {
             Mix_SetError("Unknown WAVE format");
         }
@@ -270,6 +295,31 @@ static int ReadChunk(SDL_RWops *src, Chunk *chunk, int read_data)
         SDL_RWseek(src, chunk->length, RW_SEEK_CUR);
     }
     return(chunk->length);
+}
+
+static int ReadChunk64(SDL_RWops *src, Chunk64 *chunk, int read_data, int bigend)
+{
+    chunk->magic    = SDL_ReadLE32(src);
+	if (!bigend) {
+		chunk->length   = SDL_ReadLE64(src);
+	} else {
+		chunk->length   = SDL_ReadBE64(src);
+	}
+    if ( read_data ) {
+        chunk->data = (Uint8 *)SDL_malloc((size_t)chunk->length);
+        if ( chunk->data == NULL ) {
+            Mix_SetError("Out of memory");
+            return(-1);
+        }
+        if ( SDL_RWread(src, chunk->data, (size_t)chunk->length, 1) != 1 ) {
+            Mix_SetError("Couldn't read chunk");
+            SDL_free(chunk->data);
+            return(-1);
+        }
+    } else {
+        SDL_RWseek(src, chunk->length, RW_SEEK_CUR);
+    }
+    return (int)chunk->length;
 }
 
 static SDL_RWops *LoadWAVStream (SDL_RWops *src, SDL_AudioSpec *spec,
@@ -505,3 +555,87 @@ done:
     return(src);
 }
 
+static void swap_caf_audio_format(CAFAudioFormat* format)
+{
+	format->mSampleRate = (double)SDL_SwapBE64((Uint64)(format->mSampleRate));
+	format->mFormatFlags = SDL_SwapBE32(format->mFormatFlags);
+	format->mBytesPerPacket = SDL_SwapBE32(format->mBytesPerPacket);
+	format->mFramesPerPacket = SDL_SwapBE32(format->mFramesPerPacket);
+	format->mChannelsPerFrame = SDL_SwapBE32(format->mChannelsPerFrame);
+	format->mBitsPerChannel = SDL_SwapBE32(format->mBitsPerChannel);
+}
+
+static SDL_RWops *LoadCAFStream (SDL_RWops *src, SDL_AudioSpec *spec,
+                    long *start, long *stop)
+{
+    int was_error;
+    Chunk64 chunk;
+    int lenread;
+	CAFAudioFormat* format = NULL;
+
+    /* WAV magic header */
+    Uint16 fileversion;
+	Uint16 fileflags;
+
+    was_error = 0;
+
+    /* Check the magic header */
+    fileversion = SDL_ReadLE16(src);
+	fileflags   = SDL_ReadLE16(src);
+
+	// desc chunk
+	lenread = ReadChunk64(src, &chunk, 1, 1);
+	if (lenread < 0 ) {
+		was_error = 1;
+		goto done;
+	}
+	if (chunk.magic != DESC) {
+		was_error = 1;
+        goto done;
+	}
+	format = (CAFAudioFormat*)chunk.data;
+	swap_caf_audio_format(format);
+
+	if (format->mFormatID != 0x6d63706c || format->mBytesPerPacket != 1 || format->mChannelsPerFrame != 1 || format->mBitsPerChannel != 8) {
+		was_error = 1;
+        goto done;
+	}
+
+    SDL_memset(spec, 0, (sizeof *spec));
+    spec->freq = 8000;	// <=== 8K
+    spec->format = AUDIO_S8;
+    spec->channels = (Uint8)1;
+    spec->samples = 4096;       /* Good default buffer size */
+
+    /* Set the file offset to the DATA chunk data */
+    chunk.data = NULL;
+    do {
+        *start = (long)SDL_RWtell(src) + sizeof(Uint32) + sizeof(Uint64);
+        lenread = ReadChunk64(src, &chunk, 0, 1);
+        if ( lenread < 0 ) {
+            was_error = 1;
+            goto done;
+        }
+    } while ( chunk.magic != DATA );
+    *stop = (long)SDL_RWtell(src);
+
+done:
+    if ( format != NULL ) {
+        SDL_free(format);
+    }
+    if ( was_error ) {
+        return NULL;
+    }
+    return(src);
+}
+
+int WAV_jump_to_time(WAVStream* wave, double time)
+{
+	int len_mult = 1; // only support samplerate: 8000, channels: 1, samplebit: 8
+	int pos = (int)(wave->start + time * 8000 * len_mult);
+	if (pos > wave->stop) {
+		pos = wave->stop;
+	}
+	SDL_RWseek(wave->src, pos, RW_SEEK_SET);
+	return (pos - wave->start) * wave->cvt.len_mult;
+}

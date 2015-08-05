@@ -50,19 +50,14 @@ ttoggle_panel::ttoggle_panel()
 				&ttoggle_panel::signal_handler_mouse_enter, this, _2, _3));
 	connect_signal<event::MOUSE_LEAVE>(boost::bind(
 				&ttoggle_panel::signal_handler_mouse_leave, this, _2, _3));
-/*
-	connect_signal<event::LEFT_BUTTON_CLICK>(boost::bind(
-				  &ttoggle_panel::signal_handler_pre_left_button_click
-				, this, _2)
-			, event::tdispatcher::back_pre_child);
-*/
+
 	connect_signal<event::LEFT_BUTTON_CLICK>(boost::bind(
 				&ttoggle_panel::signal_handler_left_button_click
-					, this, _2, _3));
+					, this, _2, _3, _5));
 	connect_signal<event::LEFT_BUTTON_CLICK>(boost::bind(
 				  &ttoggle_panel::signal_handler_left_button_click
-				, this, _2, _3)
-			, event::tdispatcher::back_post_child);
+				, this, _2, _3, _5), event::tdispatcher::back_post_child);
+
 	connect_signal<event::LEFT_BUTTON_DOUBLE_CLICK>(boost::bind(
 				  &ttoggle_panel::signal_handler_left_button_double_click
 				, this, _2, _3));
@@ -229,26 +224,24 @@ void ttoggle_panel::signal_handler_mouse_leave(
 	handled = true;
 }
 
-void ttoggle_panel::signal_handler_pre_left_button_click(
-		const event::tevent event)
+void ttoggle_panel::signal_handler_pre_left_button_click(const event::tevent event)
 {
 	DBG_GUI_E << get_control_type() << "[" << id() << "]: " << event << ".\n";
 
 	set_value(true);
-	if(callback_state_change_) {
+	if (callback_state_change_) {
 		callback_state_change_(this);
 	}
 }
 
-void ttoggle_panel::signal_handler_left_button_click(
-		const event::tevent event, bool& handled)
+void ttoggle_panel::signal_handler_left_button_click(const event::tevent event, bool& handled, const int type)
 {
 	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
 
 	sound::play_UI_sound(settings::sound_toggle_panel_click);
 
 	if (callback_state_pre_change_) {
-		if (!callback_state_pre_change_(this)) {
+		if (!callback_state_pre_change_(this, type)) {
 			handled = true;
 			return;
 		}

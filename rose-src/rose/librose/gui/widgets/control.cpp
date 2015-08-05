@@ -58,6 +58,10 @@ tcontrol::tcontrol(const unsigned canvas_count)
 	, text_maximum_width_(0)
 	, text_alignment_(PANGO_ALIGN_LEFT)
 	, shrunken_(false)
+	, drag_detect_started_(false)
+	, first_drag_coordinate_(0, 0)
+	, last_drag_coordinate_(0, 0)
+	, draw_offset_(0, 0)
 {
 	connect_signal<event::SHOW_TOOLTIP>(boost::bind(
 			  &tcontrol::signal_handler_show_tooltip
@@ -93,6 +97,10 @@ tcontrol::tcontrol(
 	, text_maximum_width_(0)
 	, text_alignment_(PANGO_ALIGN_LEFT)
 	, shrunken_(false)
+	, drag_detect_started_(false)
+	, first_drag_coordinate_(0, 0)
+	, last_drag_coordinate_(0, 0)
+	, draw_offset_(0, 0)
 {
 	definition_load_configuration(control_type);
 
@@ -310,6 +318,8 @@ void tcontrol::set_surface(const surface& surf, int w, int h)
 
 void tcontrol::place(const tpoint& origin, const tpoint& size)
 {
+	SDL_Rect previous_rect = ::create_rect(x_, y_, w_, h_);
+
 	// resize canvasses
 	BOOST_FOREACH(tcanvas& canvas, canvas_) {
 		canvas.set_width(size.x);
@@ -323,6 +333,10 @@ void tcontrol::place(const tpoint& origin, const tpoint& size)
 
 	// update the state of the canvas after the sizes have been set.
 	update_canvas();
+
+	if (callback_place_) {
+		callback_place_(this, previous_rect);
+	}
 }
 
 void tcontrol::load_config()
@@ -499,6 +513,14 @@ void tcontrol::impl_draw_background(
 	tshare_canvas_image_lock lock1(surf);
 	tshare_canvas_integrate_lock lock2(integrate_);
 
+	if (drag_detect_started_ && first_drag_coordinate_.x != npos) {
+		x_offset = last_drag_coordinate_.x - first_drag_coordinate_.x;
+		// y_offset = last_drag_coordinate_.y - first_drag_coordinate_.y;
+	} else if (!x_offset && !y_offset) {
+		x_offset = draw_offset_.x;
+		y_offset = draw_offset_.y;
+	}
+
 	canvas(get_state()).blit(frame_buffer, calculate_blitting_rectangle(x_offset, y_offset), get_dirty(), pre_anims_, post_anims_);
 }
 
@@ -522,6 +544,113 @@ void tcontrol::definition_load_configuration(const std::string& control_type)
 	}
 
 	update_canvas();
+}
+
+void tcontrol::control_drag_detect(bool start, int x, int y, const tdrag_direction type)
+{
+	if (drag_ == drag_none || start == drag_detect_started_) {
+		return;
+	}
+
+	if (start) {
+		// ios sequence: SDL_MOUSEMOTION, SDL_MOUSEBUTTONDOWN
+		// it is called at SDL_MOUSEBUTTONDOWN! SDL_MOUSEMOTION before it is discard.
+		first_drag_coordinate_.x = x;
+		first_drag_coordinate_.y = y;
+
+		last_drag_coordinate_.x = x;
+		last_drag_coordinate_.y = y;
+	}
+	drag_detect_started_ = start;
+
+	if (callback_control_drag_detect_) {
+		callback_control_drag_detect_(this, start, type);
+	}
+	// upcaller maybe update draw_offset.
+	set_dirty();
+}
+
+void tcontrol::set_drag_coordinate(int x, int y)
+{
+	if (drag_ == drag_none || !drag_detect_started_) {
+		return;
+	}
+
+	if (last_drag_coordinate_.x == x && last_drag_coordinate_.y == y) {
+		return;
+	}
+
+	// get rid of direct noise
+	if (!(drag_ & (drag_left | drag_right))) {
+		// concert only vertical
+		if (abs(x - last_drag_coordinate_.x) > abs(y - last_drag_coordinate_.y)) {
+			// horizontal variant is more than vertical, think no.
+			return;
+		}
+
+	} else if (!(drag_ & (drag_up | drag_down))) {
+		// concert only horizontal
+		if (abs(x - last_drag_coordinate_.x) < abs(y - last_drag_coordinate_.y)) {
+			// vertical variant is more than horizontal, think no.
+			return;
+		}
+	}
+
+	last_drag_coordinate_.x = x;
+	last_drag_coordinate_.y = y;
+
+	set_dirty();
+
+	if (callback_set_drag_coordinate_) {
+		callback_set_drag_coordinate_(this, first_drag_coordinate_, last_drag_coordinate_);
+	}
+}
+
+int tcontrol::drag_satisfied()
+{
+	if (drag_ == drag_none || !drag_detect_started_) {
+		return drag_none;
+	}
+	tdrag_direction ret = drag_none;
+
+	const int drag_threshold = 60;
+	int w_threshold = w_ / 3;
+	if (w_threshold > drag_threshold) {
+		w_threshold = drag_threshold;
+	}
+	int h_threshold = h_ / 3;
+	if (h_threshold > drag_threshold) {
+		h_threshold = drag_threshold;
+	}
+
+	
+	if (drag_ & drag_left) {
+		if (last_drag_coordinate_.x < first_drag_coordinate_.x && first_drag_coordinate_.x - last_drag_coordinate_.x > w_threshold) {
+			ret = drag_left;
+		}
+	} 
+	if (drag_ & drag_right) {
+		if (last_drag_coordinate_.x > first_drag_coordinate_.x && last_drag_coordinate_.x - first_drag_coordinate_.x > w_threshold) {
+			ret = drag_right;
+		}
+
+	}
+	if (drag_ & drag_up) {
+		if (last_drag_coordinate_.y < first_drag_coordinate_.y && first_drag_coordinate_.y - last_drag_coordinate_.y > h_threshold) {
+			ret = drag_up;
+		}
+
+	}
+	if (drag_ & drag_down) {
+		if (last_drag_coordinate_.y > first_drag_coordinate_.y && last_drag_coordinate_.y - first_drag_coordinate_.y > h_threshold) {
+			ret = drag_down;
+		}
+	}
+
+	// stop drag detect.
+	control_drag_detect(false, npos, npos, ret);
+
+	return ret;
 }
 
 tpoint tcontrol::get_best_text_size(
@@ -606,7 +735,11 @@ void tcontrol::signal_handler_notify_remove_tooltip(
 	 * alternative is to add a message to the window to remove the tip.
 	 * Might be done later.
 	 */
+<<<<<<< HEAD
+	get_window()->remove_tooltip();
+=======
 	get_window()->remove_tip();
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	// tip::remove();
 
 	handled = true;

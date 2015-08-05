@@ -65,8 +65,7 @@ namespace {
 }
 
 bool display::require_change_resolution = false;
-int display::default_zoom_ = display::ZOOM_72;
-int display::last_zoom = display::ZOOM_72;
+int display::initial_zoom = display::ZOOM_72;
 
 int display::adjust_zoom(int zoom)
 {
@@ -106,7 +105,7 @@ display::display(const std::string& tile, controller_base* controller, CVideo& v
 	, border_()
 	, theme_current_cfg_(NULL)
 	, theme_(NULL)
-	, zoom_(default_zoom_)
+	, zoom_(initial_zoom)
 	, builder_(new terrain_builder(tile, map))
 	, minimap_(NULL)
 	, minimap_location_(empty_rect)
@@ -176,12 +175,13 @@ display::display(const std::string& tile, controller_base* controller, CVideo& v
 	set_turbo(preferences::turbo());
 	set_turbo_speed(preferences::turbo_speed());
 
-	last_zoom = zoom_;
-
 	fill_images_list(game_config::fog_prefix, fog_images_);
 	fill_images_list(game_config::shroud_prefix, shroud_images_);
 
-	// image::set_zoom(zoom_);
+	if (controller_) {
+		controller_->set_zoom(zoom_);
+	}
+	image::set_zoom(zoom_);
 
 	draw_area_ = NULL;
 	// allocate memory for access troops
@@ -291,6 +291,7 @@ const std::string& display::get_variant(const std::vector<std::string>& variants
 	//TODO use better noise function
 	return variants[abs(loc.x + loc.y) % variants.size()];
 }
+
 
 void display::rebuild_all()
 {
@@ -447,6 +448,20 @@ const map_location display::pixel_position_to_hex(int x, int y) const
 	}
 
 	return result;
+}
+
+bool display::point_in_volatiles(int x, int y) const
+{
+	const std::vector<gui2::twidget*>& volatiles = theme_->volatiles();
+	for (std::vector<gui2::twidget*>::const_iterator it = volatiles.begin(); it != volatiles.end(); ++ it) {
+		const gui2::twidget* widget = *it;
+		if (widget->get_visible() == gui2::twidget::VISIBLE) {
+			if (point_in_rect(x, y, widget->get_rect())) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 void rect_of_hexes::iterator::operator++()
@@ -1036,7 +1051,12 @@ void display::flip()
 		fill_rect_alpha(r, color, 1, frameBuffer);
 	}
 
+<<<<<<< HEAD
+	theme_->get_window()->draw_tooltip(frameBuffer);
+	draw_floating(frameBuffer);
+=======
 	theme_->get_window()->draw_tip(frameBuffer);
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	font::draw_floating_labels(frameBuffer);
 	cursor::draw(frameBuffer);
 
@@ -1044,7 +1064,12 @@ void display::flip()
 
 	cursor::undraw(frameBuffer);
 	font::undraw_floating_labels(frameBuffer);
+<<<<<<< HEAD
+	undraw_floating(frameBuffer);
+	theme_->get_window()->undraw_tooltip(frameBuffer);
+=======
 	theme_->get_window()->undraw_tip(frameBuffer);
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 }
 
 void display::update_display()
@@ -1212,7 +1237,7 @@ void display::render_image(int x, int y, const display::tdrawing_layer drawing_l
 			//the lower part will be transparent
 			float alpha_base = 0.3; // 30% alpha at surface of water
 			float alpha_delta = 0.015; // lose 1.5% per pixel depth
-			alpha_delta *= zoom_ / default_zoom_; // adjust with zoom
+			alpha_delta *= zoom_ / initial_zoom; // adjust with zoom
 			surf = submerge_alpha(surf, depth, alpha_base, alpha_delta, false);
 
 			srcrect.y = submerge_height;
@@ -1561,6 +1586,8 @@ bool display::scroll(int xmove, int ymove)
 
 void display::set_zoom(int amount)
 {
+	VALIDATE(controller_, "dummy display, must not call set_zoom!");
+
 	int new_zoom = zoom_ + amount;
 	if (new_zoom < min_zoom_) {
 		new_zoom = min_zoom_;
@@ -1573,8 +1600,9 @@ void display::set_zoom(int amount)
 		xpos_ += (xpos_ + area.w / 2) * amount / zoom_;
 		ypos_ += (ypos_ + area.h / 2) * amount / zoom_;
 
-		last_zoom = zoom_;
+		int last_zoom = zoom_;
 		zoom_ = new_zoom;
+		controller_->set_zoom(zoom_);
 
 		bounds_check_position();
 		image::set_zoom(zoom_);
@@ -1582,7 +1610,7 @@ void display::set_zoom(int amount)
 		redraw_background_ = true;
 		invalidate_all();
 
-		post_zoom();
+		post_set_zoom(last_zoom);
 
 		// Forces a redraw after zooming.
 		// This prevents some graphic glitches from occurring.
@@ -1863,7 +1891,7 @@ void display::bounds_check_position()
 
 	bounds_check_position(xpos_, ypos_);
 
-	if(zoom_ != orig_zoom) {
+	if (zoom_ != orig_zoom) {
 		image::set_zoom(zoom_);
 	}
 }
@@ -1993,6 +2021,9 @@ void display::click_context_menu(const std::string& main, const std::string& id,
 
 void display::show_context_menu(const std::string& main_id, const std::string& id)
 {
+	std::vector<gui2::tcontext_menu>& menus = theme_->context_menus();
+	VALIDATE(!menus.empty(), "No context menu, must not cal show_context_menu!");
+
 	const gui2::tcontext_menu* menu = NULL;
 	if (!main_id.empty()) {
 		menu = theme_->context_menu(main_id);
@@ -2452,8 +2483,13 @@ void display::invalidate_theme()
 		}
 	}
 	gui2::twindow* window = theme_->get_window();
+<<<<<<< HEAD
+	if (window->has_tooltip()) {
+		rects.push_back(window->tooltip_rect());
+=======
 	if (window->has_tip()) {
 		rects.push_back(window->tip_rect());
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	}
 
 	rect_of_hexes underlying_hex;
@@ -2623,6 +2659,22 @@ void display::update_arrow(arrow & arrow)
 	{
 		arrows_map_[loc].push_back(&arrow);
 	}
+}
+
+void display::set_statusbar(bool show, bool white_fg)
+{
+	char str[5];
+	str[0] = '$';
+	str[1] = '$';
+	str[4] = 0;
+
+	str[2] = 'V';
+	str[3] = show? 'T': 'F';
+	SDL_SetWindowData(video().getWindow(), str, NULL);
+
+	str[2] = 'S';
+	str[3] = white_fg? 'T': 'F';
+	SDL_SetWindowData(video().getWindow(), str, NULL);
 }
 
 std::map<surface,SDL_Rect> energy_bar_rects;

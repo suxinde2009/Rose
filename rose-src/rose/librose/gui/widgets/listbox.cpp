@@ -36,9 +36,9 @@ REGISTER_WIDGET(listbox)
 
 namespace {
 
-bool callback_list_item_clicked(twidget* caller)
+bool callback_list_item_clicked(twidget* caller, const int type)
 {
-	return get_parent<tlistbox>(caller)->list_item_clicked(caller);
+	return get_parent<tlistbox>(caller)->list_item_clicked(caller, type);
 }
 
 } // namespace
@@ -50,13 +50,28 @@ tlistbox::tlistbox()
 	, dynamic_(false)
 	, list_grid_(NULL)
 	, cursel_(npos)
+	, drag_at_(npos)
+	, left_drag_grid_(NULL)
+	, left_drag_grid_size_(0, 0)
 {
+}
+
+tlistbox::~tlistbox()
+{
+	if (left_drag_grid_) {
+		delete left_drag_grid_;
+	}
 }
 
 void tlistbox::add_row(const std::map<std::string /* widget id */, string_map>& data, const int index)
 {
 	ttoggle_panel* widget = dynamic_cast<ttoggle_panel*>(list_builder_->widgets[0]->build());
 	widget->set_callback_state_pre_change(callback_list_item_clicked);
+	if (left_drag_grid_) {
+		widget->set_callback_control_drag_detect(boost::bind(&tlistbox::callback_control_drag_detect, this, _1, _2, _3));
+		widget->set_callback_pre_impl_draw_children(boost::bind(&tlistbox::callback_pre_impl_draw_children, this, _1, _2, _3, _4));
+		widget->set_callback_set_drag_coordinate(boost::bind(&tlistbox::callback_set_drag_coordinate, this, _1, _2, _3));
+	}
 	widget->set_child_members(data);
 	widget->at_ = list_grid_->listbox_insert_child(*widget, index);
 
@@ -66,6 +81,70 @@ void tlistbox::add_row(const std::map<std::string /* widget id */, string_map>& 
 
 	// don't call invalidate_layout.
 	// caller maybe call add_row continue, will result to large effect burden
+}
+
+void tlistbox::callback_control_drag_detect(tcontrol* control, bool start, const tdrag_direction type)
+{
+	// set_visible spend a lot of time.
+	twindow::tinvalidate_layout_blocker block(*this->get_window());
+
+	ttoggle_panel* widget = dynamic_cast<ttoggle_panel*>(control);
+	if (start) {
+		if (cursel_ != npos && widget->at_ != cursel_ && left_drag_grid_->get_visible() == twidget::VISIBLE) {
+			list_grid_->child(cursel_).widget_->set_dirty();
+		}
+		left_drag_grid_->place(tpoint(content_->get_x() + content_->get_width() - left_drag_grid_size_.x, widget->get_y()),
+			tpoint(left_drag_grid_size_.x, widget->get_height()));
+		left_drag_grid_->set_visible(twidget::VISIBLE);
+		left_drag_grid_->set_visible_area(empty_rect);
+
+		drag_at_ = widget->at_;
+
+	} else if (type == drag_none) {
+		left_drag_grid_->set_visible(twidget::INVISIBLE);
+		widget->set_draw_offset(0, 0);
+
+		drag_at_ = npos;
+
+	} else if (type == drag_left) {
+		widget->set_draw_offset(-1 * (content_->get_x() + content_->get_width() - left_drag_grid_->get_x()), 0);
+		left_drag_grid_->set_visible_area(left_drag_grid_->get_rect());
+	}
+}
+
+void tlistbox::callback_pre_impl_draw_children(tcontrol* control, surface& frame_buffer, int x_offset, int y_offset)
+{
+	if (left_drag_grid_->get_visible() == twidget::VISIBLE) {
+		left_drag_grid_->impl_draw_children(frame_buffer, x_offset, y_offset);
+	}
+}
+
+void tlistbox::callback_set_drag_coordinate(tcontrol* control, const tpoint& first, const tpoint& last)
+{
+	if (left_drag_grid_->get_visible() == twidget::VISIBLE) {
+		int diff = first.x - last.x;
+		if (diff > left_drag_grid_size_.x) {
+			diff = left_drag_grid_size_.x;
+		} else if (diff < 0) {
+			diff = 0;
+		}
+		SDL_Rect area = ::create_rect(left_drag_grid_->get_x() + left_drag_grid_size_.x - diff, left_drag_grid_->get_y(), 
+			diff, left_drag_grid_->get_height());
+		left_drag_grid_->set_visible_area(area);
+	}
+}
+
+void tlistbox::cancel_drag()
+{
+	if (left_drag_grid_ && left_drag_grid_->get_visible() == twidget::VISIBLE) {
+		// set_visible spend a lot of time.
+		twindow::tinvalidate_layout_blocker block(*this->get_window());
+
+		VALIDATE(drag_at_ >= 0 && drag_at_ < list_grid_->children_vsize(), null_str);
+		dynamic_cast<tcontrol*>(list_grid_->child(drag_at_).widget_)->set_draw_offset(0, 0);
+		left_drag_grid_->set_visible(twidget::INVISIBLE);
+		drag_at_ = npos;
+	}
 }
 
 // if count equal 0, remove all.
@@ -86,6 +165,7 @@ void tlistbox::remove_row(int row, int count)
 	
 	bool remove_all = !row && count == get_item_count();
 	bool cursel_is_remove = cursel_ != npos && (cursel_ >= row && cursel_ < row + count);
+	bool drag_is_remove = drag_at_ != npos && (drag_at_ >= row && drag_at_ < row + count);
 
 	for (; count; -- count) {
 		list_grid_->listbox_erase_child(row);
@@ -110,6 +190,15 @@ void tlistbox::remove_row(int row, int count)
 		}
 	} else {
 		cursel_ = npos;
+	}
+
+	if (drag_is_remove) {
+		// set_visible spend a lot of time.
+		twindow::tinvalidate_layout_blocker block(*this->get_window());
+
+		VALIDATE(left_drag_grid_->get_visible() == twidget::VISIBLE, null_str);
+		left_drag_grid_->set_visible(twidget::INVISIBLE);
+		drag_at_ = npos;
 	}
 
 	// don't call invalidate_layout(true).
@@ -211,7 +300,7 @@ void tlistbox::set_row_shown(const int row, const bool visible)
 	}
 
 	if (original_selected_row != get_selected_row() && cursel_ != npos && callback_value_changed_) {
-		callback_value_changed_(this);
+		callback_value_changed_(this, drag_none);
 	}
 	invalidate_layout(false);
 
@@ -267,17 +356,23 @@ int tlistbox::get_selected_row() const
 	return cursel_;
 }
 
-bool tlistbox::list_item_clicked(twidget* caller)
+bool tlistbox::list_item_clicked(twidget* caller, const int type)
 {
 	/** @todo Hack to capture the keyboard focus. */
 	get_window()->keyboard_capture(this);
 
 	ttoggle_panel* clicked_panel = dynamic_cast<ttoggle_panel*>(caller);
 	if (clicked_panel->at_ != cursel_) {
+		if (cursel_ != npos) {
+			dynamic_cast<tcontrol*>(list_grid_->child(cursel_).widget_)->set_draw_offset(0, 0);
+		}
+		if (type != drag_none && left_drag_grid_ && left_drag_grid_->get_visible() == twidget::VISIBLE) {
+			// clicked_panel->set_draw_offset(-1 * (content_->get_x() + content_->get_width() - left_drag_grid_->get_x()), 0);
+		}
 		select_row(caller);
 	}
 	if (callback_value_changed_) {
-		callback_value_changed_(this);
+		callback_value_changed_(this, type);
 	}
 	return true;
 }
@@ -447,6 +542,11 @@ void tlistbox::list_set_visible_area(const SDL_Rect& area)
 	list_grid_->tgrid::set_visible_area(area);
 }
 
+void tlistbox::list_impl_draw_children(surface& frame_buffer, int x_offset, int y_offset)
+{
+	list_grid_->tgrid::impl_draw_children(frame_buffer, x_offset, y_offset);
+}
+
 void tlistbox::adjust_offset(int& x_offset, int& y_offset)
 {
 	if (dynamic_) {
@@ -473,6 +573,11 @@ void tlistbox::set_content_grid_origin(const tpoint& origin, const tpoint& conte
 
 	header->set_origin(tpoint(content_origin.x, origin.y));
 	list_grid_->set_origin(tpoint(content_origin.x, content_origin.y + size.y));
+
+	if (left_drag_grid_ && left_drag_grid_->get_visible() == twidget::VISIBLE) {
+		const twidget* parent = list_grid_->child(drag_at_).widget_;
+		left_drag_grid_->set_origin(tpoint(left_drag_grid_->get_x(), parent->get_y()));	
+	}
 }
 
 void tlistbox::set_content_grid_visible_area(const SDL_Rect& area)
@@ -489,6 +594,47 @@ void tlistbox::set_content_grid_visible_area(const SDL_Rect& area)
 	list_area.y = area.y + size.y;
 	list_area.h = area.h - size.y;
 	list_grid_->set_visible_area(list_area);
+}
+
+twidget* tlistbox::find_at(const tpoint& coordinate, const bool must_be_active)
+{
+	twidget* result = NULL;
+	if (left_drag_grid_ && left_drag_grid_->get_visible() == twidget::VISIBLE) {
+		tcontrol* widget = dynamic_cast<tcontrol*>(list_grid_->child(drag_at_).widget_);
+		if (!widget->drag_detect_started()) {
+			result = left_drag_grid_->find_at(coordinate, must_be_active);
+		}
+	}
+	if (!result) {
+		result = tscrollbar_container::find_at(coordinate, must_be_active);
+	}
+	return result;
+}
+
+const twidget* tlistbox::find_at(const tpoint& coordinate, const bool must_be_active) const
+{
+	const twidget* result = NULL;
+	if (left_drag_grid_->get_visible() == twidget::VISIBLE) {
+		tcontrol* widget = dynamic_cast<tcontrol*>(list_grid_->child(drag_at_).widget_);
+		if (!widget->drag_detect_started()) {
+			result = left_drag_grid_->find_at(coordinate, must_be_active);
+		}
+	}
+	if (!result) {
+		result = tscrollbar_container::find_at(coordinate, must_be_active);
+	}
+	return result;
+}
+
+void tlistbox::child_populate_dirty_list(twindow& caller, const std::vector<twidget*>& call_stack)
+{
+	if (left_drag_grid_ && left_drag_grid_->get_visible() == twidget::VISIBLE) {
+		std::vector<twidget*> child_call_stack(call_stack);
+		child_call_stack.push_back(list_grid_->child(drag_at_).widget_);
+		left_drag_grid_->populate_dirty_list(caller, child_call_stack);
+	}
+
+	tscrollbar_container::child_populate_dirty_list(caller, call_stack);
 }
 
 void tlistbox::scroll_to_row(const unsigned row)
@@ -599,7 +745,11 @@ void tlistbox::handle_key_up_arrow(SDLMod modifier, bool& handled)
 		show_content_rect(rect);
 
 		if (callback_value_changed_) {
+<<<<<<< HEAD
+			callback_value_changed_(this, drag_none);
+=======
 			callback_value_changed_(this);
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 		}
 	} else {
 		// Inherited.
@@ -622,8 +772,8 @@ void tlistbox::handle_key_down_arrow(SDLMod modifier, bool& handled)
 
 		show_content_rect(rect);
 
-		if(callback_value_changed_) {
-			callback_value_changed_(this);
+		if (callback_value_changed_) {
+			callback_value_changed_(this, drag_none);
 		}
 	} else {
 		// Inherited.
@@ -744,7 +894,16 @@ void tlistbox::set_list_builder(tbuilder_grid_ptr list_builder)
 { 
 	VALIDATE(!list_builder_.get(), null_str);
 
-	list_builder_ = list_builder; 
+	list_builder_ = list_builder;
+	if (list_builder_->widgets.size() >= 2) {
+		left_drag_grid_ = dynamic_cast<tgrid*>(list_builder_->widgets[1]->build());
+		left_drag_grid_->set_visible(twidget::INVISIBLE);
+		left_drag_grid_size_ = left_drag_grid_->get_best_size();
+
+		// don't set row(toggle_panel) to it's parent.
+		// grid mayb containt "erase" button, it will erase row(toggle_panel). if it is parent, thine became complex.
+		left_drag_grid_->set_parent(this);
+	}
 }
 
 const std::string& tlistbox::get_control_type() const

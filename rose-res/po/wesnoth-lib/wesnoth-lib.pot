@@ -5700,3 +5700,30 @@ msgstr ""
 
 msgid "Original ID"
 msgstr ""
+
+msgid "$year|.$month"
+msgstr ""
+
+msgid "Sesame Sleep"
+msgstr ""
+
+msgid "There is no score tonight, let Sesame to accompany you to sleep!"
+msgstr ""
+
+msgid "History Record"
+msgstr ""
+
+msgid "Sleep Settings"
+msgstr ""
+
+msgid "Wake up time"
+msgstr ""
+
+msgid "Wake up music"
+msgstr ""
+
+msgid "Total capture time"
+msgstr ""
+
+msgid "The rest time of wake up"
+msgstr ""

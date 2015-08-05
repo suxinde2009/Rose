@@ -136,7 +136,7 @@ void tbrowse::pre_show(CVideo& /*video*/, twindow& window)
 	std::map<std::string, string_map> data;
 
 	update_file_lists(window);
-	list.set_callback_value_change(dialog_callback<tbrowse, &tbrowse::item_selected>);
+	list.set_callback_value_change(dialog_callback3<tbrowse, tlistbox, &tbrowse::item_selected>);
 
 	init_entry(window);
 
@@ -398,7 +398,7 @@ void tbrowse::reload_file_table(twindow& window, int cursel)
 		list->select_row(cursel);
 	}
 
-	item_selected(window);
+	item_selected(window, *list, twidget::drag_none);
 
 	// window.invalidate_layout();
 	list->invalidate_layout(true);
@@ -494,9 +494,8 @@ std::string tbrowse::get_path(const std::string& file_or_dir) const
 	return res_path;
 }
 
-void tbrowse::item_selected(twindow& window)
+void tbrowse::item_selected(twindow& window, tlistbox& list, const int type)
 {
-	tlistbox& list = find_widget<tlistbox>(&window, "default", false);
 	int row = list.get_selected_row();
 
 	tristate dir = t_unset;

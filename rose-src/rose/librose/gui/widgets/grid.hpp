@@ -195,6 +195,9 @@ public:
 
 	tpoint calculate_best_size_fix() const;
 
+	/** Inherited from twidget. */
+	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
+
 	tpoint request_reduce_width(const unsigned maximum_width);
 	int column_request_reduce_width(const unsigned column, const unsigned maximum_width);
 
@@ -353,9 +356,6 @@ public:
 private:
 	/** Layouts the children in the grid. */
 	void layout(const tpoint& origin);
-
-	/** Inherited from twidget. */
-	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 protected:
 	/** The number of grid rows. */

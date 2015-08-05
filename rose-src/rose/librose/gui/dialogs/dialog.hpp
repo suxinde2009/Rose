@@ -18,6 +18,7 @@
 
 #include "gui/dialogs/field-fwd.hpp"
 #include "SDL_rect.h"
+#include "gui/widgets/widget.hpp"
 
 #include <string>
 #include <vector>

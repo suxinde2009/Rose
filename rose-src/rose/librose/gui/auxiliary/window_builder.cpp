@@ -32,11 +32,13 @@
 #include "gui/auxiliary/window_builder/toggle_button.hpp"
 #include "gui/auxiliary/window_builder/slider.hpp"
 #include "gui/auxiliary/window_builder/scroll_label.hpp"
+#include "gui/auxiliary/window_builder/scroll_text_box.hpp"
 #include "gui/auxiliary/window_builder/minimap.hpp"
 #include "gui/auxiliary/window_builder/button.hpp"
 #include "gui/auxiliary/window_builder/drawing.hpp"
 #include "gui/auxiliary/window_builder/password_box.hpp"
 #include "gui/auxiliary/window_builder/progress_bar.hpp"
+#include "gui/auxiliary/window_builder/tree_view.hpp"
 #endif
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/window.hpp"
@@ -204,11 +206,13 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 	TRY(toggle_button);
 	TRY(slider);
 	TRY(scroll_label);
+	TRY(scroll_text_box);
 	TRY(minimap);
 	TRY(button);
 	TRY(drawing);
 	TRY(password_box);
 	TRY(progress_bar);
+	TRY(tree_view);
 #undef TRY
 #endif
 

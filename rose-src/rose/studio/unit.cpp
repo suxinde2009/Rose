@@ -653,21 +653,24 @@ void unit::insert_listbox_child(int w, int h)
 	// body must is toggle_panel
 	unit_map::tconsistent_lock lock(units_);
 
+	int body_w = 2;
 	tchild child;
 	child.window = new unit(controller_, disp_, units_, WINDOW, this, children_.size());
-	for (int x = 1; x < 2; x ++) {
+	for (int x = 1; x < body_w; x ++) {
 		child.cols.push_back(new unit(controller_, disp_, units_, COLUMN, this, children_.size()));
 	}
-	for (int y = 1; y < 2; y ++) {
-		int pitch = y * w;
-		for (int x = 0; x < w; x ++) {
+	for (int y = 1; y < body_w; y ++) {
+		int pitch = y * body_w;
+		for (int x = 0; x < body_w; x ++) {
 			if (x) {
 				child.units.push_back(new unit(controller_, disp_, units_, disp_.toggle_panel, this, children_.size()));
+				child.units.back()->insert_child(mkwin_controller::default_child_width, mkwin_controller::default_child_height);
 			} else {
 				child.rows.push_back(new unit(controller_, disp_, units_, ROW, this, children_.size()));
 			}
 		}
 	}
+	VALIDATE(child.cols.size() * child.rows.size() == child.units.size(), "count of unit mistake!");
 	children_.push_back(child);
 }
 
@@ -732,6 +735,9 @@ void unit::generate_window(config& cfg) const
 	res_cfg["definition"] = cell_.window.definition;
 	if (cell_.window.click_dismiss) {
 		res_cfg["click_dismiss"] = true;
+	}
+	if (cell_.window.orientation != gui2::twidget::auto_orientation) {
+		res_cfg["orientation"] = gui2::orientations.find(cell_.window.orientation)->second.id;
 	}
 
 	if (cell_.window.automatic_placement) {
@@ -866,6 +872,11 @@ void unit::generate_widget(config& cfg) const
 				sub["height"] = formual_fill_str(cell_.widget.height);
 			}
 		}
+		if (has_drag()) {
+			if (cell_.widget.drag) {
+				sub["drag"] = gui2::implementation::form_drag_str(cell_.widget.drag);
+			}
+		}
 	}
 
 	if (fix_rect()) {
@@ -910,6 +921,9 @@ void unit::generate_widget(config& cfg) const
 
 	} else if (is_report()) {
 		generate_report(sub);
+
+	} else if (is_slider()) {
+		generate_slider(sub);
 
 	} else if (is_drawing()) {
 		generate_drawing(sub);
@@ -1040,6 +1054,22 @@ void unit::generate_report(config& cfg) const
 	}
 }
 
+void unit::generate_slider(config& cfg) const
+{
+	// [slider]
+	//		[..cfg..]
+	// [/slider]
+	if (cell_.widget.slider.minimum_value) {
+		cfg["minimum_value"] = cell_.widget.slider.minimum_value;
+	}
+	if (cell_.widget.slider.maximum_value) {
+		cfg["maximum_value"] = cell_.widget.slider.maximum_value;
+	}
+	if (cell_.widget.slider.step_size) {
+		cfg["step_size"] = cell_.widget.slider.step_size;
+	}
+}
+
 void unit::generate_drawing(config& cfg) const
 {
 	// [drawing]
@@ -1123,6 +1153,7 @@ void unit::from_window(const config& cfg)
 	const config& res_cfg = cfg.child("resolution");
 
 	cell_.window.definition = res_cfg["definition"].str();
+	cell_.window.orientation = gui2::implementation::get_orientation(res_cfg["orientation"]);
 	cell_.window.click_dismiss = res_cfg["click_dismiss"].to_bool();
 	cell_.window.automatic_placement = res_cfg["automatic_placement"].to_bool(true);
 	if (cell_.window.automatic_placement) {
@@ -1167,6 +1198,9 @@ void unit::from_widget(const config& cfg, bool unpack)
 		cell_.widget.width = formual_extract_str(sub_cfg["width"].str());
 		cell_.widget.height = formual_extract_str(sub_cfg["height"].str());
 	}
+	if (has_drag()) {
+		cell_.widget.drag = gui2::implementation::get_drag(sub_cfg["drag"].str());
+	}
 	split_t_string(sub_cfg["label"].t_str(), cell_.widget.label_textdomain, cell_.widget.label);
 	split_t_string(sub_cfg["tooltip"].t_str(), cell_.widget.tooltip_textdomain, cell_.widget.tooltip);
 
@@ -1203,6 +1237,9 @@ void unit::from_widget(const config& cfg, bool unpack)
 
 	} else if (is_report()) {
 		from_report(sub_cfg);
+
+	} else if (is_slider()) {
+		from_slider(sub_cfg);
 
 	} else if (is_drawing()) {
 		from_drawing(sub_cfg);
@@ -1472,6 +1509,13 @@ void unit::from_report(const config& cfg)
 	cell_.widget.report.gap = cfg["gap"].to_int();
 }
 
+void unit::from_slider(const config& cfg)
+{
+	cell_.widget.slider.minimum_value = cfg["minimum_value"].to_int();
+	cell_.widget.slider.maximum_value = cfg["maximum_value"].to_int();
+	cell_.widget.slider.step_size = cfg["step_size"].to_int();
+}
+
 void unit::from_drawing(const config& cfg)
 {
 	const config& draw_cfg = cfg.child("draw");
@@ -1702,6 +1746,10 @@ void unit::generate_adjust(const tmode& mode, config& cfg)
 			config base_remove2_cfg = get_base_remove2_cfg(mode);
 			std::set<int> ret = adjust.newed_remove2_cfg(base_remove2_cfg);
 			for (std::set<int>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++ it2) {
+				int number = *it2;
+				if (number >= (int)children_.size()) {
+					continue;
+				}
 				config& remove = cfg.add_child("remove");
 				remove["id"] = children_[*it2].window->cell().id;
 			}

@@ -429,23 +429,17 @@ tline::tline(const config& cfg)
 	}
 }
 
-void tline::draw(surface& canvas
-		, const game_logic::map_formula_callable& variables)
+void tline::draw(surface& canvas, const game_logic::map_formula_callable& variables)
 {
 	/**
 	 * @todo formulas are now recalculated every draw cycle which is a bit silly
 	 * unless there has been a resize. So to optimize we should use an extra
 	 * flag or do the calculation in a separate routine.
 	 */
-
 	const unsigned x1 = x1_(variables);
 	const unsigned y1 = y1_(variables);
 	const unsigned x2 = x2_(variables);
 	const unsigned y2 = y2_(variables);
-
-	DBG_GUI_D << "Line: draw from "
-			<< x1 << ',' << y1 << " to " << x2 << ',' << y2
-			<< " canvas size " << canvas->w << ',' << canvas->h << ".\n";
 
 	VALIDATE(
 			  static_cast<int>(x1) < canvas->w
@@ -465,7 +459,7 @@ void tline::draw(surface& canvas
 
 	// lock the surface
 	surface_lock locker(canvas);
-	if(x1 > x2) {
+	if (x1 > x2) {
 		// invert points
 		draw_line(canvas, color_, x2, y2, x1, y1, true);
 	} else {
@@ -586,9 +580,9 @@ void trectangle::draw(surface& canvas
 	const unsigned w = w_(variables);
 	const unsigned h = h_(variables);
 
-	DBG_GUI_D << "Rectangle: draw from " << x << ',' << y
-			<< " width " << w << " height " << h
-			<< " canvas size " << canvas->w << ',' << canvas->h << ".\n";
+	if (!w || !h) {
+		return;
+	}
 
 	VALIDATE(
 			  static_cast<int>(x) < canvas->w

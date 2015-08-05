@@ -26,7 +26,7 @@ OGG_LIBRARY_PATH := external/libogg-1.3.1
 VORBIS_LIBRARY_PATH := external/libvorbisidec-1.2.1
 
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2-2.0.3/include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2-2.0.4/include
 LOCAL_CFLAGS := -DWAV_MUSIC
 
 LOCAL_SRC_FILES := $(notdir $(filter-out %/playmus.c %/playwave.c, $(wildcard $(LOCAL_PATH)/*.c)))

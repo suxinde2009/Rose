@@ -25,6 +25,7 @@ extern editor editor_;
 static void OnDeleteBt(HWND hdlgP, char *fname);
 bool extra_kingdom_ins_disk(char* kingdom_src, char* kingdom_ins, char* kingdon_ins_android);
 bool extract_rose(tcopier& copier);
+bool extract_sleep(tcopier& copier);
 BOOL generate_kingdom_mod_res(tmod_config& mod_config, const std::string& kingdom_res, const std::string& kingdom_star_patch, const std::string& kingdom_star);
 BOOL extract_kingdom_star_patch(tmod_config& mod_config, const std::string& kingdom_star, const std::string& kingdom_star_patch);
 
@@ -244,6 +245,25 @@ void On_DlgDDescCommand(HWND hdlgP, int id, HWND hwndCtrl, UINT codeNotify)
 				symbols["src"] = copier.get_path("src");
 				symbols["result"] = fok? "Success": "Fail";
 				strcpy(text, utf8_2_ansi(vgettext2("Extract Rose package from \"$src\" to \"$dst\", $result!", symbols).c_str())); 
+				posix_print_mb(text);
+			}
+		}
+		break;
+
+	case IDM_NEW_EXTRASLEEP:
+		{
+			tcopier copier(get_generate_cfg(editor_config::data_cfg, "sleep"));
+
+			symbols["dst"] = copier.get_path("app_src");
+			strcpy(text, utf8_2_ansi(vgettext2("Do you want to extract Sleep package to $dst?", symbols).c_str())); 
+			strstr.str("");
+			strstr << utf8_2_ansi(_("Confirm generate"));
+			retval = MessageBox(hdlgP, text, strstr.str().c_str(), MB_YESNO | MB_DEFBUTTON2);
+			if (retval == IDYES) {
+				fok = extract_sleep(copier);
+				symbols["src"] = copier.get_path("src");
+				symbols["result"] = fok? "Success": "Fail";
+				strcpy(text, utf8_2_ansi(vgettext2("Extract Sleep package from \"$src\" to \"$dst\", $result!", symbols).c_str())); 
 				posix_print_mb(text);
 			}
 		}
@@ -473,6 +493,7 @@ BOOL On_DlgDDescNotify(HWND hdlgP, int DlgItem, LPNMHDR lpNMHdr)
 		if (!can_execute_tack(TASK_NEW) || strcasecmp(gdmgr._menu_text, game_config::path.c_str())) {
 			EnableMenuItem(gdmgr._hpopup_new, IDM_NEW_EXTRAINSDIST, MF_BYCOMMAND | MF_GRAYED);
 			EnableMenuItem(gdmgr._hpopup_new, IDM_NEW_EXTRAROSE, MF_BYCOMMAND | MF_GRAYED);
+			EnableMenuItem(gdmgr._hpopup_new, IDM_NEW_EXTRASLEEP, MF_BYCOMMAND | MF_GRAYED);
 		}
 		if (!can_execute_tack(TASK_NEW)) {
 			EnableMenuItem(gdmgr._hpopup_new, IDM_NEW_CAMPAIGN, MF_BYCOMMAND | MF_GRAYED);
@@ -520,6 +541,7 @@ BOOL On_DlgDDescNotify(HWND hdlgP, int DlgItem, LPNMHDR lpNMHdr)
 
 		EnableMenuItem(gdmgr._hpopup_new, IDM_NEW_EXTRAINSDIST, MF_BYCOMMAND | MF_ENABLED);
 		EnableMenuItem(gdmgr._hpopup_new, IDM_NEW_EXTRAROSE, MF_BYCOMMAND | MF_ENABLED);
+		EnableMenuItem(gdmgr._hpopup_new, IDM_NEW_EXTRASLEEP, MF_BYCOMMAND | MF_ENABLED);
 		EnableMenuItem(gdmgr._hpopup_explorer, IDM_EXPLORER_WML, MF_BYCOMMAND | MF_ENABLED);
 		EnableMenuItem(gdmgr._hpopup_delete, IDM_DELETE_ITEM0, MF_BYCOMMAND | MF_ENABLED);
 		EnableMenuItem(gdmgr._hpopup_delete, IDM_DELETE_ITEM1, MF_BYCOMMAND | MF_ENABLED);
@@ -784,7 +806,6 @@ bool extra_kingdom_ins_disk(char* kingdom_src, char* kingdom_ins, char* kingdom_
 bool extract_rose(tcopier& copier)
 {
 	tcallback_lock lock(false, boost::bind(&tcopier::do_delete_path, &copier, _1));
-	// if (!copier.make_path("rose_res")) {
 	if (!copier.make_path("rose_src") || !copier.make_path("rose_res")) {
 		return false;
 	}
@@ -793,6 +814,23 @@ bool extract_rose(tcopier& copier)
 		return false;
 	}
 	if (!copier.do_remove("rose_res")) {
+		return false;
+	}
+
+	lock.set_result(true);
+	return true;
+}
+
+bool extract_sleep(tcopier& copier)
+{
+	tcallback_lock lock(false, boost::bind(&tcopier::do_delete_path, &copier, _1));
+	if (!copier.make_path("app_src") || !copier.make_path("app_res")) {
+		return false;
+	}
+	if (!copier.do_copy("src", "app_src") || !copier.do_copy("res", "app_res") || !copier.do_copy("app_res_patch", "app_res")) {
+		return false;
+	}
+	if (!copier.do_remove("app_res")) {
 		return false;
 	}
 

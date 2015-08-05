@@ -914,9 +914,10 @@ void mkwin_controller::erase_widget()
 		units_.insert(selected_hex_, new unit(*this, *gui_, units_, gui_->spacer, parent.u, parent.number));
 		unit* u = units_.find_unit(selected_hex_);
 		replace_child_unit(u);
-	}
-	if (has_child) {
-		layout_dirty();
+
+		if (has_child) {
+			layout_dirty();
+		}
 	}
 
 	fill_object_list();
@@ -1663,11 +1664,11 @@ void mkwin_controller::load_patch_res(const unit::tchild& top, const tmode& patc
 	}
 }
 
-void mkwin_controller::mouse_motion(int x, int y, const bool browse, bool update)
+void mkwin_controller::mouse_motion(int x, int y, const bool browse)
 {
-	mouse_handler_base::mouse_motion(x, y, browse, update);
+	mouse_handler_base::mouse_motion(x, y, browse);
 
-	if (mouse_handler_base::mouse_motion_default(x, y, update)) return;
+	if (mouse_handler_base::mouse_motion_default(x, y)) return;
 	map_location hex_clicked = gui_->hex_clicked_on(x, y);
 	last_hex_ = hex_clicked;
 	last_unit_ = units_.unit_clicked_on(x, y, last_hex_);

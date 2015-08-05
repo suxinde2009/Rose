@@ -119,6 +119,8 @@ tanchor::tanchor(int val, const std::string& description, bool horizontal)
 std::map<int, tanchor> horizontal_anchor;
 std::map<int, tanchor> vertical_anchor;
 
+std::map<int, tparam3> orientations;
+
 void init_layout_mode()
 {
 	if (horizontal_layout.empty()) {
@@ -174,6 +176,12 @@ void init_layout_mode()
 		vertical_anchor.insert(std::make_pair(theme::FIXED, tanchor(theme::FIXED, vgettext("wesnoth-lib", "$field1 fixed, $field2 fixed", symbols), false)));
 		vertical_anchor.insert(std::make_pair(theme::TOP_ANCHORED, tanchor(theme::TOP_ANCHORED, vgettext("wesnoth-lib", "$field1 fixed, $field2 scalable", symbols), false)));
 		vertical_anchor.insert(std::make_pair(theme::BOTTOM_ANCHORED, tanchor(theme::BOTTOM_ANCHORED, vgettext("wesnoth-lib", "$field1 scalable, $field2 fixed", symbols), false)));
+	}
+
+	if (orientations.empty()) {
+		orientations.insert(std::make_pair(twidget::auto_orientation, tparam3(twidget::auto_orientation, "auto", _("Auto"))));
+		orientations.insert(std::make_pair(twidget::landscape_orientation, tparam3(twidget::landscape_orientation, "landscape", _("Landscape"))));
+		orientations.insert(std::make_pair(twidget::portrait_orientation, tparam3(twidget::portrait_orientation, "portrait", _("Portrait"))));
 	}
 }
 
@@ -513,6 +521,19 @@ void tcontrol_setting::pre_advanced(twindow& window)
 		text_box->set_label(cell_.widget.tree_view.node_id);
 	}
 
+	if (!u_.is_slider()) {
+		tgrid* grid = find_widget<tgrid>(&window, "_grid_slider", false, true);
+		grid->set_visible(twidget::INVISIBLE);
+
+	} else {
+		text_box = find_widget<ttext_box>(&window, "minimum_value", false, true);
+		text_box->set_label(str_cast(cell_.widget.slider.minimum_value));
+		text_box = find_widget<ttext_box>(&window, "maximum_value", false, true);
+		text_box->set_label(str_cast(cell_.widget.slider.maximum_value));
+		text_box = find_widget<ttext_box>(&window, "step_size", false, true);
+		text_box->set_label(str_cast(cell_.widget.slider.step_size));
+	}
+
 	if (!u_.is_report()) {
 		tgrid* grid = find_widget<tgrid>(&window, "_grid_report", false, true);
 		grid->set_visible(twidget::INVISIBLE);
@@ -539,6 +560,20 @@ void tcontrol_setting::pre_advanced(twindow& window)
 					, boost::ref(window)));
 	} else {
 		find_widget<tgrid>(&window, "_grid_scrollbar", false).set_visible(twidget::INVISIBLE);
+	}
+
+	if (u_.has_drag()) {
+		ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "_drag_left", false, true);
+		toggle->set_value(cell_.widget.drag & twidget::drag_left);
+		toggle = find_widget<ttoggle_button>(&window, "_drag_right", false, true);
+		toggle->set_value(cell_.widget.drag & twidget::drag_right);
+		toggle = find_widget<ttoggle_button>(&window, "_drag_up", false, true);
+		toggle->set_value(cell_.widget.drag & twidget::drag_up);
+		toggle = find_widget<ttoggle_button>(&window, "_drag_down", false, true);
+		toggle->set_value(cell_.widget.drag & twidget::drag_down);
+
+	} else {
+		find_widget<tgrid>(&window, "_grid_drag", false).set_visible(twidget::INVISIBLE);
 	}
 
 	connect_signal_mouse_left_click(
@@ -618,7 +653,7 @@ bool tcontrol_setting::save_base(twindow& window)
 {
 	ttext_box* text_box = find_widget<ttext_box>(&window, "_border", false, true);
 	int border = lexical_cast_default<int>(text_box->label());
-	if (border < 0 || border > 20) {
+	if (border < 0 || border > 50) {
 		return false;
 	}
 	cell_.widget.cell.border_size_ = border;
@@ -738,6 +773,27 @@ bool tcontrol_setting::save_advanced(twindow& window)
 		}
 	}
 
+	if (u_.is_slider()) {
+		ttext_box* text_box = find_widget<ttext_box>(&window, "minimum_value", false, true);
+		cell_.widget.slider.minimum_value = lexical_cast_default<int>(text_box->label());
+		text_box = find_widget<ttext_box>(&window, "maximum_value", false, true);
+		cell_.widget.slider.maximum_value = lexical_cast_default<int>(text_box->label());
+		if (cell_.widget.slider.minimum_value >= cell_.widget.slider.maximum_value) {
+			show_id_error(disp_, "Minimum or Maximum value", _("Maximum value must large than minimum value!"));
+			return false;
+		}
+		text_box = find_widget<ttext_box>(&window, "step_size", false, true);
+		cell_.widget.slider.step_size = lexical_cast_default<int>(text_box->label());
+		if (cell_.widget.slider.step_size <= 0) {
+			show_id_error(disp_, "Step size", _("Step size must > 0!"));
+			return false;
+		}
+		if (cell_.widget.slider.step_size >= cell_.widget.slider.maximum_value - cell_.widget.slider.minimum_value) {
+			show_id_error(disp_, "Step size", _("Step size must < maximum_value - minimum_value!"));
+			return false;
+		}
+	}
+
 	const tmode& current_mode = controller_.mode(advanced_current_tab_);
 
 	if (u_.is_report()) {
@@ -769,6 +825,26 @@ bool tcontrol_setting::save_advanced(twindow& window)
 			current_advanced_cfg_["unit_width"] = width;
 			current_advanced_cfg_["unit_height"] = height;
 			current_advanced_cfg_["gap"] = gap;
+		}
+	}
+
+	if (u_.has_drag()) {
+		cell_.widget.drag = 0;
+		ttoggle_button* toggle = find_widget<ttoggle_button>(&window, "_drag_left", false, true);
+		if (toggle->get_value()) {
+			cell_.widget.drag |= twidget::drag_left;
+		}
+		toggle = find_widget<ttoggle_button>(&window, "_drag_right", false, true);
+		if (toggle->get_value()) {
+			cell_.widget.drag |= twidget::drag_right;
+		}
+		toggle = find_widget<ttoggle_button>(&window, "_drag_up", false, true);
+		if (toggle->get_value()) {
+			cell_.widget.drag |= twidget::drag_up;
+		}
+		toggle = find_widget<ttoggle_button>(&window, "_drag_down", false, true);
+		if (toggle->get_value()) {
+			cell_.widget.drag |= twidget::drag_down;
 		}
 	}
 

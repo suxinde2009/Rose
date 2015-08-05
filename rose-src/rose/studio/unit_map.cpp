@@ -43,6 +43,7 @@ void unit_map::create_coor_map(int w, int h)
 		orignal_map = (base_unit**)malloc(map_vsize_ * sizeof(base_unit*));
 		memcpy(orignal_map, map_, map_vsize_ * sizeof(base_unit*));
 	}
+	base_map::clear();
 	base_map::create_coor_map(w, h);
 	if (orignal_map_vsize) {
 		map_vsize_ = orignal_map_vsize;

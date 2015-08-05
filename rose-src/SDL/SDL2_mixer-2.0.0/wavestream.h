@@ -58,3 +58,6 @@ extern void WAVStream_FreeSong(WAVStream *wave);
 
 /* Return non-zero if a stream is currently playing */
 extern int WAVStream_Active(void);
+
+/* Jump (seek) to a given position (time is in seconds) */
+extern int WAV_jump_to_time(WAVStream *wave, double time);

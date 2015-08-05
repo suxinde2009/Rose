@@ -581,6 +581,11 @@ void tchat_::enter_inputing(bool enter)
 			height = 60;
 		}
 	}
+	{
+		settings::keyboard_height = 272;
+		int ii = 0;
+	}
+
 	inputing_ = enter;
 
 	input_scale_->set_best_size(tpoint(0, height));
@@ -1082,7 +1087,7 @@ void tchat_::pre_show(twindow& window)
 	tstacked_widget* stack = find_widget<tstacked_widget>(&window, ctrlid_history_stack, false, true);
 	stack->set_float(true);
 
-	chanlist_->set_callback_value_change(dialog_callback<tchat_, &tchat_::find_chan_toggled>);
+	chanlist_->set_callback_value_change(dialog_callback3<tchat_, tlistbox, &tchat_::find_chan_toggled>);
 
 	std::stringstream ss;
 	
@@ -1286,7 +1291,7 @@ void tchat_::switch_to_find(twindow& window)
 {
 	panel_->set_radio_layer(FIND_LAYER);
 
-	find_chan_toggled(window);
+	find_chan_toggled(window, *chanlist_);
 	find_->set_active(lobby->chat.ready());
 }
 
@@ -1756,7 +1761,7 @@ void tchat_::process_quit(const std::string& nick)
 	}
 }
 
-void tchat_::find_chan_toggled(twindow& window)
+void tchat_::find_chan_toggled(twindow& window, tlistbox& list, const int type)
 {
 	bool active = !list_chans_.empty() && chanlist_->get_item_count();
 	if (active) {
@@ -1826,7 +1831,7 @@ void tchat_::process_chanlist_end()
 	switch_to_chat_find_->set_active(true);
 	find_->set_label(dgettext("wesnoth-lib", "Find"));
 	find_->set_active(lobby->chat.ready());
-	find_chan_toggled(*window_);
+	find_chan_toggled(*window_, *chanlist_);
 }
 
 void tchat_::process_network_status(bool connected)

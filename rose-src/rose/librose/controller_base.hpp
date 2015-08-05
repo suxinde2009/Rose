@@ -31,7 +31,7 @@ namespace events {
 class mouse_handler_base;
 }
 
-class controller_base : public events::handler
+class controller_base : public events::handler, public base_finger
 {
 public:
 	static std::set<std::string> theme_reserved_wml;
@@ -41,6 +41,8 @@ public:
 
 	controller_base(int ticks, const config& game_config, CVideo& video);
 	virtual ~controller_base();
+
+	virtual void set_zoom(int new_zoom) {}
 
 	void play_slice(bool is_delay_enabled = true);
 
@@ -129,9 +131,17 @@ protected:
 	 */
 	virtual void post_mouse_press(const SDL_Event& event);
 
+	virtual void pinch_event(bool out) {};
+
 	bool handle_scroll_wheel(int dx, int dy, int hit_threshold, int motion_threshold);
 	const config &get_theme(const config& game_config, std::string theme_name);
 
+	// override base_finger
+	bool coordinate_valid(int x, int y) const;
+	void handle_swipe(int x, int y, int dx, int dy);
+	void handle_pinch(int x, int y, bool out);
+
+protected:
 	const config& game_config_;
 	const int ticks_;
 	CKey key_;
@@ -141,7 +151,9 @@ protected:
 	// finger motion result to scroll
 	bool finger_motion_scroll_;
 	int finger_motion_direction_;
-	bool wait_bh_event_;
+
+	// generate mouse motion whether or not.
+	int motions_;
 };
 
 

@@ -289,7 +289,7 @@ void ttext_box::paste_selection(const bool mouse)
 	conv_ansi_utf8(text, true);
 
 	insert_str(text);
-	fire(event::NOTIFY_MODIFIED, *this, NULL);
+	fire2(event::NOTIFY_MODIFIED, *this);
 }
 
 void ttext_box::normalize_start_end(SDL_Rect& start, SDL_Rect& end) const
@@ -429,7 +429,7 @@ void ttext_box::handle_key_backspace(SDLMod /*modifier*/, bool& handled)
 	} else if (selection_start_.x || selection_start_.y){
 		delete_char(true);
 	}
-	fire(event::NOTIFY_MODIFIED, *this, NULL);
+	fire2(event::NOTIFY_MODIFIED, *this);
 }
 
 void ttext_box::handle_key_delete(SDLMod /*modifier*/, bool& handled)
@@ -442,7 +442,7 @@ void ttext_box::handle_key_delete(SDLMod /*modifier*/, bool& handled)
 	} else if (!label_.empty()) {
 		delete_char(false);
 	}
-	fire(event::NOTIFY_MODIFIED, *this, NULL);
+	fire2(event::NOTIFY_MODIFIED, *this);
 }
 
 Uint16 shift_character(SDLMod modifier, Uint16 c)
@@ -522,7 +522,7 @@ void ttext_box::handle_key_default(
 		int modified = shift_character(modifier, key);
 		std::string str(1, modified);
 		insert_str(str);
-		fire(event::NOTIFY_MODIFIED, *this, NULL);
+		fire2(event::NOTIFY_MODIFIED, *this);
 	}
 }
 
@@ -705,7 +705,7 @@ void ttext_box::signal_handler_sdl_text_input(const event::tevent event
 		inserted = true;
 	}
 	if (inserted) {
-		fire(event::NOTIFY_MODIFIED, *this, NULL);
+		fire2(event::NOTIFY_MODIFIED, *this);
 	}
 
 	handled = true;

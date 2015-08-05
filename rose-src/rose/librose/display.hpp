@@ -96,6 +96,8 @@ struct rect_of_hexes {
 	iterator end() const;
 };
 
+#define ZOOM_INCREMENT		4
+
 #define point_in_rect_of_hexes(x, y, rect)	\
 	((x) >= (rect).left && (y) >= (rect).top[(x) & 1] && (x) <= (rect).right && (y) <= (rect).bottom[(x) & 1])
 
@@ -117,8 +119,7 @@ public:
 	};
 
 	static bool require_change_resolution;
-	static int last_zoom;
-	static int default_zoom_;
+	static int initial_zoom;
 
 	enum {ZOOM_72 = 72, ZOOM_64 = 64, ZOOM_56 = 56, ZOOM_48 = 48};
 	static int adjust_zoom(int zoom);
@@ -192,6 +193,8 @@ public:
 
 	/** Check if the bbox of the hex at x,y has pixels outside the area rectangle. */
 	bool outside_area(const SDL_Rect& area, const int x,const int y) const;
+
+	int zoom() const { return zoom_; }
 
 	/**
 	 * Function which returns the width of a hex in pixels,
@@ -537,8 +540,12 @@ public:
 
 	int min_zoom() const { return min_zoom_; }
 	int max_zoom() const { return max_zoom_; }
+	bool point_in_volatiles(int x, int y) const;
 
 	virtual void shrouded_and_fogged(const map_location& loc, bool& shrouded, bool& fogged) const {}
+
+	// valid on iOS
+	void set_statusbar(bool show, bool white_fg);
 
 protected:
 	/** Clear the screen contents */
@@ -621,7 +628,7 @@ protected:
 	virtual double minimap_shift_x(const SDL_Rect& map_rect, const SDL_Rect& map_out_rect) const;
 	virtual double minimap_shift_y(const SDL_Rect& map_rect, const SDL_Rect& map_out_rect) const;
 
-	virtual void post_zoom() {}
+	virtual void post_set_zoom(int last_zoom) {}
 
 protected:
 	CVideo& screen_;
@@ -889,6 +896,9 @@ public:
 	/** Draws the drawing_buffer_ and clears it. */
 	void drawing_buffer_commit(surface& screen);
 
+	virtual void draw_floating(surface& screen) {}
+	virtual void undraw_floating(surface& screen) {}
+
 protected:
 	void create_theme();
 	void release_theme();
@@ -985,7 +995,6 @@ private:
 
 const SDL_Rect& calculate_energy_bar(surface surf);
 void draw_bar_to_surf(const std::string& image, surface& dst_surf, int x, int y, int size, double filled, const SDL_Color& col, fixed_t alpha, bool vtl);
-void set_zoom_to_default(int zoom);
 
 #endif
 

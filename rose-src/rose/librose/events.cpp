@@ -24,6 +24,7 @@
 #include "game_end_exceptions.hpp"
 #include "display.hpp"
 #include "preferences.hpp"
+#include "gui/widgets/settings.hpp"
 #include "posix.h"
 
 #include "SDL.h"
@@ -39,6 +40,100 @@
 extern void handle_app_event(Uint32 type);
 
 int cached_draw_events = 0;
+
+#define PINCH_SQUARE_THRESHOLD		6400
+void base_finger::process_event(const SDL_Event& event)
+{
+	int x, y, dx, dy;
+	bool hit = false;
+	Uint32 now = SDL_GetTicks();
+
+	switch(event.type) {
+	case SDL_FINGERDOWN:
+		x = event.tfinger.x * gui2::settings::screen_width;
+		y = event.tfinger.y * gui2::settings::screen_height;
+		if (!coordinate_valid(x, y)) {
+			return;
+		}
+		fingers_.push_back(tfinger(event.tfinger.fingerId, x, y, now));
+		break;
+
+	case SDL_FINGERMOTION:
+		{
+			int x1 = 0, y1 = 0, x2 = 0, y2 = 0, at = 0;
+			x = event.tfinger.x * gui2::settings::screen_width;
+			y = event.tfinger.y * gui2::settings::screen_height;
+			dx = event.tfinger.dx * gui2::settings::screen_width;
+			dy = event.tfinger.dy * gui2::settings::screen_height;
+
+			for (std::vector<tfinger>::iterator it = fingers_.begin(); it != fingers_.end(); ++ it, at ++) {
+				tfinger& finger = *it;
+				if (finger.fingerId == event.tfinger.fingerId) {
+					finger.x = x;
+					finger.y = y;
+					finger.active = now;
+					hit = true;
+				}
+				if (at == 0) {
+					x1 = finger.x;
+					y1 = finger.y;
+				} else if (at == 1) {
+					x2 = finger.x;
+					y2 = finger.y;
+				}
+			}
+			if (!hit) {
+				return;
+			}
+			if (!coordinate_valid(x, y)) {
+				return;
+			}
+			
+			if (fingers_.size() == 1) {
+				handle_swipe(x, y, dx, dy);
+
+			} else if (fingers_.size() == 2) {
+				// calculate distance between finger
+				int distance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+				if (pinch_distance_ != gui2::twidget::npos) {
+					int diff = pinch_distance_ - distance;
+					if (abs(diff) >= PINCH_SQUARE_THRESHOLD) {
+						pinch_distance_ = distance;
+						handle_pinch(x, y, diff > 0);
+					}
+				} else {
+					pinch_distance_ = distance;
+				}
+			}
+		}
+		break;
+
+	case SDL_FINGERUP:
+		for (std::vector<tfinger>::iterator it = fingers_.begin(); it != fingers_.end(); ) {
+			const tfinger& finger = *it;
+			if (finger.fingerId == event.tfinger.fingerId) {
+				it = fingers_.erase(it);
+			} else if (now > finger.active + 5000) {
+				it = fingers_.erase(it);
+			} else {
+				++ it;
+			}
+		}
+		break;
+
+	case SDL_MULTIGESTURE:
+		// Now I don't use SDL logic, process multi-finger myself. Ignore it.
+		break;
+	}
+}
+
+bool base_finger::multi_gestures() const
+{
+	if (fingers_.size() < 2) {
+		return false;
+	}
+	return true;
+}
 
 namespace events
 {

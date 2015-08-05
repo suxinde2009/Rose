@@ -28,6 +28,7 @@ namespace gui2 {
 
 class treport;
 class tstacked_widget;
+class tlistbox;
 
 class tmkwin_theme: public ttheme
 {
@@ -73,7 +74,7 @@ public:
 
 private:
 	void app_pre_show();
-	void object_selected(twindow& window);
+	void object_selected(twindow& window, tlistbox& listobx, const int type);
 
 private:
 	mkwin_controller& controller_;

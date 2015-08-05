@@ -20,7 +20,7 @@ PNG_LIBRARY_PATH := external/libpng-1.6.2
 WEBP_LIBRARY_PATH := external/libwebp-0.3.0
 
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2-2.0.3/include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2-2.0.4/include
 LOCAL_CFLAGS := -DLOAD_BMP -DLOAD_GIF -DLOAD_LBM -DLOAD_PCX -DLOAD_PNM \
                 -DLOAD_TGA -DLOAD_XCF -DLOAD_XPM -DLOAD_XV
 LOCAL_CFLAGS += -O3 -fstrict-aliasing -fprefetch-loop-arrays

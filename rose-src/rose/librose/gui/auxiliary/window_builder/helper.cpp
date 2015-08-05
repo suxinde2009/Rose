@@ -72,6 +72,68 @@ twidget::torientation get_orientation(const std::string& orientation)
 	}
 }
 
+<<<<<<< HEAD
+twidget::tdrag_direction get_drag_direction(const std::string& pan)
+{
+	if (pan == "left") {
+		return twidget::drag_left;
+
+	} else if (pan == "right") {
+		return twidget::drag_right;
+
+	} else if (pan == "up") {
+		return twidget::drag_up;
+
+	} else if (pan == "down") {
+		return twidget::drag_down;
+
+	} else {
+		// auto
+		return twidget::drag_none;
+	}
+}
+
+unsigned get_drag(const std::string& drag)
+{
+	unsigned ret = 0; 
+	std::vector<std::string> v = utils::split(drag);
+
+	for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++ it) {
+		ret |= get_drag_direction(*it);
+	}
+
+	return ret;
+}
+
+std::string form_drag_str(unsigned flags)
+{
+	std::stringstream ss;
+	if (flags & twidget::drag_left) {
+		ss << "left";
+	}
+	if (flags & twidget::drag_right) {
+		if (!ss.str().empty()) {
+			ss << ", ";
+		}
+		ss << "right";
+	}
+	if (flags & twidget::drag_up) {
+		if (!ss.str().empty()) {
+			ss << ", ";
+		}
+		ss << "up";
+	}
+	if (flags & twidget::drag_down) {
+		if (!ss.str().empty()) {
+			ss << ", ";
+		}
+		ss << "down";
+	}
+	return ss.str();
+}
+
+=======
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 unsigned get_border(const std::vector<std::string>& border)
 {
 	unsigned result = 0;

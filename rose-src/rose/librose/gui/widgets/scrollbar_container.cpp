@@ -542,7 +542,6 @@ void tscrollbar_container::child_populate_dirty_list(twindow& caller,
 	// Inherited.
 	tcontainer_::child_populate_dirty_list(caller, call_stack);
 
-	assert(content_grid_);
 	std::vector<twidget*> child_call_stack(call_stack);
 	content_grid_->populate_dirty_list(caller, child_call_stack);
 }

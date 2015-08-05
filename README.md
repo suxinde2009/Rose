@@ -5,6 +5,18 @@ Rose is a corss-platform C++ SDK. It is based on [SDL](http://www.libsdl.org), a
 V0.0.7<br>
 ----
 * SDK
+<<<<<<< HEAD
+	* Base newer SDL. SDL 2.0.4(20150707)
+	* Update widget: slider.
+	* Implement some operation on touch deivce. 1)pinch, 2)drag.
+	* Can rotate between landscape and portrait runtime.
+	* IDE on Windows use Visual Studio 2010.<br>
+
+V0.0.7<br>
+----
+* SDK
+=======
+>>>>>>> 924ec1f09cdc3b0dd6e951697975ba13101a0f0b
 	* Single line report must be tabbar.<br>
 	* Implement tooltip as a window component, not past window.
 	* Normalize animation config. Provide new class base_animator to play unit animation.<br>

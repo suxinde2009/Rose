@@ -32,6 +32,9 @@ enum channel_group {
 	SOUND_FX
 };
 
+void set_play_params(int sound_sample_rate, size_t sound_buffer_size);
+size_t get_buffer_size();
+
 bool init_sound();
 void close_sound();
 void reset_sound();

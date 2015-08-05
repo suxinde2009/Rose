@@ -69,7 +69,7 @@ protected:
 	void draw_sidebar();
 	void draw_invalidated();
 	void redraw_units(const std::vector<map_location>& invalidated_unit_locs);
-	void post_zoom();
+	void post_set_zoom(int last_zoom);
 
 	void set_mouse_overlay(surface& image_fg);
 	void draw_minimap_units(surface& screen);

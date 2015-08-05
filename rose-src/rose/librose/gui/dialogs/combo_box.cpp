@@ -101,14 +101,14 @@ void tcombo_box::pre_show(CVideo& /*video*/, twindow& window)
 
 		item_index ++;
 	}
-	list.set_callback_value_change(dialog_callback<tcombo_box, &tcombo_box::item_selected>);
+	list.set_callback_value_change(dialog_callback3<tcombo_box, tlistbox, &tcombo_box::item_selected>);
 
 	if (index_ != -1) {
 		list.select_row(index_);
 	}
 }
 
-void tcombo_box::item_selected(twindow& window)
+void tcombo_box::item_selected(twindow& window, tlistbox& list, const int type)
 {
 	if (type_ != EXTRACT) {
 		window.set_retval(twindow::OK);

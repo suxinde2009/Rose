@@ -1177,6 +1177,7 @@
 #define IDM_EXCHANGE                    40154
 #define IDM_APPEND                      40155
 #define IDM_NEW_EXTRAROSE               40156
+#define IDM_NEW_EXTRASLEEP              40157
 #define IDM_MOD_RES0                    40160
 #define IDM_MOD_RES1                    40161
 #define IDM_MOD_RES2                    40162

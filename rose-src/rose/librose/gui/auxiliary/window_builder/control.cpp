@@ -21,6 +21,7 @@
 #include "formatter.hpp"
 #include "gettext.hpp"
 #include "gui/auxiliary/log.hpp"
+#include "gui/auxiliary/window_builder/helper.hpp"
 #include "gui/widgets/control.hpp"
 #include "gui/widgets/settings.hpp"
 
@@ -38,6 +39,7 @@ tbuilder_control::tbuilder_control(const config& cfg)
 	, label(cfg["label"].t_str())
 	, tooltip(cfg["tooltip"].t_str())
 	, help(cfg["help"].t_str())
+	, drag(get_drag(cfg["drag"]))
 	, use_tooltip_on_label_overflow(true)
 	, fix_rect(empty_rect)
 {
@@ -74,6 +76,7 @@ void tbuilder_control::init_control(tcontrol* control) const
 	if (fix_rect.w && fix_rect.h) {
 		control->set_fix_rect(fix_rect);
 	}
+	control->set_drag(drag);
 
 	control->set_debug_border_mode(debug_border_mode);
 	control->set_debug_border_color(debug_border_color);

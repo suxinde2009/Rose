@@ -37,6 +37,51 @@ enum HOTKEY_COMMAND {
 	HOTKEY_MIN = 100
 };
 
+struct tfinger
+{
+	tfinger(SDL_FingerID id, int x, int y, Uint32 active)
+		: fingerId(id)
+		, x(x)
+		, y(y)
+		, active(active)
+	{}
+
+	bool operator==(const tfinger& that) const
+	{
+		if (fingerId != that.fingerId) return false;
+		return true;
+	}
+	bool operator!=(const tfinger& that) const { return !operator==(that); }
+
+
+	SDL_FingerID fingerId;
+	int x;
+	int y;
+	Uint32 active;
+};
+
+class base_finger
+{
+protected:
+	base_finger()
+		: pinch_distance_(0)
+	{}
+
+	void process_event(const SDL_Event& event);
+
+	// generate multigesture whether or not.
+	bool multi_gestures() const;
+
+	virtual bool coordinate_valid(int x, int y) const { return true; }
+
+	virtual void handle_swipe(int x, int y, int dx, int dy) {}
+	virtual void handle_pinch(int x, int y, bool out) {}
+
+protected:
+	std::vector<tfinger> fingers_;
+	int pinch_distance_;
+};
+
 namespace events
 {
 
