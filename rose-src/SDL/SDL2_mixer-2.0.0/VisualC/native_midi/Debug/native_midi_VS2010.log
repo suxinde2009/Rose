@@ -1,0 +1,23 @@
+﻿Build started 2015/8/3 21:03:53.
+     1>Project "C:\ddksample\kingdom-src\SDL\SDL2_mixer-2.0.0\VisualC\native_midi\native_midi_VS2010.vcxproj" on node 2 (rebuild target(s)).
+     1>_PrepareForClean:
+         Deleting file ".\Debug\native_midi.lastbuildstate".
+       InitializeBuildStatus:
+         Creating ".\Debug\native_midi.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I"..\..\..\SDL-dev-framework\SDL-2.0.x\include" /I..\.. /I..\..\native_midi /Z7 /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _VC80_UPGRADE=0x0600 /Gm- /EHsc /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo".\Debug\\" /Fd".\Debug\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\native_midi\native_midi_common.c ..\..\native_midi\native_midi_win32.c
+         native_midi_common.c
+         native_midi_win32.c
+         Generating Code...
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\Lib.exe /OUT:".\Debug\native_midi.lib" /NOLOGO .\Debug\native_midi_common.obj
+         .\Debug\native_midi_win32.obj
+         native_midi_VS2010.vcxproj -> C:\ddksample\kingdom-src\SDL\SDL2_mixer-2.0.0\VisualC\native_midi\.\Debug\native_midi.lib
+       FinalizeBuildStatus:
+         Deleting file ".\Debug\native_midi.unsuccessfulbuild".
+         Touching ".\Debug\native_midi.lastbuildstate".
+     1>Done Building Project "C:\ddksample\kingdom-src\SDL\SDL2_mixer-2.0.0\VisualC\native_midi\native_midi_VS2010.vcxproj" (rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.45

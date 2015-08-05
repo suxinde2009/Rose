@@ -1,0 +1,45 @@
+﻿Build started 2015/8/3 21:03:53.
+     1>Project "C:\ddksample\kingdom-src\SDL\SDL2_mixer-2.0.0\VisualC\timidity\timidity_VS2010.vcxproj" on node 3 (rebuild target(s)).
+     1>_PrepareForClean:
+         Deleting file ".\Debug\timidity.lastbuildstate".
+       InitializeBuildStatus:
+         Creating ".\Debug\timidity.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I"..\..\..\SDL-dev-framework\SDL-2.0.x\include" /Z7 /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _CRT_SECURE_NO_WARNINGS /D _VC80_UPGRADE=0x0600 /Gm- /EHsc /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo".\Debug\\" /Fd".\Debug\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\timidity\common.c ..\..\timidity\ctrlmode.c ..\..\timidity\filter.c ..\..\timidity\instrum.c ..\..\timidity\mix.c ..\..\timidity\output.c ..\..\timidity\playmidi.c ..\..\timidity\readmidi.c ..\..\timidity\resample.c ..\..\timidity\sdl_a.c ..\..\timidity\sdl_c.c ..\..\timidity\tables.c ..\..\timidity\timidity.c
+         common.c
+         ctrlmode.c
+         filter.c
+         instrum.c
+         mix.c
+         output.c
+         playmidi.c
+         readmidi.c
+         resample.c
+         sdl_a.c
+         sdl_c.c
+         tables.c
+         timidity.c
+         Generating Code...
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\Lib.exe /OUT:".\Debug\timidity.lib" /NOLOGO .\Debug\common.obj
+         .\Debug\ctrlmode.obj
+         .\Debug\filter.obj
+         .\Debug\instrum.obj
+         .\Debug\mix.obj
+         .\Debug\output.obj
+         .\Debug\playmidi.obj
+         .\Debug\readmidi.obj
+         .\Debug\resample.obj
+         .\Debug\sdl_a.obj
+         .\Debug\sdl_c.obj
+         .\Debug\tables.obj
+         .\Debug\timidity.obj
+         timidity_VS2010.vcxproj -> C:\ddksample\kingdom-src\SDL\SDL2_mixer-2.0.0\VisualC\timidity\.\Debug\timidity.lib
+       FinalizeBuildStatus:
+         Deleting file ".\Debug\timidity.unsuccessfulbuild".
+         Touching ".\Debug\timidity.lastbuildstate".
+     1>Done Building Project "C:\ddksample\kingdom-src\SDL\SDL2_mixer-2.0.0\VisualC\timidity\timidity_VS2010.vcxproj" (rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.62
