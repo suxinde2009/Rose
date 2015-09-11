@@ -63,7 +63,8 @@ class controller_base;
  * Rectangular area of hexes, allowing to decide how the top and bottom
  * edges handles the vertical shift for each parity of the x coordinate
  */
-struct rect_of_hexes {
+struct rect_of_hexes 
+{
 	int left;
 	int right;
 	int top[2]; // for even and odd values of x, respectively
@@ -94,6 +95,17 @@ struct rect_of_hexes {
 
 	iterator begin() const;
 	iterator end() const;
+};
+
+struct tsurf_buf
+{
+	tsurf_buf()
+		: rect(create_rect(0, 0, 0, 0))
+	{}
+
+	SDL_Rect rect;  // based on screen coordinate
+	surface surf;  // foreground surface
+	surface buffer; // background surface
 };
 
 #define ZOOM_INCREMENT		4
@@ -365,15 +377,9 @@ public:
 	 */
 	static void sunset(const size_t delay = 0);
 
-	/** Toggle to continuously redraw the screen. */
-	static void toggle_benchmark();
-
 	terrain_builder& get_builder() {return *builder_;};
 
 	void flip();
-
-	/** Copy the backbuffer to the framebuffer. */
-	void update_display();
 
 	/** Rebuild all dynamic terrain. */
 	virtual void rebuild_all();
@@ -576,7 +582,7 @@ protected:
 	 * Hook for actions to take right after draw() calls drawing_buffer_commit
 	 * No action here by default.
 	 */
-	virtual void post_commit() {}
+	void post_commit();
 
 	/**
 	 * Redraws a single gamemap location.
@@ -653,6 +659,7 @@ protected:
 
 	gui2::tpoint zero_;
 	bool portrait_;
+	bool always_bottom_;
 
 	/** Event raised when the map is being scrolled */
 	mutable events::generic_event scroll_event_;
@@ -897,7 +904,7 @@ public:
 	void drawing_buffer_commit(surface& screen);
 
 	virtual void draw_floating(surface& screen) {}
-	virtual void undraw_floating(surface& screen) {}
+	virtual void undraw_floating(surface& screen);
 
 protected:
 	void create_theme();
@@ -944,12 +951,13 @@ protected:
 	int max_zoom_;
 	std::map<int, animation*> area_anims_;
 
+	int halo_id_;
+	std::map<int, tsurf_buf> haloes_;
+
 	gui2::twidget::torientation orientation_;
 	bool original_landscape_;
 
 private:
-	/** Handle for the label which displays frames per second. */
-	int fps_handle_;
 	/** Count work done for the debug info displayed under fps */
 	int invalidated_hexes_;
 	int drawn_hexes_;

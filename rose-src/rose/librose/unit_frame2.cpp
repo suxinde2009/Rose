@@ -508,9 +508,16 @@ void unit_frame::replace_static_text(const std::string& src, const std::string& 
 
 void unit_frame::replace_int(const std::string& name, int src, int dst)
 {
-	if (builder_.text_color_ == (src & 0xffffff)) {
-		builder_.text_color_ = dst & 0xffffff;
-	}
+	if (name == "duration") {
+		if (builder_.duration_ == src) {
+			builder_.duration_ = dst;
+		}
+
+	} else if (name == "text_color") {
+		if (builder_.text_color_ == (src & 0xffffff)) {
+			builder_.text_color_ = dst & 0xffffff;
+		}
+	} 
 }
 
 

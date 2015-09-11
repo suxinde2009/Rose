@@ -56,7 +56,6 @@ public:
 	std::pair<std::string, gui2::tcontrol_definition_ptr> toggle_panel;
 
 protected:
-	void pre_draw();
 	/**
 	* The editor uses different rules for terrain highlighting (e.g. selections)
 	*/

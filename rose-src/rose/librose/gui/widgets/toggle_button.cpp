@@ -203,7 +203,7 @@ void ttoggle_button::signal_handler_left_button_click(
 		return;
 	}
 
-	sound::play_UI_sound(settings::sound_toggle_button_click);
+	// sound::play_UI_sound(settings::sound_toggle_button_click);
 
 	if (callback_state_pre_change_) {
 		if (!callback_state_pre_change_(this)) {

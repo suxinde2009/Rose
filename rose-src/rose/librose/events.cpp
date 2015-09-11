@@ -41,18 +41,35 @@ extern void handle_app_event(Uint32 type);
 
 int cached_draw_events = 0;
 
+base_finger::base_finger()
+	: pinch_distance_(0)
+	, mouse_motions_(0)
+	, pinch_noisc_time_(100)
+	, last_pinch_ticks_(0)
+{}
+
 #define PINCH_SQUARE_THRESHOLD		6400
 void base_finger::process_event(const SDL_Event& event)
 {
 	int x, y, dx, dy;
 	bool hit = false;
+	Uint8 mouse_flags;
 	Uint32 now = SDL_GetTicks();
+
+	unsigned screen_width2 = gui2::settings::screen_width;
+	unsigned screen_height2 = gui2::settings::screen_height;
+#if (defined(__APPLE__) && TARGET_OS_IPHONE)
+	if (gui2::twidget::hdpi) {
+		screen_width2 /= gui2::twidget::hdpi_ratio;
+		screen_height2 /= gui2::twidget::hdpi_ratio;
+	}
+#endif
 
 	switch(event.type) {
 	case SDL_FINGERDOWN:
-		x = event.tfinger.x * gui2::settings::screen_width;
-		y = event.tfinger.y * gui2::settings::screen_height;
-		if (!coordinate_valid(x, y)) {
+		x = event.tfinger.x * screen_width2;
+		y = event.tfinger.y * screen_height2;
+		if (!finger_coordinate_valid(x, y)) {
 			return;
 		}
 		fingers_.push_back(tfinger(event.tfinger.fingerId, x, y, now));
@@ -61,10 +78,10 @@ void base_finger::process_event(const SDL_Event& event)
 	case SDL_FINGERMOTION:
 		{
 			int x1 = 0, y1 = 0, x2 = 0, y2 = 0, at = 0;
-			x = event.tfinger.x * gui2::settings::screen_width;
-			y = event.tfinger.y * gui2::settings::screen_height;
-			dx = event.tfinger.dx * gui2::settings::screen_width;
-			dy = event.tfinger.dy * gui2::settings::screen_height;
+			x = event.tfinger.x * screen_width2;
+			y = event.tfinger.y * screen_height2;
+			dx = event.tfinger.dx * screen_width2;
+			dy = event.tfinger.dy * screen_height2;
 
 			for (std::vector<tfinger>::iterator it = fingers_.begin(); it != fingers_.end(); ++ it, at ++) {
 				tfinger& finger = *it;
@@ -85,7 +102,7 @@ void base_finger::process_event(const SDL_Event& event)
 			if (!hit) {
 				return;
 			}
-			if (!coordinate_valid(x, y)) {
+			if (!finger_coordinate_valid(x, y)) {
 				return;
 			}
 			
@@ -97,9 +114,12 @@ void base_finger::process_event(const SDL_Event& event)
 				int distance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 				if (pinch_distance_ != gui2::twidget::npos) {
 					int diff = pinch_distance_ - distance;
-					if (abs(diff) >= PINCH_SQUARE_THRESHOLD) {
+					if (abs(diff) >= PINCH_SQUARE_THRESHOLD * gui2::twidget::hdpi_ratio) {
 						pinch_distance_ = distance;
-						handle_pinch(x, y, diff > 0);
+						if (now - last_pinch_ticks_ > pinch_noisc_time_) {
+							last_pinch_ticks_ = now;
+							handle_pinch(x, y, diff > 0);
+						}
 					}
 				} else {
 					pinch_distance_ = distance;
@@ -109,7 +129,7 @@ void base_finger::process_event(const SDL_Event& event)
 		break;
 
 	case SDL_FINGERUP:
-		for (std::vector<tfinger>::const_iterator it = fingers_.begin(); it != fingers_.end(); ) {
+		for (std::vector<tfinger>::iterator it = fingers_.begin(); it != fingers_.end(); ) {
 			const tfinger& finger = *it;
 			if (finger.fingerId == event.tfinger.fingerId) {
 				it = fingers_.erase(it);
@@ -123,6 +143,50 @@ void base_finger::process_event(const SDL_Event& event)
 
 	case SDL_MULTIGESTURE:
 		// Now I don't use SDL logic, process multi-finger myself. Ignore it.
+		break;
+
+	case SDL_MOUSEBUTTONDOWN:
+		mouse_motions_ = 0;
+		pinch_distance_ = gui2::twidget::npos;
+		handle_mouse_down(event.button);
+		break;
+
+	case SDL_MOUSEBUTTONUP:
+		// 1. once one finger up, thank this finger end.
+		// 2. solve mouse_up nest.
+		fingers_.clear();
+
+		handle_mouse_up(event.button);
+		break;
+
+	case SDL_MOUSEMOTION:
+		mouse_motions_ ++;
+		handle_mouse_motion(event.motion);
+		break;
+
+	case SDL_MOUSEWHEEL:
+		if (event.wheel.which == SDL_TOUCH_MOUSEID) {
+			break;
+		}
+		mouse_flags = SDL_GetMouseState(&x, &y);
+		if (!mouse_wheel_coordinate_valid(x, y)) {
+			return;
+		}
+#ifdef _WIN32
+		if (mouse_flags & SDL_BUTTON(SDL_BUTTON_LEFT) && abs(event.wheel.y) >= MOUSE_MOTION_THRESHOLD) {
+			// left mouse + wheel vetical ==> pinch
+			mouse_motions_ ++;
+			Uint32 now = SDL_GetTicks();
+			if (now - last_pinch_ticks_ > pinch_noisc_time_) {
+				last_pinch_ticks_ = now;
+				handle_pinch(x, y, event.wheel.y > 0);
+			}
+			
+		} else
+#endif
+		{
+			handle_mouse_wheel(event.wheel, x, y, mouse_flags);
+		}
 		break;
 	}
 }

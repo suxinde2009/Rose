@@ -215,6 +215,7 @@ public:
 	int children_layers() const;
 
 	bool is_spacer() const { return type_ == WIDGET && widget_.first == "spacer"; }
+	bool is_track() const { return type_ == WIDGET && widget_.first == "track"; }
 	bool is_grid() const { return type_ == WIDGET && widget_.first == "grid"; }
 	bool is_stacked_widget() const { return type_ == WIDGET && widget_.first == "stacked_widget"; }
 	bool is_drawing() const { return type_ == WIDGET && widget_.first == "drawing"; }
@@ -229,7 +230,7 @@ public:
 	bool is_panel() const { return type_ == WIDGET && (widget_.first == "panel" || widget_.first == "toggle_panel"); }
 	bool has_special_setting() const { return is_drawing(); }
 	bool is_image() const { return type_ == WIDGET && widget_.first == "image"; }
-	bool has_size() const { return is_scroll() || is_drawing() || is_spacer() || is_image(); }
+	bool has_size() const { return is_scroll() || is_drawing() || is_spacer() || is_image() || is_track(); }
 	bool has_drag() const { return widget_.first == "button" || widget_.first == "toggle_panel"; }
 	bool is_main_map() const;
 

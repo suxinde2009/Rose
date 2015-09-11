@@ -376,9 +376,6 @@ void tdebug_layout_graph::widget_generate_size_info(
 
 	if(control) {
 		out << "<tr><td>\n"
-			<< "minimum config size=" << control->get_config_minimum_size() << '\n'
-			<< "</td></tr>\n"
-			<< "<tr><td>\n"
 			<< "default config size=" << control->get_config_default_size() << '\n'
 			<< "</td></tr>\n"
 			<< "<tr><td>\n"

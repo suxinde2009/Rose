@@ -39,6 +39,7 @@
 #include "gui/auxiliary/window_builder/password_box.hpp"
 #include "gui/auxiliary/window_builder/progress_bar.hpp"
 #include "gui/auxiliary/window_builder/tree_view.hpp"
+#include "gui/auxiliary/window_builder/track.hpp"
 #endif
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/window.hpp"
@@ -213,6 +214,7 @@ tbuilder_widget_ptr create_builder_widget(const config& cfg)
 	TRY(password_box);
 	TRY(progress_bar);
 	TRY(tree_view);
+	TRY(track);
 #undef TRY
 #endif
 
@@ -393,6 +395,11 @@ twindow_builder::tresolution::tresolution(const config& cfg) :
  * @end{parent}{name=gui/window/resolution/}
  */
 
+	if (twidget::hdpi) {
+		maximum_width *= twidget::hdpi_ratio;
+		maximum_height *= twidget::hdpi_ratio;
+	}
+
 	const config &c = cfg.child("grid");
 
 	VALIDATE(c, _("No grid defined."));
@@ -527,8 +534,8 @@ tbuilder_grid::tbuilder_grid(const config& cfg) :
 		BOOST_FOREACH(const config &c, row.child_range("column"))
 		{
 			flags.push_back(implementation::read_flags(c));
-			border_size.push_back(c["border_size"]);
-			if(rows == 0) {
+			border_size.push_back(c["border_size"].to_int() * twidget::hdpi_ratio);
+			if (rows == 0) {
 				col_grow_factor.push_back(c["grow_factor"]);
 			}
 

@@ -56,6 +56,16 @@ extern int cached_draw_events;
 
 namespace gui2{
 
+const int ttransition::normal_duration = 200; // 2 second
+// const int ttransition::normal_duration = 5000; // 2 second
+
+void ttransition::set_transition(surface& surf, int start, int duration)
+{ 
+	transition_surf_.assign(make_neutral_surface(surf));
+	transition_start_time_ = start; 
+	transition_duration_ = duration;
+}
+
 namespace implementation {
 /** @todo See whether this hack can be removed. */
 // Needed to fix a compiler error in REGISTER_WIDGET.
@@ -75,6 +85,7 @@ public:
 REGISTER_WIDGET(window)
 
 unsigned twindow::sunset_ = 0;
+surface twindow::last_frame_buffer;
 
 namespace {
 #ifdef DEBUG_WINDOW_LAYOUT_GRAPHS
@@ -640,7 +651,11 @@ int twindow::show(const bool restore, const unsigned auto_close_timeout)
 
 	suspend_drawing_ = true;
 
+	// last_frame_buffer.assign(make_neutral_surface(video_.getSurface()));
+
 	// restore area
+	// if (restore && (get_width() != settings::screen_width || get_height() != settings::screen_height)) {
+	// int ii = 0;
 	if (restore) {
 		SDL_Rect rect = get_rect();
 		sdl_blit(restorer_, 0, video_.getSurface(), &rect);
@@ -676,6 +691,7 @@ void twindow::draw()
 		// Restore old surface. In the future this phase will not be needed
 		// since all will be redrawn when needed with dirty rects. Since that
 		// doesn't work yet we need to undraw the window.
+		// new rect maybe less than old's.
 		if (restorer_) {
 			SDL_Rect rect = get_rect();
 			sdl_blit(restorer_, 0, frame_buffer, &rect);
@@ -704,24 +720,34 @@ void twindow::draw()
 		populate_dirty_list(*this, call_stack);
 	}
 
-	if (!has_tooltip() && dirty_list_.empty()) {
-		if (preferences::use_color_cursors() || sunset_) {
-			surface frame_buffer = get_video_surface();
+	Uint32 now = SDL_GetTicks();
+	bool require_clone = false;
+	const SDL_Rect window_rect = get_rect();
 
-			if (sunset_) {
-				/** @todo should probably be moved to event::thandler::draw. */
-				static unsigned i = 0;
-				if(++i % sunset_ == 0) {
-					SDL_Rect r = ::create_rect(0, 0, frame_buffer->w, frame_buffer->h);
-					const Uint32 color =
-							SDL_MapRGBA(frame_buffer->format,0,0,0,255);
+	if (transition_start_time_ != twidget::npos) {
+		if (transition_surf_ && (int)now < transition_start_time_ + transition_duration_) {
+			if (window_rect.w == transition_surf_->w && window_rect.h == transition_surf_->h) {
+				require_clone = true;
 
-					fill_rect_alpha(r, color, 1, frame_buffer);
+			} else if (window_rect.y + window_rect.h == transition_surf_->h) {
+				if (!transition_frame_buffer_) {
+					adjust_surface_color2(frame_buffer, -50, -50, -50);
 				}
+				require_clone = true;
+
 			}
+
+			if (require_clone) {
+				if (!transition_frame_buffer_) {
+					transition_frame_buffer_ = SDL_CreateRGBSurface(0, frame_buffer->w, frame_buffer->h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+					SDL_SetSurfaceBlendMode(transition_frame_buffer_, SDL_BLENDMODE_NONE);
+				}
+				frame_buffer = transition_frame_buffer_;
+			}
+
 		}
-		return;
 	}
+	int xsrc = draw_offset_.x, ysrc = draw_offset_.y;
 
 	BOOST_FOREACH(tdirty_list& list, dirty_list_) {
 
@@ -771,8 +797,8 @@ void twindow::draw()
 
 		// Restore.
 		if (bg_opaque_ != t_true) {
-			SDL_Rect rect = get_rect();
-			sdl_blit(restorer_, 0, frame_buffer, &rect);
+			SDL_Rect r = window_rect;
+			sdl_blit(restorer_, 0, frame_buffer, &r);
 		}
 
 		/**
@@ -788,34 +814,110 @@ void twindow::draw()
 			twidget* widget = *itor;
 
 			if (bg_opaque_ != t_unset) {
-				widget->draw_background(frame_buffer, 0, 0);
+				widget->draw_background(frame_buffer, xsrc, ysrc);
 
 			} else {
 				surface_is_opaque.set_request();
-				widget->draw_background(frame_buffer, 0, 0);
+				widget->draw_background(frame_buffer, xsrc, ysrc);
 				bg_opaque_ = surface_is_opaque.retval()? t_true: t_false;
 			}
 
 			if (widget == terminal || (!children.empty() && std::count(children.begin(), children.end(), widget))) {
-				widget->draw_children(frame_buffer, 0, 0);
+				widget->draw_children(frame_buffer, xsrc, ysrc);
 			}
 		}
-
-/*		// Children.
-		if (!item.empty()) {
-			item.back()->draw_children(frame_buffer, 0, 0);
-		}
-*/
 
 		// Foreground.
 		for (std::vector<twidget*>::reverse_iterator ritor = item.rbegin(); ritor != item.rend(); ++ritor) {
 			twidget& widget = **ritor;
-			widget.draw_foreground(frame_buffer, 0, 0);
+			widget.draw_foreground(frame_buffer, xsrc, ysrc);
 			widget.set_dirty(false);
 		}
 	}
 
 	dirty_list_.clear();
+
+	SDL_Rect src_r = ::create_rect(0, 0, frame_buffer->w, frame_buffer->h);
+	SDL_Rect dst_r = src_r;
+	bool restore_from_transition_surf = false;
+	if (transition_start_time_ != twidget::npos) {
+		if (transition_surf_ && (int)now < transition_start_time_ + transition_duration_) {
+			surface frame_buffer2 = video_.getSurface();
+
+			if (window_rect.w == transition_surf_->w && window_rect.h == transition_surf_->h) {
+				VALIDATE(require_clone, null_str);
+
+				const int threshold = window_rect.w / 4;
+				int remain = transition_start_time_ + transition_duration_ - now;
+				// why divided by 2? minimum transite offset is 1/2 windowrect.w.
+				xsrc = (window_rect.w / 2) * remain / transition_duration_;
+
+				if (transition_fade_ == fade_left || transition_fade_ == fade_right) {
+					if (xsrc < threshold) {
+						// reatch threshold, blit transition surface.
+						if (transition_fade_ == fade_left) {
+							src_r.x = threshold - xsrc;
+							src_r.w = window_rect.w - src_r.x;
+
+							dst_r.x = 0;
+						} else {
+							src_r.x = 0;
+							src_r.w = window_rect.w - (threshold - xsrc);
+
+							dst_r.x = threshold - xsrc;
+						}
+						dst_r.y = 0;
+
+						sdl_blit(transition_surf_, &src_r, frame_buffer2, &dst_r);
+					}
+
+					if (transition_fade_ == fade_left) {
+						src_r.x = 0;
+						dst_r.x = xsrc;
+
+					} else {
+						src_r.x = xsrc;
+						dst_r.x = 0;
+					}
+					src_r.w = window_rect.w - xsrc;
+
+					sdl_blit(transition_frame_buffer_, &src_r, frame_buffer2, &dst_r);
+
+				} else {
+					restore_from_transition_surf = true;
+				}
+
+			} else if (window_rect.y + window_rect.h == transition_surf_->h) {
+				int remain = transition_start_time_ + transition_duration_ - now;
+				ysrc = (window_rect.h / 2 ) * remain / transition_duration_;
+
+				// don't blit transition surface.
+				src_r = ::create_rect(window_rect.x, window_rect.y, window_rect.w, window_rect.h - ysrc);
+				dst_r.x = window_rect.x;
+				dst_r.y = window_rect.y + ysrc;
+				sdl_blit(transition_frame_buffer_, &src_r, frame_buffer2, &dst_r);
+
+			} else {
+				restore_from_transition_surf = true;
+			}
+
+		} else {
+			restore_from_transition_surf = true;
+		}
+	}
+
+	if (restore_from_transition_surf) {
+		if (transition_frame_buffer_) {
+			dst_r.x = window_rect.x;
+			dst_r.y = window_rect.y;
+			surface frame_buffer2 = video_.getSurface();
+			sdl_blit(transition_frame_buffer_, &window_rect, frame_buffer2, &dst_r);
+			transition_frame_buffer_ = NULL;
+
+			broadcast_frame_buffer(frame_buffer2);
+		}
+		transition_start_time_ = twidget::npos;
+	}
 
 /*
 	std::vector<twidget*> call_stack;
@@ -931,23 +1033,23 @@ void twindow::layout()
 	int maximum_width;
 	if (keep_rect_.x != -1) {
 		maximum_width = keep_rect_.w;
+
+	} else if (automatic_placement_) {
+		maximum_width = maximum_width_? std::min(maximum_width_, settings::screen_width): settings::screen_width;
+
 	} else {
-		maximum_width = automatic_placement_
-			?  maximum_width_
-				? std::min(maximum_width_, settings::screen_width)
-				: settings::screen_width
-			: w_(variables_);
+		maximum_width = w_(variables_);
 	}
 
 	int maximum_height;
 	if (keep_rect_.x != -1 && !settings::keyboard_height) {
 		maximum_height = keep_rect_.h;
+
+	} else if (automatic_placement_) {
+		maximum_height = maximum_height_? std::min(maximum_height_, settings::screen_height): settings::screen_height;
+
 	} else {
-		maximum_height = automatic_placement_
-			? maximum_height_
-				? std::min(maximum_height_, settings::screen_height)
-				: settings::screen_height
-			: h_(variables_);
+		maximum_height = h_(variables_);
 	}
 
 	if (fix_coordinate_) {
@@ -1074,6 +1176,43 @@ tpoint twindow::calculate_best_size() const
 		grid().calculate_best_size_fix();
 		return tpoint(keep_rect_.w, keep_rect_.h);
 	}
+}
+
+void twindow::impl_draw_background(
+		  surface& frame_buffer
+		, int x_offset
+		, int y_offset)
+{
+	// look canvas(0) as standard canvas. animation is add to it.
+
+	// before it, draw has calculated draw_offset_.
+	x_offset -= draw_offset_.x;
+	y_offset -= draw_offset_.y;
+
+	// tcontrol will add draw_offset_. this minus keep "0" value
+	x_offset -= draw_offset_.x;
+	y_offset -= draw_offset_.y;
+
+	tcontrol::impl_draw_background(frame_buffer, x_offset, y_offset);
+}
+
+void twindow::impl_draw_foreground(
+		  surface& frame_buffer
+		, int x_offset
+		, int y_offset)
+{
+	std::vector<int> anims;
+	canvas(1).blit(
+			  frame_buffer
+			, calculate_blitting_rectangle(x_offset - draw_offset_.x, y_offset - draw_offset_.y), get_dirty(), anims, anims);
+}
+
+void twindow::impl_draw_children(surface& frame_buffer, int x_offset, int y_offset)
+{
+	x_offset -= draw_offset_.x;
+	y_offset -= draw_offset_.y;
+
+	tpanel::impl_draw_children(frame_buffer, x_offset, y_offset);
 }
 
 void twindow::layout_linked_widgets(const twidget* parent)
@@ -1237,12 +1376,6 @@ const std::string& twindow::get_control_type() const
 	return type;
 }
 
-void twindow::draw(surface& /*surf*/, const bool /*force*/,
-		const bool /*invalidate_background*/)
-{
-	assert(false);
-}
-
 namespace {
 
 /**
@@ -1295,73 +1428,6 @@ void twindow::generate_dot_file(const std::string& generator,
 	debug_layout_->generate_dot_file(generator, domain);
 }
 #endif
-
-void twindow::radio_page_swap_uh(const tradio_page::tpage& page, twidget* holder, bool first)
-{
-	// earse linked_size_
-	// typedef std::pair<const std::string, tlinked_size> hack;
-	for (std::map<std::string, tlinked_size>::iterator hack = linked_size_.begin(); hack != linked_size_.end();) {
-		if (!hack->second.radio) {
-			hack ++;
-			continue;
-		}
-		std::map<std::string, tlinked_size>::iterator erase_it = hack;
-		hack ++;
-		linked_size_.erase(erase_it);
-	}
-
-	// add linked_size_
-	BOOST_FOREACH(const tlinked_group& lg, page.linked_groups) {
-
-		if (has_linked_size_group(lg.id)) {
-			utils::string_map symbols;
-			symbols["id"] = lg.id;
-			t_string msg = vgettext(
-					  "Linked '$id' group has multiple definitions."
-					, symbols);
-			VALIDATE(false, msg);
-		}
-
-		init_linked_size_group(
-				lg.id, lg.fixed_width, lg.fixed_height, true);
-	}
-
-	// keyboard focus maybe in delete control, set keyboard_focus_ to null.
-	// keyboard_capture(NULL);
-
-	if (page.row) {
-		tlistbox* table = dynamic_cast<tlistbox*>(holder);
-
-		table->set_list_builder(page.row);
-
-		// _header_grid
-		tgrid* grid_ptr = new tgrid();
-		page.header->build(grid_ptr);
-		grid_ptr->set_id("_header_grid");
-		twidget* widget = table->content_grid()->swap_child("_header_grid", grid_ptr, true, this);
-		VALIDATE(widget, "original grid cannot find table_header id");
-		delete widget;
-	} else {
-		tscrollbar_panel* panel = dynamic_cast<tscrollbar_panel*>(holder);
-
-		// _grid
-		tgrid* grid_ptr = new tgrid();
-		page.header->build(grid_ptr);
-		grid_ptr->set_id("_grid");
-		twidget* widget = panel->content_grid()->swap_child("_grid", grid_ptr, false, this);
-		VALIDATE(widget, "original grid cannot find _grid id");
-		delete widget;
-	}
-}
-
-void twindow::radio_page_swap_bh(const tradio_page::tpage& page, twidget* holder)
-{
-	tscrollbar_container* container = dynamic_cast<tscrollbar_container*>(holder);
-
-	// container->layout_init(true);
-	// layout_linked_widgets(holder);
-	container->invalidate_layout(true);
-}
 
 void twindow::mouse_capture(const bool capture)
 {

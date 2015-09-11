@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: wesnoth\n"
 "Report-Msgid-Bugs-To: http://bugs.wesnoth.org/\n"
 "POT-Creation-Date: 2010-12-08 18:05+0100\n"
-"PO-Revision-Date: 2015-07-23 15:37+0800\n"
+"PO-Revision-Date: 2015-09-10 21:09+0800\n"
 "Last-Translator: \n"
 "Language-Team: Chinese/Simplified <i18n-translation@lists.linux.net.cn>\n"
 "Language: zh_CN\n"
@@ -5165,6 +5165,16 @@ msgstr ""
 "拒绝访问！请检查在游戏中是否正确设置了$server上的账号/密码。解决步骤：在游戏"
 "的“玩家武将”窗口按下“$account”。"
 
+#
+# http server
+#
+msgid ""
+"$nick is invalid nick when chat! To set up: Press $account in \"Player "
+"profile\" Setting, and set valid nick when chat."
+msgstr ""
+"$nick不是有效的聊天时昵称！解决步骤：在游戏的“玩家武将”窗口按下“$account”，然"
+"后设置有效的聊天时昵称。"
+
 msgid "Invalid access! pre_kingdom_version table on $server isn't ready."
 msgstr "拒绝访问！$server上的pre_kingdom_version表未就绪。"
 
@@ -5843,8 +5853,8 @@ msgstr "原标识"
 msgid "$year|.$month"
 msgstr "$year年$month月份"
 
-msgid "Sesame Sleep"
-msgstr "芝麻睡眠"
+msgid "Sesame Health"
+msgstr "芝麻健康"
 
 msgid "There is no score tonight, let Sesame to accompany you to sleep!"
 msgstr "目前还没有评分，今晚让芝麻陪您一起入眠吧！"
@@ -5862,10 +5872,103 @@ msgid "Wake up music"
 msgstr "唤醒音乐"
 
 msgid "Total capture time"
-msgstr "此次设置总时长"
+msgstr "睡眠时长"
+
+msgid "The rest time of entering sleep"
+msgstr "进入睡眠剩余时长"
 
 msgid "The rest time of wake up"
 msgstr "唤醒剩余时长"
+
+msgid "Click to login/register"
+msgstr "点击登录/注册"
+
+msgid "About i-Sleep"
+msgstr "关于i-Sleep"
+
+msgid "Sleep Analysis"
+msgstr "睡眠分析"
+
+msgid "Snore data"
+msgstr "打鼾数据"
+
+msgid "Motion data"
+msgstr "体动数据"
+
+msgid "Click to view the details"
+msgstr "点击查看详情"
+
+msgid "Sober"
+msgstr "清醒"
+
+msgid "Shallow sleep"
+msgstr "浅睡"
+
+msgid "Deep sleep"
+msgstr "深睡"
+
+msgid "Sleep quality"
+msgstr "睡眠质量"
+
+msgid "Sleep duration"
+msgstr "睡眠时长"
+
+msgid "Start time"
+msgstr "入睡时间"
+
+msgid "Shallow duration"
+msgstr "浅睡时长"
+
+msgid "Deep duration"
+msgstr "深睡时长"
+
+msgid "Snore duration"
+msgstr "打鼾时长"
+
+msgid "Apnea"
+msgstr "呼吸暂停"
+
+msgid "Sound usage"
+msgstr "鼾声所占容量"
+
+msgid "Deleted"
+msgstr "已删除"
+
+msgid "Return to today"
+msgstr "返回当前日期"
+
+msgid "Snore"
+msgstr "鼾声"
+
+msgid "Done"
+msgstr "完成"
+
+msgid "Delay sleep time"
+msgstr "延迟开始时间"
+
+msgid "Select delay sleep time"
+msgstr "选择延迟开始时间"
+
+msgid "Select wake up music"
+msgstr "选择唤醒音乐"
+
+msgid "Enable snore"
+msgstr "启动鼾声"
+
+msgid "Motion"
+msgstr "体动"
+
+msgid "$val minutes"
+msgstr "$val 分钟"
+
+msgid "Immediately start"
+msgstr "立即开始"
+
+msgid "Capture time"
+msgstr "记录时间"
+
+msgid "Duration"
+msgstr "时长"
 
 #~ msgid "Setting"
 #~ msgstr "设置"

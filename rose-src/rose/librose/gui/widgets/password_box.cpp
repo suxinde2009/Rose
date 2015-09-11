@@ -23,7 +23,6 @@
 #include "gui/auxiliary/window_builder/password_box.hpp"
 #include "gui/widgets/settings.hpp"
 #include "serialization/string_utils.hpp"
-#include "posix.h"
 
 #include <boost/bind.hpp>
 

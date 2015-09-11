@@ -69,7 +69,7 @@ struct tborder
 enum ANCHORING { FIXED, TOP_ANCHORED, PROPORTIONAL, BOTTOM_ANCHORED };
 ANCHORING read_anchor(const std::string& str);
 SDL_Rect calculate_relative_loc(const config& cfg, int screen_w, int screen_h);
-const config* set_resolution(const config& cfg, const SDL_Rect& screen, const std::string& patch, config& resolved_config);
+const config* set_resolution(const config& cfg, int screen_w, int screen_h, const std::string& patch, config& resolved_config);
 const config* set_resolution2(const config& cfg, int screen_w, int screen_h);
 
 extern const int XDim;

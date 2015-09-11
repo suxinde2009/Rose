@@ -285,7 +285,7 @@ static const config& modify_top_cfg_according_to_mode(const std::string& patch, 
 // I make sure there is a 480x320 [resolution] in [theme]. so:
 // 1. Don't resolve partialresolution when it is 480x320.
 // 2. Don't save other resolution except 480x320, when current is tiny_gui mode.
-static void expand_partialresolution(const std::string& patch, config& dst_cfg, const config& _top_cfg, const SDL_Rect& screen)
+static void expand_partialresolution(const std::string& patch, config& dst_cfg, const config& _top_cfg)
 {
 	config tmp;
 	const config& top_cfg = modify_top_cfg_according_to_mode(patch, _top_cfg, tmp);
@@ -453,6 +453,11 @@ ANCHORING read_anchor(const std::string& str)
 
 SDL_Rect calculate_relative_loc(const config& cfg, int screen_w, int screen_h)
 {
+	if (gui2::twidget::hdpi) {
+		screen_w /= gui2::twidget::hdpi_ratio;
+		screen_h /= gui2::twidget::hdpi_ratio;
+	}
+
 	SDL_Rect relative_loc;
 	ANCHORING xanchor_ = read_anchor(cfg["xanchor"]);
 	ANCHORING yanchor_ = read_anchor(cfg["yanchor"]);
@@ -512,23 +517,34 @@ SDL_Rect calculate_relative_loc(const config& cfg, int screen_w, int screen_h)
 	if (relative_loc.w < 0) relative_loc.w = THEME_NO_SIZE;
 	if (relative_loc.h < 0) relative_loc.h = THEME_NO_SIZE;
 
+
+	if (gui2::twidget::hdpi) {
+		relative_loc = create_rect(relative_loc.x * gui2::twidget::hdpi_ratio, relative_loc.y * gui2::twidget::hdpi_ratio,
+			relative_loc.w * gui2::twidget::hdpi_ratio, relative_loc.h * gui2::twidget::hdpi_ratio);
+	}
+
 	return relative_loc;
 }
 
-const config* set_resolution(const config& cfg, const SDL_Rect& screen, const std::string& patch, config& resolved_config)
+const config* set_resolution(const config& cfg, int screen_w, int screen_h, const std::string& patch, config& resolved_config)
 {
 	config tmp;
-	expand_partialresolution(patch, tmp, cfg, screen);
+	expand_partialresolution(patch, tmp, cfg);
 	// character of tmp expand_partialresolution generated:
 	// 1. there is no attrubute in root
 	// 2. only one block: [resolution], block count equal to count of [resolution] + count of [partialresolution]
 	do_resolve_rects(tmp, resolved_config);
 
-	return set_resolution2(resolved_config, screen.w, screen.h);
+	return set_resolution2(resolved_config, screen_w, screen_h);
 }
 
 const config* set_resolution2(const config& cfg, int screen_w, int screen_h)
 {
+	if (gui2::twidget::hdpi) {
+		screen_w /= gui2::twidget::hdpi_ratio;
+		screen_h /= gui2::twidget::hdpi_ratio;
+	}
+
 	const config* current_cfg_ = NULL;
 	int current_rating = 1000000;
 	BOOST_FOREACH (const config &i, cfg.child_range("resolution")) {

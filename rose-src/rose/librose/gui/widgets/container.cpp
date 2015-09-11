@@ -27,91 +27,6 @@
 
 namespace gui2 {
 
-void tradio_page::parse_cfg(const config& cfg, std::vector<tradio_page::tpage>& result)
-{
-	if (!cfg) {
-		// it isn't radio-style.
-		return;
-	}
-
-	BOOST_FOREACH(const config& page_cfg, cfg.child_range("page")) {
-		result.push_back(tpage());
-		tpage& page = result.back();
-
-		if (page_cfg.child("linked_group")) {
-			BOOST_FOREACH(const config& lg, page_cfg.child_range("linked_group")) {
-				tlinked_group linked_group;
-				linked_group.id = lg["id"].str();
-				linked_group.fixed_width = lg["fixed_width"].to_bool();
-				linked_group.fixed_height = lg["fixed_height"].to_bool();
-
-				VALIDATE(!linked_group.id.empty()
-						, missing_mandatory_wml_key("linked_group", "id"));
-
-				if(!(linked_group.fixed_width || linked_group.fixed_height)) {
-					utils::string_map symbols;
-					symbols["id"] = linked_group.id;
-					t_string msg = vgettext(
-							  "Linked '$id' group needs a 'fixed_width' or "
-								"'fixed_height' key."
-							, symbols);
-
-					VALIDATE(false, msg);
-				}
-
-				page.linked_groups.push_back(linked_group);
-			}
-		}
-
-		if (page_cfg.child("list_definition")) {
-			page.header = new tbuilder_grid(page_cfg.child("header"));
-			page.row = new tbuilder_grid(page_cfg.child("list_definition"));
-		} else {
-			page.header = new tbuilder_grid(page_cfg.child("grid"));
-		}
-	}
-}
-
-tradio_page::tradio_page(const std::vector<tpage>& pages, twidget* widget)
-	: pages_(pages)
-	, widget_(widget)
-	, current_page_(NO_PAGE)
-	, swaping_page_(NO_PAGE)
-{}
-
-bool tradio_page::swap_uh(twindow& window, int page)
-{
-	VALIDATE(swaping_page_ == NO_PAGE, "Program require call swap_bh before it!");
-	VALIDATE(page >= 0 && page < (int)pages_.size(), "Invalid page number!");
-
-	if (page == current_page_) {
-		return false;
-	}
-
-	bool first = current_page_ == NO_PAGE;
-	window.radio_page_swap_uh(pages_[page], widget_, first);
-	
-	if (!first) {
-		swaping_page_ = page;
-
-	} else {
-		// first is fill data. needn't call swap_bh.
-		current_page_ = page;
-	}
-	return true;
-}
-
-void tradio_page::swap_bh(twindow& window)
-{
-	VALIDATE(swaping_page_ != NO_PAGE, "Program require to call swap_uh before it!");
-	VALIDATE(current_page_ != NO_PAGE, "Don't call swap_bh when fill data!");
-
-	window.radio_page_swap_bh(pages_[swaping_page_], widget_);
-	
-	current_page_ = swaping_page_;
-	swaping_page_ = NO_PAGE;
-}
-
 void tcontainer_::layout_init(const bool full_initialization)
 {
 	// Inherited.
@@ -178,25 +93,23 @@ void tcontainer_::set_visible_area(const SDL_Rect& area)
 	grid_.set_visible_area(area);
 }
 
-void tcontainer_::impl_draw_children(
-		  surface& frame_buffer
-		, int x_offset
-		, int y_offset)
+void tcontainer_::impl_draw_children(surface& frame_buffer, int x_offset, int y_offset)
 {
-	assert(get_visible() == twidget::VISIBLE
-			&& grid_.get_visible() == twidget::VISIBLE);
+	VALIDATE(get_visible() == twidget::VISIBLE && grid_.get_visible() == twidget::VISIBLE, null_str);
+
+	x_offset += draw_offset_.x;
+	y_offset += draw_offset_.y;
 
 	if (callback_pre_impl_draw_children_) {
 		callback_pre_impl_draw_children_(this, frame_buffer, x_offset, y_offset);
 	}
 
-	if (drag_detect_started_ && first_drag_coordinate_.x != npos) {
-		x_offset = last_drag_coordinate_.x - first_drag_coordinate_.x;
-	} else {
-		x_offset = draw_offset_.x;
-		y_offset = draw_offset_.y;
-	}
 	grid_.draw_children(frame_buffer, x_offset, y_offset);
+}
+
+void tcontainer_::broadcast_frame_buffer(surface& frame_buffer)
+{
+	grid_.broadcast_frame_buffer(frame_buffer);
 }
 
 void tcontainer_::layout_children()

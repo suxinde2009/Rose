@@ -347,7 +347,10 @@ bool init_sound()
 
 		LOG_AUDIO << "Audio initialized.\n";
 
-		play_music();
+		{
+			int ii = 0;
+			// play_music();
+		}
 	}
 	return true;
 }
@@ -876,6 +879,24 @@ void set_UI_volume(int vol)
 			vol = MIX_MAX_VOLUME;
 
 		Mix_Volume(UI_sound_channel, vol);
+	}
+}
+
+tfrequency_lock::tfrequency_lock(int new_frequency, int new_buffer_size)
+		: original_buffer_size_(sound::get_buffer_size())
+{
+	Mix_QuerySpec(&original_frequency_, NULL, NULL);
+	if (original_frequency_ != new_frequency) {
+		sound::set_play_params(new_frequency, new_buffer_size);
+	}
+}
+
+tfrequency_lock::~tfrequency_lock()
+{
+	int frequency;
+	Mix_QuerySpec(&frequency, NULL, NULL);
+	if (original_frequency_ != frequency) {
+		sound::set_play_params(original_frequency_, original_buffer_size_);
 	}
 }
 

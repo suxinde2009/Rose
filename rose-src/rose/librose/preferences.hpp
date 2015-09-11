@@ -50,6 +50,7 @@ namespace preferences {
 	const config &get_child(const std::string &key);
 	std::string get(const std::string& key);
 	bool get(const std::string &key, bool def);
+	int get2(const std::string &key, int def);
 	void erase(const std::string& key);
 
 	void disable_preferences_save();

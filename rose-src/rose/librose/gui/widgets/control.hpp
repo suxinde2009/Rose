@@ -146,15 +146,6 @@ public:
 	/***** ***** ***** ***** layout functions ***** ***** ***** *****/
 
 	/**
-	 * Gets the minimum size as defined in the config.
-	 *
-	 * @pre                       config_ !=  NULL
-	 *
-	 * @returns                   The size.
-	 */
-	tpoint get_config_minimum_size() const;
-
-	/**
 	 * Gets the default size as defined in the config.
 	 *
 	 * @pre                       config_ !=  NULL
@@ -198,11 +189,15 @@ public:
 	tpoint request_reduce_width(const unsigned maximum_width);
 
 	bool drag_detect_started() const { return drag_detect_started_; }
+	const tpoint& first_drag_coordinate() const { return first_drag_coordinate_; }
+	const tpoint& last_drag_coordinate() const { return last_drag_coordinate_; }
 	void control_drag_detect(bool start, int x = npos, int y = npos, const tdrag_direction type = drag_none);
 	void set_drag_coordinate(int x, int y);
 	int drag_satisfied();
+	void set_enable_drag_draw_coordinate(bool enable) { enable_drag_draw_coordinate_ = enable; }
 
-	void set_draw_offset(int x, int y) { draw_offset_.x = x; draw_offset_.y = y; }
+	void set_draw_offset(int x, int y);
+	const tpoint& draw_offset() const { return draw_offset_; }
 
 protected:
 	virtual bool exist_anim();
@@ -333,14 +328,14 @@ public:
 	void set_callback_place(boost::function<void (tcontrol*, const SDL_Rect&)> callback)
 		{ callback_place_ = callback; }
 
-	void set_callback_control_drag_detect(boost::function<void (tcontrol*, bool start, const tdrag_direction)> callback)
+	void set_callback_control_drag_detect(boost::function<bool (tcontrol*, bool start, const tdrag_direction)> callback)
 		{ callback_control_drag_detect_ = callback; }
+
+	void set_callback_set_drag_coordinate(boost::function<bool (tcontrol*, const tpoint& first, const tpoint& last)> callback)
+		{ callback_set_drag_coordinate_ = callback; }
 
 	void set_callback_pre_impl_draw_children(boost::function<void (tcontrol*, surface&, int, int)> callback)
 		{ callback_pre_impl_draw_children_ = callback; }
-
-	void set_callback_set_drag_coordinate(boost::function<void (tcontrol*, const tpoint& first, const tpoint& last)> callback)
-		{ callback_set_drag_coordinate_ = callback; }
 
 protected:
 	void set_config(tresolution_definition_ptr config) { config_ = config; }
@@ -380,6 +375,7 @@ protected:
 	bool drag_detect_started_;
 	tpoint first_drag_coordinate_;
 	tpoint last_drag_coordinate_;
+	bool enable_drag_draw_coordinate_;
 
 	tpoint draw_offset_;
 
@@ -403,9 +399,9 @@ private:
 	// call when after place.
 	boost::function<void (tcontrol*, const SDL_Rect&)> callback_place_;
 
-	boost::function<void (tcontrol*, bool start, const tdrag_direction type)> callback_control_drag_detect_;
+	boost::function<bool (tcontrol*, bool start, const tdrag_direction type)> callback_control_drag_detect_;
 
-	boost::function<void (tcontrol*, const tpoint& first, const tpoint& last)> callback_set_drag_coordinate_;
+	boost::function<bool (tcontrol*, const tpoint& first, const tpoint& last)> callback_set_drag_coordinate_;
 
 	/**
 	 * If the text doesn't fit on the label should the text be used as tooltip?

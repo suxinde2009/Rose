@@ -44,6 +44,11 @@ tbuilder_report::tbuilder_report(const config& cfg)
 	, unit_height(cfg["unit_height"])
 	, gap(cfg["gap"])
 {
+	if (twidget::hdpi) {
+		unit_width *= twidget::hdpi_ratio;
+		unit_height *= twidget::hdpi_ratio;
+		gap *= twidget::hdpi_ratio;
+	}
 }
 
 twidget* tbuilder_report::build() const

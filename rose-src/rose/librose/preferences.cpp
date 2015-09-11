@@ -110,7 +110,7 @@ void write_preferences()
 	}
 
 
-    #ifndef _WIN32
+#ifndef _WIN32
 
     if(!prefs_file_existed) {
 
@@ -120,7 +120,7 @@ void write_preferences()
 
     }
 
-    #endif
+#endif
 
 
 }
@@ -172,6 +172,11 @@ std::string get(const std::string& key) {
 bool get(const std::string &key, bool def)
 {
 	return prefs[key].to_bool(def);
+}
+
+int get2(const std::string &key, int def)
+{
+	return prefs[key].to_int(def);
 }
 
 void disable_preferences_save() {

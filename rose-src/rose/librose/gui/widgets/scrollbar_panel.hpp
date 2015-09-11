@@ -30,7 +30,7 @@ namespace implementation {
  * This widget can draw items beyond the widgets it holds and in front of
  * them. A panel is always active so these functions return dummy values.
  */
-class tscrollbar_panel: public tscrollbar_container, public tradio_page
+class tscrollbar_panel: public tscrollbar_container
 {
 	friend struct implementation::tbuilder_scrollbar_panel;
 public:
@@ -40,9 +40,8 @@ public:
 	 *
 	 * @param canvas_count        The canvas count for tcontrol.
 	 */
-	explicit tscrollbar_panel(const std::vector<tradio_page::tpage>& pages, const unsigned canvas_count = 2) :
+	explicit tscrollbar_panel(const unsigned canvas_count = 2) :
 		tscrollbar_container(canvas_count)
-		, tradio_page(pages, this)
 	{
 	}
 

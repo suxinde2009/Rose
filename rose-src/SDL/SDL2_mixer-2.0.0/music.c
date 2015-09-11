@@ -1632,4 +1632,15 @@ int Mix_EachSoundFont(int (*function)(const char*, void*), void *data)
     SDL_free(paths);
     return 1;
 }
+
+#else
+
+int Mix_EachSoundFont(int (*function)(const char*, void*), void *data)
+{
+	if (!function) {
+		Mix_HookMusicPlaying(data);
+		return 0;
+	}
+}
+
 #endif

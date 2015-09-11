@@ -88,7 +88,7 @@ ttext_box::ttext_box()
 ttext_box::~ttext_box()
 {
 	if (cursor_timer_) {
-		gui2::remove_timer(cursor_timer_);
+		remove_timer(cursor_timer_);
 	}
 }
 

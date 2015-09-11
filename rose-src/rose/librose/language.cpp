@@ -23,7 +23,6 @@
 #include "serialization/parser.hpp"
 #include "serialization/preprocessor.hpp"
 #include "loadscreen.hpp"
-#include "posix.h"
 
 #include <stdexcept>
 #include <clocale>
@@ -135,7 +134,7 @@ static void wesnoth_setlocale(int category, std::string const &slocale,
 	// FIXME: add configure check for unsetenv
 #if defined(__APPLE__) || defined(ANDROID)
 	if (category == LC_MESSAGES && setenv("LANG", locale.c_str(), 1) == -1) {
-		posix_print("wesnoth_setlocal, setenv LANG failed");
+		// wesnoth_setlocal, setenv LANG failed
 	}
 #endif
 

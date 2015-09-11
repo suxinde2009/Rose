@@ -61,6 +61,7 @@ tcontrol::tcontrol(const unsigned canvas_count)
 	, drag_detect_started_(false)
 	, first_drag_coordinate_(0, 0)
 	, last_drag_coordinate_(0, 0)
+	, enable_drag_draw_coordinate_(true)
 	, draw_offset_(0, 0)
 {
 	connect_signal<event::SHOW_TOOLTIP>(boost::bind(
@@ -100,6 +101,7 @@ tcontrol::tcontrol(
 	, drag_detect_started_(false)
 	, first_drag_coordinate_(0, 0)
 	, last_drag_coordinate_(0, 0)
+	, enable_drag_draw_coordinate_(true)
 	, draw_offset_(0, 0)
 {
 	definition_load_configuration(control_type);
@@ -175,16 +177,6 @@ bool tcontrol::disable_click_dismiss() const
 iterator::twalker_* tcontrol::create_walker()
 {
 	return new iterator::walker::twidget(*this);
-}
-
-tpoint tcontrol::get_config_minimum_size() const
-{
-	assert(config_);
-
-	tpoint result(config_->min_width, config_->min_height);
-
-	DBG_GUI_L << LOG_HEADER << " result " << result << ".\n";
-	return result;
 }
 
 tpoint tcontrol::get_config_default_size() const
@@ -513,13 +505,8 @@ void tcontrol::impl_draw_background(
 	tshare_canvas_image_lock lock1(surf);
 	tshare_canvas_integrate_lock lock2(integrate_);
 
-	if (drag_detect_started_ && first_drag_coordinate_.x != npos) {
-		x_offset = last_drag_coordinate_.x - first_drag_coordinate_.x;
-		// y_offset = last_drag_coordinate_.y - first_drag_coordinate_.y;
-	} else if (!x_offset && !y_offset) {
-		x_offset = draw_offset_.x;
-		y_offset = draw_offset_.y;
-	}
+	x_offset += draw_offset_.x;
+	y_offset += draw_offset_.y;
 
 	canvas(get_state()).blit(frame_buffer, calculate_blitting_rectangle(x_offset, y_offset), get_dirty(), pre_anims_, post_anims_);
 }
@@ -537,7 +524,7 @@ void tcontrol::definition_load_configuration(const std::string& control_type)
 
 	set_config(get_control(control_type, definition_));
 
-	assert(canvas().size() == config()->state.size());
+	VALIDATE(canvas().size() == config()->state.size(), null_str);
 	for (size_t i = 0; i < canvas().size(); ++i) {
 		canvas(i) = config()->state[i].canvas;
 		canvas(i).start_animation();
@@ -560,14 +547,19 @@ void tcontrol::control_drag_detect(bool start, int x, int y, const tdrag_directi
 
 		last_drag_coordinate_.x = x;
 		last_drag_coordinate_.y = y;
+	} else if (enable_drag_draw_coordinate_) {
+		set_draw_offset(0, 0);
 	}
 	drag_detect_started_ = start;
 
+	bool require_dirty = true;
 	if (callback_control_drag_detect_) {
-		callback_control_drag_detect_(this, start, type);
+		require_dirty = callback_control_drag_detect_(this, start, type);
 	}
 	// upcaller maybe update draw_offset.
-	set_dirty();
+	if (require_dirty) {
+		set_dirty();
+	}
 }
 
 void tcontrol::set_drag_coordinate(int x, int y)
@@ -580,29 +572,38 @@ void tcontrol::set_drag_coordinate(int x, int y)
 		return;
 	}
 
-	// get rid of direct noise
-	if (!(drag_ & (drag_left | drag_right))) {
-		// concert only vertical
-		if (abs(x - last_drag_coordinate_.x) > abs(y - last_drag_coordinate_.y)) {
-			// horizontal variant is more than vertical, think no.
-			return;
-		}
+	if (drag_ != drag_track) {
+		// get rid of direct noise
+		if (!(drag_ & (drag_left | drag_right))) {
+			// concert only vertical
+			if (abs(x - last_drag_coordinate_.x) > abs(y - last_drag_coordinate_.y)) {
+				// horizontal variant is more than vertical, think no.
+				return;
+			}
 
-	} else if (!(drag_ & (drag_up | drag_down))) {
-		// concert only horizontal
-		if (abs(x - last_drag_coordinate_.x) < abs(y - last_drag_coordinate_.y)) {
-			// vertical variant is more than horizontal, think no.
-			return;
+		} else if (!(drag_ & (drag_up | drag_down))) {
+			// concert only horizontal
+			if (abs(x - last_drag_coordinate_.x) < abs(y - last_drag_coordinate_.y)) {
+				// vertical variant is more than horizontal, think no.
+				return;
+			}
 		}
 	}
 
 	last_drag_coordinate_.x = x;
 	last_drag_coordinate_.y = y;
 
-	set_dirty();
+	if (enable_drag_draw_coordinate_) {
+		set_draw_offset(last_drag_coordinate_.x - first_drag_coordinate_.x, 0);
+	}
 
+	bool require_dirty = true;
 	if (callback_set_drag_coordinate_) {
-		callback_set_drag_coordinate_(this, first_drag_coordinate_, last_drag_coordinate_);
+		require_dirty = callback_set_drag_coordinate_(this, first_drag_coordinate_, last_drag_coordinate_);
+	}
+
+	if (require_dirty) {
+		set_dirty();
 	}
 }
 
@@ -613,7 +614,8 @@ int tcontrol::drag_satisfied()
 	}
 	tdrag_direction ret = drag_none;
 
-	const int drag_threshold = 60;
+	const int drag_threshold_mdpi = 40;
+	const int drag_threshold = hdpi? drag_threshold_mdpi * hdpi_ratio: drag_threshold_mdpi;
 	int w_threshold = w_ / 3;
 	if (w_threshold > drag_threshold) {
 		w_threshold = drag_threshold;
@@ -651,6 +653,12 @@ int tcontrol::drag_satisfied()
 	control_drag_detect(false, npos, npos, ret);
 
 	return ret;
+}
+
+void tcontrol::set_draw_offset(int x, int y) 
+{
+	draw_offset_.x = x; 
+	draw_offset_.y = y; 
 }
 
 tpoint tcontrol::get_best_text_size(

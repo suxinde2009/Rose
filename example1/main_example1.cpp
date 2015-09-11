@@ -1,4 +1,4 @@
-/* Require Rose v0.0.8 or above. $ */
+/* Require Rose v0.0.7 or above. $ */
 
 #define GETTEXT_DOMAIN "wesnoth-lib"
 
@@ -61,7 +61,7 @@ class tlobby_manager
 public:
 	tlobby_manager()
 	{
-		lobby = new tlobby();
+		lobby = new tlobby(new tlobby::tchat_sock(), new tlobby::thttp_sock(), new tlobby::ttransit_sock());
 	}
 	~tlobby_manager()
 	{
@@ -88,7 +88,7 @@ static int do_gameloop(int argc, char** argv)
 #endif
 
 	// modify some game_config variable
-	game_config::init("studio", "Rose", "#rose", true);
+	game_config::init("studio", "Rose", "#rose", true, false);
 	game_config::wesnoth_program_dir = directory_name(argv[0]);
 	game_config::version = game_config::rose_version;
 	game_config::wesnoth_version = version_info(game_config::version);
@@ -100,7 +100,7 @@ static int do_gameloop(int argc, char** argv)
 	// always connect to lobby server.
 	tlobby_manager lobby_manager;
 	const network::manager net_manager(1, 1);
-	lobby->chat.set_host("chat.freenode.net", 6665);
+	lobby->chat->set_host("chat.freenode.net", 6665);
 	lobby->join();
 	lobby->set_nick2(group.leader().name());
 

@@ -34,6 +34,46 @@
 #define ALIGN_4
 #endif
 
+struct textendable_buf
+{
+	textendable_buf()
+		: data(NULL)
+		, size(0)
+		, vsize(0)
+	{}
+	~textendable_buf()
+	{
+		if (data) {
+			free(data);
+		}
+	}
+
+	void put(const void* src, int src_size)
+	{
+		if (!src || src_size <= 0) {
+			return;
+		}
+
+		if (src_size > size) {
+			char* tmp = (char*)malloc(src_size);
+			if (data) {
+				if (vsize) {
+					memcpy(tmp, data, vsize);
+				}
+				free(data);
+			}
+			data = tmp;
+			size = src_size;
+		}
+		memcpy(data, src, src_size);
+		vsize = src_size;
+	}
+
+	char* data;
+	int size;
+	int vsize;
+};
+
 namespace network_worker_pool
 {
 

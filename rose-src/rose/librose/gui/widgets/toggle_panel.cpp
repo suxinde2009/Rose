@@ -238,7 +238,7 @@ void ttoggle_panel::signal_handler_left_button_click(const event::tevent event, 
 {
 	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
 
-	sound::play_UI_sound(settings::sound_toggle_panel_click);
+	// sound::play_UI_sound(settings::sound_toggle_panel_click);
 
 	if (callback_state_pre_change_) {
 		if (!callback_state_pre_change_(this, type)) {

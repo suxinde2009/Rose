@@ -596,6 +596,8 @@ static int process_queue(void* shard_num)
 {
 	size_t shard = static_cast<size_t>(reinterpret_cast<uintptr_t>(shard_num));
 	DBG_NW << "thread started...\n";
+	textendable_buf buf;
+
 	for (;;) {
 
 		//if we find a socket to send data to, sent_buf will be non-NULL. If we find a socket
@@ -711,7 +713,8 @@ static int process_queue(void* shard_num)
 		DBG_NW << "thread found a buffer...\n";
 
 		SOCKET_STATE result = SOCKET_READY;
-		std::vector<char> buf;
+		
+		buf.vsize = 0;
 
 		if (sent_buf) {
  			if (!sent_buf->config_error.empty()) {
@@ -730,7 +733,7 @@ static int process_queue(void* shard_num)
 			result = info.receive_buf(buf);
 		}
 
-		if (result != SOCKET_READY || buf.empty()) {
+		if (result != SOCKET_READY || !buf.vsize) {
 			// if it is send result in, buf.empty() is equal true. at same time, result == SOCKET_READY.
 			// so if send, must enter here.
 			check_socket_result(sock,result);
@@ -740,14 +743,18 @@ static int process_queue(void* shard_num)
 		network::buffer* received_data = new network::buffer(sock);
 
 		if (info.raw_data_only) {
-			received_data->raw_buffer.swap(buf);
+			received_data->raw_buffer.resize(buf.vsize);
+			memcpy(&received_data->raw_buffer[0], buf.data, buf.vsize);
+			// received_data->raw_buffer.swap(buf);
 		} else {
-			std::string buffer(buf.begin(), buf.end());
-			std::istringstream stream(buffer);
+			std::stringstream gangplank;
+			std::iostream stream(gangplank.rdbuf());
+			stream.write(buf.data, buf.vsize);
+			// std::string buffer(buf.begin(), buf.end());
+			// std::istringstream stream(buffer);
 			try {
 				read_gz(received_data->config_buf, stream);
-			} catch(config::error &e)
-			{
+			} catch(config::error &e) {
 				received_data->config_error = e.message;
 			}
 		}

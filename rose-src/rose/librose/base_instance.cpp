@@ -287,6 +287,12 @@ bool base_instance::init_video()
 
 #if (defined(__APPLE__) && TARGET_OS_IPHONE) || defined(ANDROID)
     SDL_Rect rc = video_.bound();
+#if (defined(__APPLE__) && TARGET_OS_IPHONE)
+	if (gui2::twidget::hdpi) {
+		rc.w *= gui2::twidget::hdpi_ratio;
+		rc.h *= gui2::twidget::hdpi_ratio;
+	}
+#endif
 	gui2::tpoint normal_size = gui2::twidget::toggle_orientation_size(rc.w, rc.h);
 	resolution = std::make_pair(normal_size.x, normal_size.y);
 	bpp = 32;

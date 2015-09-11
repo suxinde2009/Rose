@@ -63,23 +63,29 @@ struct tfinger
 class base_finger
 {
 protected:
-	base_finger()
-		: pinch_distance_(0)
-	{}
+	base_finger();
 
 	void process_event(const SDL_Event& event);
 
 	// generate multigesture whether or not.
 	bool multi_gestures() const;
 
-	virtual bool coordinate_valid(int x, int y) const { return true; }
+	virtual bool finger_coordinate_valid(int x, int y) const { return true; }
+	virtual bool mouse_wheel_coordinate_valid(int x, int y) const { return true; }
 
 	virtual void handle_swipe(int x, int y, int dx, int dy) {}
 	virtual void handle_pinch(int x, int y, bool out) {}
+	virtual void handle_mouse_down(const SDL_MouseButtonEvent& button) {}
+	virtual void handle_mouse_up(const SDL_MouseButtonEvent& button) {}
+	virtual void handle_mouse_motion(const SDL_MouseMotionEvent& motion) {}
+	virtual void handle_mouse_wheel(const SDL_MouseWheelEvent& wheel, int x, int y, Uint8 mouse_flags) {}
 
 protected:
 	std::vector<tfinger> fingers_;
 	int pinch_distance_;
+	int mouse_motions_;
+	Uint32 pinch_noisc_time_;
+	Uint32 last_pinch_ticks_;
 };
 
 namespace events

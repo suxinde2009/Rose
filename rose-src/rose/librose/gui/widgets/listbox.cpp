@@ -53,6 +53,7 @@ tlistbox::tlistbox()
 	, drag_at_(npos)
 	, left_drag_grid_(NULL)
 	, left_drag_grid_size_(0, 0)
+	, row_align_(true)
 {
 }
 
@@ -83,7 +84,7 @@ void tlistbox::add_row(const std::map<std::string /* widget id */, string_map>& 
 	// caller maybe call add_row continue, will result to large effect burden
 }
 
-void tlistbox::callback_control_drag_detect(tcontrol* control, bool start, const tdrag_direction type)
+bool tlistbox::callback_control_drag_detect(tcontrol* control, bool start, const tdrag_direction type)
 {
 	// set_visible spend a lot of time.
 	twindow::tinvalidate_layout_blocker block(*this->get_window());
@@ -110,6 +111,8 @@ void tlistbox::callback_control_drag_detect(tcontrol* control, bool start, const
 		widget->set_draw_offset(-1 * (content_->get_x() + content_->get_width() - left_drag_grid_->get_x()), 0);
 		left_drag_grid_->set_visible_area(left_drag_grid_->get_rect());
 	}
+
+	return true;
 }
 
 void tlistbox::callback_pre_impl_draw_children(tcontrol* control, surface& frame_buffer, int x_offset, int y_offset)
@@ -119,7 +122,7 @@ void tlistbox::callback_pre_impl_draw_children(tcontrol* control, surface& frame
 	}
 }
 
-void tlistbox::callback_set_drag_coordinate(tcontrol* control, const tpoint& first, const tpoint& last)
+bool tlistbox::callback_set_drag_coordinate(tcontrol* control, const tpoint& first, const tpoint& last)
 {
 	if (left_drag_grid_->get_visible() == twidget::VISIBLE) {
 		int diff = first.x - last.x;
@@ -132,6 +135,8 @@ void tlistbox::callback_set_drag_coordinate(tcontrol* control, const tpoint& fir
 			diff, left_drag_grid_->get_height());
 		left_drag_grid_->set_visible_area(area);
 	}
+
+	return true;
 }
 
 void tlistbox::cancel_drag()
@@ -549,7 +554,7 @@ void tlistbox::list_impl_draw_children(surface& frame_buffer, int x_offset, int 
 
 void tlistbox::adjust_offset(int& x_offset, int& y_offset)
 {
-	if (dynamic_) {
+	if (dynamic_ || !row_align_) {
 		return;
 	}
 
@@ -841,7 +846,7 @@ void tlistbox::place_content_grid(const tpoint& content_origin, const tpoint& de
 
 	tpoint size = desire_size;
 	unsigned items = list_grid_->children_vsize();
-	if (items) {
+	if (row_align_ && items) {
 		tgrid* header = find_widget<tgrid>(content_grid_, "_header_grid", true, false);
 		// by this time, hasn't called place(), cannot use get_size().
 		int header_height = header->get_best_size().y;

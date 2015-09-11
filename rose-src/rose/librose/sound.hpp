@@ -97,6 +97,17 @@ void set_sound_volume(int vol);
 void set_bell_volume(int vol);
 void set_UI_volume(int vol);
 
+class tfrequency_lock
+{
+public:
+	tfrequency_lock(int new_frequency, int new_buffer_size);
+	~tfrequency_lock();
+
+private:
+	int original_frequency_;
+	size_t original_buffer_size_;
+};
+
 }
 
 #endif

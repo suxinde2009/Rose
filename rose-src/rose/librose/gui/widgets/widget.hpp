@@ -79,7 +79,10 @@ public:
 	static bool orientation_effect_resolution(const int width, const int height);
 	static tpoint toggle_orientation_size(int width, int height);
 
-	enum tdrag_direction { drag_none, drag_left = 0x1, drag_right = 0x2, drag_up = 0x4, drag_down = 0x8};
+	static bool hdpi;
+	static int hdpi_ratio;
+
+	enum tdrag_direction { drag_none, drag_left = 0x1, drag_right = 0x2, drag_up = 0x4, drag_down = 0x8, drag_track = 0x10};
 
 	/** @deprecated use the second overload. */
 	twidget();
@@ -141,6 +144,25 @@ public:
 		PARTLY_DRAWN,
 		/** The widget is not visible and should not be drawn if dirty. */
 		NOT_DRAWN
+	};
+
+	class tvisible_lock
+	{
+	public:
+		tvisible_lock(twidget& widget, tvisible into)
+			: widget_(widget)
+			, into_(into)
+		{
+			widget.set_visible(into);
+		}
+		~tvisible_lock()
+		{
+			widget_.set_visible(VISIBLE);
+		}
+
+	private:
+		twidget& widget_;
+		tvisible into_;
 	};
 
 	/***** ***** ***** ***** layout functions ***** ***** ***** *****/
@@ -530,6 +552,8 @@ public:
 	 */
 	void populate_dirty_list(twindow& caller,
 			std::vector<twidget*>& call_stack);
+
+	virtual void broadcast_frame_buffer(surface& frame_buffer) {}
 
 	virtual bool exist_anim() { return false; }
 

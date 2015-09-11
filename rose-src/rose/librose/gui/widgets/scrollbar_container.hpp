@@ -39,8 +39,7 @@ namespace implementation {
  *
  * @todo events are not yet send to the content grid.
  */
-class tscrollbar_container
-	: public tcontainer_
+class tscrollbar_container: public tcontainer_
 {
 	friend class tdebug_layout_graph;
 
@@ -427,6 +426,8 @@ private:
 
 	/** Inherited from tcontainer_. */
 	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
+
+	void broadcast_frame_buffer(surface& frame_buffer);
 
 	/** Inherited from tcontainer_. */
 	void child_populate_dirty_list(twindow& caller,

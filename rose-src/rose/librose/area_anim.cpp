@@ -29,7 +29,6 @@
 
 namespace anim_field_tag {
 
-enum tfield {NONE, X, Y, OFFSET_X, OFFSET_Y, IMAGE, IMAGE_MOD, TEXT, ALPHA};
 std::map<const std::string, tfield> tags;
 
 void fill_tags()
@@ -128,7 +127,13 @@ void fill_anims(const config& cfg)
 
 	symbols["child"] = tintegrate::generate_format("animation", "yellow");
 	BOOST_FOREACH (const config &anim, cfg.child_range("animation")) {
-		const std::string id = anim["id"].str();
+		const std::string& app = anim["app"].str();
+
+		if (!app.empty() && app != game_config::app) {
+			continue;
+		}
+
+		const std::string& id = anim["id"].str();
 		VALIDATE(!id.empty(), vgettext("wesnoth-lib", no_id_msgid, symbols));
 
 		symbols["id"] = tintegrate::generate_format(id, "red");
@@ -470,6 +475,9 @@ int start_cycle_float_anim(display& disp, const config& cfg)
 		return INVALID_ANIM_ID;
 	}
 	const animation* tpl = anim2::anim(type);
+	if (!tpl) {
+		return INVALID_ANIM_ID;
+	}
 	float_animation* clone = new float_animation(*tpl);
 		
 	int id = disp.insert_area_anim2(clone);
@@ -483,25 +491,25 @@ int start_cycle_float_anim(display& disp, const config& cfg)
 		if (attr.first.find("-") == std::string::npos) {
 			continue;
 		}
-		vstr = utils::split(attr.first, '-');
-		if (vstr.size() != 2) {
+		vstr = utils::split(attr.first, '-', utils::STRIP_SPACES);
+		if (vstr.size() != 3) {
 			continue;
 		}
-		anim_field_tag::tfield field = anim_field_tag::find(vstr[0]);
+		anim_field_tag::tfield field = anim_field_tag::find(vstr[1]);
 		if (field == anim_field_tag::NONE) {
 			continue;
 		}
 		if (anim_field_tag::is_progressive_field(field)) {
-			anim.replace_progressive(vstr[0], vstr[1], attr.second);
+			anim.replace_progressive(vstr[0], vstr[1], vstr[2], attr.second);
 
 		} else if (field == anim_field_tag::IMAGE) {
-			anim.replace_image_name(vstr[1], attr.second);
+			anim.replace_image_name(vstr[0], vstr[2], attr.second);
 
 		} else if (field == anim_field_tag::IMAGE_MOD) {
-			anim.replace_image_mod(vstr[1], attr.second);
+			anim.replace_image_mod(vstr[0], vstr[2], attr.second);
 
 		} else if (field == anim_field_tag::TEXT) {
-			anim.replace_static_text(vstr[1], attr.second);
+			anim.replace_static_text(vstr[0], vstr[2], attr.second);
 
 		}
 	}

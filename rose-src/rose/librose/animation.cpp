@@ -299,48 +299,63 @@ void animation::require_release()
 	}
 }
 
-void animation::replace_image_name(const std::string& src, const std::string& dst)
+void animation::replace_image_name(const std::string& part, const std::string& src, const std::string& dst)
 {
-	std::map<std::string, particular>::iterator anim_itor = sub_anims_.begin();
-	unit_anim_.replace_image_name(src, dst);
-	for( /*null*/; anim_itor != sub_anims_.end() ; ++anim_itor) {
-		anim_itor->second.replace_image_name(src, dst);
+	if (part.empty()) {
+		unit_anim_.replace_image_name(src, dst);
+	} else {
+		std::map<std::string, particular>::iterator it = sub_anims_.find(part + "_frame");
+		if (it != sub_anims_.end()) {
+			it->second.replace_image_name(src, dst);
+		}
 	}
 }
 
-void animation::replace_image_mod(const std::string& src, const std::string& dst)
+void animation::replace_image_mod(const std::string& part, const std::string& src, const std::string& dst)
 {
-	std::map<std::string, particular>::iterator anim_itor = sub_anims_.begin();
-	unit_anim_.replace_image_mod(src, dst);
-	for( /*null*/; anim_itor != sub_anims_.end() ; ++anim_itor) {
-		anim_itor->second.replace_image_mod(src, dst);
+	if (part.empty()) {
+		unit_anim_.replace_image_mod(src, dst);
+	} else {
+		std::map<std::string, particular>::iterator it = sub_anims_.find(part + "_frame");
+		if (it != sub_anims_.end()) {
+			it->second.replace_image_mod(src, dst);
+		}
 	}
 }
 
-void animation::replace_progressive(const std::string& name, const std::string& src, const std::string& dst)
+void animation::replace_progressive(const std::string& part, const std::string& name, const std::string& src, const std::string& dst)
 {
-	std::map<std::string, particular>::iterator anim_itor = sub_anims_.begin();
-	unit_anim_.replace_progressive(name, src, dst);
-	for( /*null*/; anim_itor != sub_anims_.end() ; ++anim_itor) {
-		anim_itor->second.replace_progressive(name, src, dst);
+	if (part.empty()) {
+		unit_anim_.replace_progressive(name, src, dst);
+	} else {
+		std::map<std::string, particular>::iterator it = sub_anims_.find(part + "_frame");
+		if (it != sub_anims_.end()) {
+			it->second.replace_progressive(name, src, dst);
+		}
 	}
 }
 
-void animation::replace_static_text(const std::string& src, const std::string& dst)
+void animation::replace_static_text(const std::string& part, const std::string& src, const std::string& dst)
 {
-	std::map<std::string, particular>::iterator anim_itor = sub_anims_.begin();
-	unit_anim_.replace_static_text(src, dst);
-	for( /*null*/; anim_itor != sub_anims_.end() ; ++anim_itor) {
-		anim_itor->second.replace_static_text(src, dst);
+	if (part.empty()) {
+		unit_anim_.replace_static_text(src, dst);
+	} else {
+		std::map<std::string, particular>::iterator it = sub_anims_.find(part + "_frame");
+		if (it != sub_anims_.end()) {
+			it->second.replace_static_text(src, dst);
+		}
 	}
 }
 
-void animation::replace_int(const std::string& name, int src, int dst)
+void animation::replace_int(const std::string& part, const std::string& name, int src, int dst)
 {
-	std::map<std::string, particular>::iterator anim_itor = sub_anims_.begin();
-	unit_anim_.replace_int(name, src, dst);
-	for( /*null*/; anim_itor != sub_anims_.end() ; ++anim_itor) {
-		anim_itor->second.replace_int(name, src, dst);
+	if (part.empty()) {
+		unit_anim_.replace_int(name, src, dst);
+	} else {
+		std::map<std::string, particular>::iterator it = sub_anims_.find(part + "_frame");
+		if (it != sub_anims_.end()) {
+			it->second.replace_int(name, src, dst);
+		}
 	}
 }
 

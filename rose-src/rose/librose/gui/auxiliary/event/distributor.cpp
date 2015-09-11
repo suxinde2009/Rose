@@ -614,7 +614,7 @@ template<
 	if (drags.empty()) {
 		return std::make_pair(reinterpret_cast<twidget*>(NULL), click);
 	}
-	twidget* temp = mouse_over;
+	twidget* temp = focus;
 	do {
 		if (temp->drag() && std::find(drags.begin(), drags.end(), temp) != drags.end()) {
 			return std::make_pair(temp, click);

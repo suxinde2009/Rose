@@ -30,6 +30,8 @@
 #include <cstring>
 #include <iostream>
 
+#include "gui/lib/types/point.hpp"
+
 const SDL_Rect empty_rect = {0, 0, 0, 0};
 const SDL_Rect invalid_rect = {-1, -1, 0, 0};
 
@@ -117,13 +119,14 @@ void put_pixel(
 	*reinterpret_cast<Uint32*>(start + (y * w * 4) + x * 4) = color;
 }
 
+// only condition: x1 >= x2.
 void draw_line(
 		  surface& canvas
 		, Uint32 color
-		, unsigned x1
-		, unsigned y1
-		, const unsigned x2
-		, unsigned y2
+		, int x1
+		, int y1
+		, int x2
+		, int y2
 		, bool require_map)
 {
 	if (require_map) {
@@ -135,28 +138,38 @@ void draw_line(
 	}
 
 	ptrdiff_t start = reinterpret_cast<ptrdiff_t>(canvas->pixels);
-	unsigned w = canvas->w;
+	int w = canvas->w;
+	int h = canvas->h;
 
-	VALIDATE(static_cast<int>(x1) < canvas->w, null_str);
-	VALIDATE(static_cast<int>(x2) < canvas->w, null_str);
-	VALIDATE(static_cast<int>(y1) < canvas->h, null_str);
-	VALIDATE(static_cast<int>(y2) < canvas->h, null_str);
+	VALIDATE(x2 >= x1, null_str);
+	if (x1 >= w) {
+		return;
+	}
+	if (x2 >= w) {
+		x2 = w - 1;
+	}
 
 	// use a special case for vertical lines
-	if(x1 == x2) {
-		if(y2 < y1) {
+	if (x1 == x2) {
+		if (y2 < y1) {
 			std::swap(y1, y2);
 		}
 
-		for(unsigned y = y1; y <= y2; ++y) {
+		if (y1 >= h) {
+			return;
+		}
+		if (y2 >= h) {
+			y2 = h - 1;
+		}
+		for (int y = y1; y <= y2; ++ y) {
 			put_pixel(start, color, w, x1, y);
 		}
 		return;
 	}
 
 	// use a special case for horizontal lines
-	if(y1 == y2) {
-		for(unsigned x  = x1; x <= x2; ++x) {
+	if (y1 == y2) {
+		for (int x = x1; x <= x2; ++ x) {
 			put_pixel(start, color, w, x, y1);
 		}
 		return;
@@ -166,23 +179,25 @@ void draw_line(
 	// http://de.wikipedia.org/wiki/Bresenham-Algorithmus#Kompakte_Variante
 	// version of 26.12.2010.
 	const int dx = x2 - x1; // precondition x2 >= x1
-	const int dy = abs(static_cast<int>(y2 - y1));
+	const int dy = abs(y2 - y1);
 	const int step_x = 1;
 	const int step_y = y1 < y2 ? 1 : -1;
 	int err = (dx > dy ? dx : -dy) / 2;
 	int e2;
 
-	for(;;){
-		put_pixel(start, color, w, x1, y1);
-		if(x1 == x2 && y1 == y2) {
+	for (;;) {
+		if (x1 > 0 && x1 < w && y1 > 0 && y1 < h) {
+			put_pixel(start, color, w, x1, y1);
+		}
+		if (x1 == x2 && y1 == y2) {
 			break;
 		}
 		e2 = err;
-		if(e2 > -dx) {
+		if (e2 > -dx) {
 			err -= dy;
 			x1 += step_x;
 		}
-		if(e2 <  dy) {
+		if (e2 <  dy) {
 			err += dx;
 			y1 += step_y;
 		}
@@ -192,8 +207,8 @@ void draw_line(
 void draw_circle(
 		  surface& canvas
 		, Uint32 color
-		, const unsigned x_centre
-		, const unsigned y_centre
+		, const unsigned x_center
+		, const unsigned y_center
 		, const unsigned radius
 		, bool require_map)
 {
@@ -208,10 +223,10 @@ void draw_circle(
 	ptrdiff_t start = reinterpret_cast<ptrdiff_t>(canvas->pixels);
 	unsigned w = canvas->w;
 
-	assert(static_cast<int>(x_centre + radius) < canvas->w);
-	assert(static_cast<int>(x_centre - radius) >= 0);
-	assert(static_cast<int>(y_centre + radius) < canvas->h);
-	assert(static_cast<int>(y_centre - radius) >= 0);
+	VALIDATE(static_cast<int>(x_center + radius) < canvas->w, null_str);
+	VALIDATE(static_cast<int>(x_center - radius) >= 0, null_str);
+	VALIDATE(static_cast<int>(y_center + radius) < canvas->h, null_str);
+	VALIDATE(static_cast<int>(y_center - radius) >= 0, null_str);
 
 	// Algorithm based on
 	// http://de.wikipedia.org/wiki/Rasterung_von_Kreisen#Methode_von_Horn
@@ -220,15 +235,15 @@ void draw_circle(
 	int x = radius;
 	int y = 0;
 	while(!(y > x)) {
-		put_pixel(start, color, w, x_centre + x, y_centre + y);
-		put_pixel(start, color, w, x_centre + x, y_centre - y);
-		put_pixel(start, color, w, x_centre - x, y_centre + y);
-		put_pixel(start, color, w, x_centre - x, y_centre - y);
+		put_pixel(start, color, w, x_center + x, y_center + y);
+		// put_pixel(start, color, w, x_center + x, y_center - y);
+		// put_pixel(start, color, w, x_center - x, y_center + y);
+		// put_pixel(start, color, w, x_center - x, y_center - y);
 
-		put_pixel(start, color, w, x_centre + y, y_centre + x);
-		put_pixel(start, color, w, x_centre + y, y_centre - x);
-		put_pixel(start, color, w, x_centre - y, y_centre + x);
-		put_pixel(start, color, w, x_centre - y, y_centre - x);
+		// put_pixel(start, color, w, x_center + y, y_center + x);
+		// put_pixel(start, color, w, x_center + y, y_center - x);
+		// put_pixel(start, color, w, x_center - y, y_center + x);
+		// put_pixel(start, color, w, x_center - y, y_center - x);
 
 		d += 2 * y + 1;
 		++y;
@@ -477,8 +492,7 @@ surface scale_surface(const surface &surf, int w, int h, bool optimize)
 	if (w == surf->w && h == surf->h) {
 		return surf;
 	}
-	assert(w >= 0);
-	assert(h >= 0);
+	VALIDATE(w >= 0 && h >= 0, null_str);
 
 	surface dst(create_neutral_surface(w,h));
 
@@ -547,6 +561,11 @@ surface scale_surface(const surface &surf, int w, int h, bool optimize)
 				pix[1] = *(src_word + dx);       // northeast
 				pix[2] = *(src_word + dy);       // southwest
 				pix[3] = *(src_word + dx + dy);  // southeast
+
+				if (pix[0] == pix[1] && pix[0] == pix[2] && pix[0] == pix[3]) {
+					*dst_word = pix[0];
+					continue;
+				}
 
 				bilin[0] = n*w;
 				bilin[1] = n*e;
@@ -755,6 +774,38 @@ surface adjust_surface_color(const surface &surf, int red, int green, int blue, 
 	}
 
 	return optimize ? create_optimized_surface(nsurf) : nsurf;
+}
+
+void adjust_surface_color2(surface &surf, int red, int green, int blue)
+{
+	if (!surf || (red == 0 && green == 0 && blue == 0)) {
+		return;
+	}
+
+	{
+		surface_lock lock(surf);
+		Uint32* beg = lock.pixels();
+		Uint32* end = beg + surf->w*surf->h;
+
+		while (beg != end) {
+			Uint8 alpha = (*beg) >> 24;
+
+			if (alpha) {
+				Uint8 r, g, b;
+				r = (*beg) >> 16;
+				g = (*beg) >> 8;
+				b = (*beg) >> 0;
+
+				r = std::max<int>(0,std::min<int>(255,int(r)+red));
+				g = std::max<int>(0,std::min<int>(255,int(g)+green));
+				b = std::max<int>(0,std::min<int>(255,int(b)+blue));
+
+				*beg = (alpha << 24) + (r << 16) + (g << 8) + b;
+			}
+
+			++beg;
+		}
+	}
 }
 
 surface greyscale_image(const surface &surf, bool optimize)
@@ -1282,7 +1333,7 @@ surface blur_surface(const surface &surf, int depth, bool optimize)
 	return optimize ? create_optimized_surface(res) : res;
 }
 
-void blur_surface(surface& surf, SDL_Rect rect, unsigned depth)
+void blur_surface(surface& surf, SDL_Rect rect, int depth)
 {
 	if(surf == NULL) {
 		return;
@@ -1301,12 +1352,12 @@ void blur_surface(surface& surf, SDL_Rect rect, unsigned depth)
 	const unsigned pixel_offset = rect.y * surf->w + rect.x;
 
 	surface_lock lock(surf);
-	for(unsigned y = 0; y < rect.h; ++y) {
+	for(int y = 0; y < rect.h; ++y) {
 		const Uint32* front = &queue[0];
 		Uint32* back = &queue[0];
 		Uint32 red = 0, green = 0, blue = 0, avg = 0;
 		Uint32* p = lock.pixels() + pixel_offset + y * surf->w;
-		for(unsigned x = 0; x <= depth && x < rect.w; ++x, ++p) {
+		for(int x = 0; x <= depth && x < rect.w; ++x, ++p) {
 			red += ((*p) >> 16)&0xFF;
 			green += ((*p) >> 8)&0xFF;
 			blue += (*p)&0xFF;
@@ -1318,7 +1369,7 @@ void blur_surface(surface& surf, SDL_Rect rect, unsigned depth)
 		}
 
 		p = lock.pixels() + pixel_offset + y * surf->w;
-		for(unsigned x = 0; x < rect.w; ++x, ++p) {
+		for(int x = 0; x < rect.w; ++x, ++p) {
 			*p = 0xFF000000
 					| (std::min(red/avg,ff) << 16)
 					| (std::min(green/avg,ff) << 8)
@@ -1349,12 +1400,12 @@ void blur_surface(surface& surf, SDL_Rect rect, unsigned depth)
 		}
 	}
 
-	for(unsigned x = 0; x < rect.w; ++x) {
+	for(int x = 0; x < rect.w; ++x) {
 		const Uint32* front = &queue[0];
 		Uint32* back = &queue[0];
 		Uint32 red = 0, green = 0, blue = 0, avg = 0;
 		Uint32* p = lock.pixels() + pixel_offset + x;
-		for(unsigned y = 0; y <= depth && y < rect.h; ++y, p += surf->w) {
+		for(int y = 0; y <= depth && y < rect.h; ++y, p += surf->w) {
 			red += ((*p) >> 16)&0xFF;
 			green += ((*p) >> 8)&0xFF;
 			blue += *p&0xFF;
@@ -1366,7 +1417,7 @@ void blur_surface(surface& surf, SDL_Rect rect, unsigned depth)
 		}
 
 		p = lock.pixels() + pixel_offset + x;
-		for(unsigned y = 0; y < rect.h; ++y, p += surf->w) {
+		for(int y = 0; y < rect.h; ++y, p += surf->w) {
 			*p = 0xFF000000
 					| (std::min(red/avg,ff) << 16)
 					| (std::min(green/avg,ff) << 8)
@@ -1525,6 +1576,9 @@ surface cut_surface(const surface &surf, SDL_Rect const &r)
 	if (surf == NULL) {
 		return NULL;
 	}
+	if (r.w <= 0 || r.h <= 0) {
+		return NULL;
+	}
 
 	surface res = create_compatible_surface(surf, r.w, r.h);
 
@@ -1680,6 +1734,19 @@ surface flop_surface(const surface &surf, bool optimize)
 	return optimize ? create_optimized_surface(nsurf) : nsurf;
 }
 
+surface rotate_surface(const surface& surf, double angle)
+{
+	if (!surf) {
+		return NULL;
+	}
+
+	int flip = 0;
+	int dstwidth, dstheight;
+    double cangle, sangle;
+	SDLgfx_rotozoomSurfaceSizeTrig(surf->w, surf->h, -angle, &dstwidth, &dstheight, &cangle, &sangle);
+	surface surface_rotated = SDLgfx_rotateSurface(surf, -angle, dstwidth/2, dstheight/2, 1, flip & SDL_FLIP_HORIZONTAL, flip & SDL_FLIP_VERTICAL, dstwidth, dstheight, cangle, sangle);
+	return surface_rotated;
+}
 
 surface create_compatible_surface(const surface &surf, int width, int height)
 {
@@ -1879,8 +1946,12 @@ surface get_surface_portion(const surface &src, SDL_Rect &area, bool optimize_fo
 		return NULL;
 	}
 
+	if (area.w <= 0 || area.h <= 0) {
+		return NULL;
+	}
+
 	// Check if there is something in the portion
-	if(area.x >= src->w || area.y >= src->h || area.x + area.w < 0 || area.y + area.h < 0) {
+	if (area.x >= src->w || area.y >= src->h || area.x + area.w < 0 || area.y + area.h < 0) {
 		return NULL;
 	}
 
@@ -2195,11 +2266,104 @@ surface generate_surface(int width, int height, const std::string& img, int inte
 	return surf;
 }
 
+//
+// circle, arc function
+//
+// extract pixels from surf to circle_pixels_
+tarc_pixel* circle_calculate_pixels(surface& surf, int* valid_pixels)
+{
+	VALIDATE(surf->w == surf->h, null_str);
+	const int diameter = surf->w;
+
+	surface_lock lock(surf);
+	Uint32* beg = lock.pixels();
+	Uint32* end = beg + diameter * diameter;
+
+	int circle_valid_pixels = 0;
+	while (beg != end) {
+		Uint8 alpha = (*beg) >> 24;
+		if (alpha) {
+			circle_valid_pixels ++;
+		}
+		++ beg;
+	}
+
+	tarc_pixel* circle_pixels = NULL;
+	if (circle_valid_pixels) {
+		circle_pixels = (tarc_pixel*)malloc(circle_valid_pixels * sizeof(tarc_pixel));
+		beg = lock.pixels();
+		int at = 0;
+		const int originx = diameter / 2;
+		const int originy = originx;
+		int diffx, diffy;
+		for (int row = 0; row < diameter; row ++) {
+			for (int col = 0; col < diameter; col ++) {
+				if (beg[row * diameter + col] >> 24) {
+					tarc_pixel* pixel = circle_pixels + at;
+					pixel->x = col;
+					pixel->y = row;
+
+					if (col >= originx && row < originy) {
+						diffx = col - originx;
+						diffy = originy - row;
+						pixel->degree = atan(1.0 * diffx / diffy) * 180 / M_PI;
+
+					} else if (col >= originx && row >= originy) {
+						diffx = col - originx;
+						diffy = row - originy;
+						pixel->degree = atan(1.0 * diffy / diffx) * 180 / M_PI + 90;
+
+					} else if (col < originx && row >= originy) {
+						diffx = originx - col;
+						diffy = row - originy;
+						pixel->degree = atan(1.0 * diffx / diffy) * 180 / M_PI + 180;
+
+					} else if (col < originx && row < originy) {
+						diffx = originx - col;
+						diffy = originy - row;
+						pixel->degree = atan(1.0 * diffy / diffx) * 180 / M_PI + 270;
+					}
+
+					at ++;
+				}
+			}
+		}
+		VALIDATE(at == circle_valid_pixels, null_str);
+	}
+	if (valid_pixels) {
+		*valid_pixels = circle_valid_pixels;
+	}
+	return circle_pixels;
+}
+
+// erase_col: ARGB
+void circle_draw_arc(surface& surf, tarc_pixel* circle_pixels, const int circle_valid_pixels, int start, int stop, Uint32 erase_col)
+{
+	VALIDATE(start >= 0 && start < 360 && stop >= 0 && stop < 360, null_str);
+	const int diameter = surf->w;
+	surface_lock lock(surf);
+
+	Uint32* beg = lock.pixels();
+	for (int at = 0; at < circle_valid_pixels; at ++) {
+		const tarc_pixel& coor = circle_pixels[at];
+		if (start < stop) {
+			if (!(coor.degree >= start && coor.degree <= stop)) {
+				beg[coor.y * diameter + coor.x] = erase_col;
+			}
+		} else {
+			if (coor.degree < start && coor.degree > stop) {
+				beg[coor.y * diameter + coor.x] = erase_col;
+			}
+		}
+	}
+}
+
 std::ostream& operator<<(std::ostream& s, const SDL_Rect& rect)
 {
 	s << rect.x << ',' << rect.y << " x "  << rect.w << ',' << rect.h;
 	return s;
 }
+
 
 tsurface_is_opaque surface_is_opaque;
 const surface* share_canvas_image;

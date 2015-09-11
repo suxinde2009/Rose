@@ -60,8 +60,6 @@ namespace {
 	const int MinZoom = 4;
 	const int MaxZoom = 200;
 	size_t sunset_delay = 0;
-
-	bool benchmark = false;
 }
 
 bool display::require_change_resolution = false;
@@ -100,6 +98,7 @@ display::display(const std::string& tile, controller_base* controller, CVideo& v
 	, last_map_w_(0)
 	, last_map_h_(0)
 	, zero_(0, 0)
+	, always_bottom_(false)
 	, theme_cfg_()
 	, main_map_area_(empty_rect)
 	, border_()
@@ -135,7 +134,6 @@ display::display(const std::string& tile, controller_base* controller, CVideo& v
 	, canvas_drawing_buffer_()
 	, to_canvas_(false)
 	, map_screenshot_(false)
-	, fps_handle_(0)
 	, invalidated_hexes_(0)
 	, drawn_hexes_(0)
 	, idle_anim_rate_(1.0)
@@ -153,6 +151,7 @@ display::display(const std::string& tile, controller_base* controller, CVideo& v
 	, drawing_(false)
 	, main_tip_handle_(0)
 	, area_anims_()
+	, halo_id_(0)
 	, min_zoom_(MinZoom)
 	, max_zoom_(MaxZoom)
 	, reports_(num_reports)
@@ -250,7 +249,14 @@ void display::create_theme()
 	theme_ = dlg;
 
 	dlg->asyn_show(screen_, main_map_area_);
+
 	dlg->post_layout();
+
+	if (always_bottom_) {
+		ypos_ = max_map_area().h;
+		bounds_check_position(xpos_, ypos_);
+	}
+
 	controller_->events::handler::join();
 }
 
@@ -353,8 +359,8 @@ const SDL_Rect& display::max_map_area() const
 	// To display a hex fully on screen,
 	// a little bit extra space is needed.
 	// Also added the border two times.
-	max_area.w  = static_cast<int>((get_map().w() + 2 * border_.size) * hex_width());
-	max_area.h = static_cast<int>((get_map().h() + 2 * border_.size) * hex_size());
+	max_area.w  = static_cast<int>((map_->w() + 2 * border_.size) * hex_width());
+	max_area.h = static_cast<int>((map_->h() + 2 * border_.size) * hex_size());
 
 	return max_area;
 }
@@ -1026,15 +1032,21 @@ void display::drawing_buffer_commit(surface& screen)
 	drawing_buffer.clear();
 }
 
+void display::undraw_floating(surface& screen)
+{
+	for (std::map<int, tsurf_buf>::reverse_iterator it = haloes_.rbegin(); it != haloes_.rend(); ++ it) {
+		tsurf_buf& buf = it->second;
+		if (is_empty_rect(buf.rect)) {
+			continue;
+		}
+		sdl_blit(buf.surf, NULL, screen, &buf.rect);
+	}
+}
+
 void display::sunset(const size_t delay)
 {
 	// This allow both parametric and toggle use
 	sunset_delay = (sunset_delay == 0 && delay == 0) ? 3 : delay;
-}
-
-void display::toggle_benchmark()
-{
-	benchmark = !benchmark;
 }
 
 void display::flip()
@@ -1052,7 +1064,6 @@ void display::flip()
 	}
 
 	theme_->get_window()->draw_tooltip(frameBuffer);
-	draw_floating(frameBuffer);
 	font::draw_floating_labels(frameBuffer);
 	cursor::draw(frameBuffer);
 
@@ -1060,52 +1071,7 @@ void display::flip()
 
 	cursor::undraw(frameBuffer);
 	font::undraw_floating_labels(frameBuffer);
-	undraw_floating(frameBuffer);
 	theme_->get_window()->undraw_tooltip(frameBuffer);
-}
-
-void display::update_display()
-{
-	if (screen_.update_locked()) {
-		return;
-	}
-
-	if (benchmark) {
-		static int last_sample = SDL_GetTicks();
-		static int frames = 0;
-		++frames;
-		const int sample_freq = 10;
-		if(frames == sample_freq) {
-			const int this_sample = SDL_GetTicks();
-
-			const int fps = (frames*1000)/(this_sample - last_sample);
-			last_sample = this_sample;
-			frames = 0;
-
-			if(fps_handle_ != 0) {
-				font::remove_floating_label(fps_handle_);
-				fps_handle_ = 0;
-			}
-			std::ostringstream stream;
-			stream << "fps: " << fps;
-			drawn_hexes_ = 0;
-			invalidated_hexes_ = 0;
-
-			font::floating_label flabel(stream.str());
-			flabel.set_font_size(12);
-			flabel.set_color(benchmark ? font::BAD_COLOR : font::NORMAL_COLOR);
-			flabel.set_position(10, 100);
-
-			fps_handle_ = font::add_floating_label(flabel);
-		}
-	} else if(fps_handle_ != 0) {
-		font::remove_floating_label(fps_handle_);
-		fps_handle_ = 0;
-		drawn_hexes_ = 0;
-		invalidated_hexes_ = 0;
-	}
-
-	flip();
 }
 
 static void draw_background(surface screen, const SDL_Rect& area, const std::string& image)
@@ -1283,11 +1249,7 @@ void display::draw_init()
 		return;
 	}
 
-	if(benchmark) {
-		invalidateAll_ = true;
-	}
-
-	if(redraw_background_) {
+	if (redraw_background_) {
 		// Full redraw of the background
 		const SDL_Rect clip_rect = map_outside_area();
 		const surface screen = get_screen_surface();
@@ -1301,8 +1263,6 @@ void display::draw_init()
 	}
 
 	if (invalidateAll_) {
-		DBG_DP << "draw() with invalidateAll\n";
-
 		// toggle invalidateAll_ first to allow regular invalidations
 		invalidateAll_ = false;
 		invalidate_locations_in_rect(map_area());
@@ -1323,8 +1283,8 @@ void display::draw_wrap(bool update, bool force)
 	}
 
 	if (update) {
-		update_display();
-		if(!force && !benchmark && wait_time > 0) {
+		flip();
+		if (!force && wait_time > 0) {
 			// If it's not time yet to draw, delay until it is
 			SDL_Delay(wait_time);
 		}
@@ -1471,6 +1431,10 @@ void display::draw_minimap()
 		if (minimap_ == NULL) {
 			return;
 		}
+		if (always_bottom_ && (minimap_->w != area.w || minimap_->h != area.h)) {
+			surface surf = scale_surface(minimap_, area.w, area.h);
+			minimap_ = surf;
+		}
 	}
 
 	surface screen = create_neutral_surface(area.w, area.h);
@@ -1505,6 +1469,10 @@ void display::draw_minimap()
 	int view_y = static_cast<int>((ypos_ + shift_y) * yscaling);
 	int view_w = static_cast<int>(map_out_rect.w * xscaling);
 	int view_h = static_cast<int>(map_out_rect.h * yscaling);
+	if (always_bottom_) {
+		view_y = 1;
+		view_h = minimap_->h - 2;
+	}
 
 	const Uint32 box_color = SDL_MapRGB(minimap_->format, border_.view_rectange_color.r, border_.view_rectange_color.g, border_.view_rectange_color.b);
 	draw_rectangle(minimap_location_.x + view_x - 1,
@@ -1517,6 +1485,10 @@ void display::draw_minimap()
 
 bool display::scroll(int xmove, int ymove)
 {
+	if (always_bottom_ && ymove) {
+		ymove = 0;
+	}
+
 	const int orig_x = xpos_;
 	const int orig_y = ypos_;
 	xpos_ += xmove;
@@ -1526,8 +1498,9 @@ bool display::scroll(int xmove, int ymove)
 	const int dy = orig_y - ypos_; // dy = -ymove
 
 	// Only invalidate if we've actually moved
-	if(dx == 0 && dy == 0)
+	if (dx == 0 && dy == 0) {
 		return false;
+	}
 
 	font::scroll_floating_labels(dx, dy);
 
@@ -1544,16 +1517,6 @@ bool display::scroll(int xmove, int ymove)
 	if (!screen_.update_locked()) {
 		sdl_blit(screen, &srcrect, screen, &dstrect);
 	}
-/*
-//This is necessary to avoid a crash in some SDL versions on some systems
-//see http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=462794
-//FIXME remove this once the latest stable SDL release doesn't crash as 1.2.13 does
-#ifdef _MSC_VER
-    __asm{cld};
-#elif defined(__GNUG__) && (defined(__i386__) || defined(__x86_64__))
-    asm("cld");
-#endif
-*/
 	// Invalidate locations in the newly visible rects
 
 	if (dy != 0) {
@@ -1596,6 +1559,9 @@ void display::set_zoom(int amount)
 		zoom_ = new_zoom;
 		controller_->set_zoom(zoom_);
 
+		if (always_bottom_) {
+			ypos_ = max_map_area().h;
+		}
 		bounds_check_position();
 		image::set_zoom(zoom_);
 		labels().recalculate_labels();
@@ -2090,12 +2056,16 @@ void display::draw(bool update,bool force)
 		 * draw_invalidated() also invalidates the halos, so also needs to be
 		 * ran if invalidated_.empty() == true.
 		 */
+		undraw_floating(screen_.getSurface());
+		halo::unrender();
+
 		draw_invalidated();
 
 		drawing_buffer_commit(screen_.getSurface());
-		gui2::async_draw();
 
 		post_commit();
+
+		gui2::async_draw();
 
 		// clear flag. 
 		// draw_sidebar may genrate new invalidate loc(ex. show_unit_tip), keep those dirty so next draw will update then
@@ -2107,6 +2077,12 @@ void display::draw(bool update,bool force)
 	draw_wrap(update, force);
 	
 	drawing_ = false;
+}
+
+void display::post_commit()
+{
+	halo::render();
+	draw_floating(screen_.getSurface());
 }
 
 map_labels& display::labels()
@@ -2570,7 +2546,6 @@ void display::draw_float_anim()
 		return;
 	}
 
-	// invalidate_animations();
 	new_animation_frame();
 	
 	for (std::map<int, animation*>::iterator it = area_anims_.begin(); it != area_anims_.end(); ++ it) {
@@ -2650,18 +2625,8 @@ void display::update_arrow(arrow & arrow)
 
 void display::set_statusbar(bool show, bool white_fg)
 {
-	char str[5];
-	str[0] = '$';
-	str[1] = '$';
-	str[4] = 0;
-
-	str[2] = 'V';
-	str[3] = show? 'T': 'F';
-	SDL_SetWindowData(video().getWindow(), str, NULL);
-
-	str[2] = 'S';
-	str[3] = white_fg? 'T': 'F';
-	SDL_SetWindowData(video().getWindow(), str, NULL);
+	SDL_SetWindowData(NULL, "statusbar_show", (void*)(show? 1: 0));
+	SDL_SetWindowData(NULL, "statusbar_style", (void*)(white_fg? 1: 0));
 }
 
 std::map<surface,SDL_Rect> energy_bar_rects;

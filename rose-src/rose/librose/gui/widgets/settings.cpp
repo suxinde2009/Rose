@@ -48,6 +48,13 @@ void ttip_definition::read(const config& _cfg)
 	text_font_size = _cfg["text_font_size"].to_int(font::SIZE_NORMAL);
 	vertical_gap = _cfg["vertical_gap"].to_int();
 
+	if (twidget::hdpi) {
+		text_extra_width *= twidget::hdpi_ratio;
+		text_extra_height *= twidget::hdpi_ratio;
+		text_font_size *= twidget::hdpi_ratio;
+		vertical_gap *= twidget::hdpi_ratio;
+	}
+
 	cfg = _cfg;
 }
 

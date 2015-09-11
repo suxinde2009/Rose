@@ -272,9 +272,12 @@ const char* utf8_2_ansi(const std::string& str);
 const char* ansi_2_utf8(const std::string& str);
 
 std::string format_time_ymd(time_t t);
+std::string format_time_hms(time_t t);
+std::string format_time_hm(time_t t);
 std::string format_time_date(time_t t);
 std::string format_time_local(time_t t);
-std::string format_time_elapse(time_t elapse);
+std::string format_elapse(time_t elapse, bool align = false);
+std::string format_elapse_hm(time_t elapse, bool align = false);
 
 char* saes_encrypt_heap(const char* ptext, int size, unsigned char* key);
 char* saes_decrypt_heap(const char* ctext, int size, unsigned char* key);

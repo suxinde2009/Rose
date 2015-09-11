@@ -239,9 +239,7 @@ void tbutton::signal_handler_left_button_click(
 {
 	DBG_GUI_E << LOG_HEADER << ' ' << event << ".\n";
 
-	if (sound_button_click_.empty()) {
-		sound::play_UI_sound(settings::sound_button_click);
-	} else {
+	if (!sound_button_click_.empty()) {
 		sound::play_UI_sound(sound_button_click_);
 	}
 

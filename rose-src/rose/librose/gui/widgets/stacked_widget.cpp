@@ -311,6 +311,11 @@ std::string tstacked_widget::generate_layout_str(const int level) const
 	return ss.str();
 }
 
+tgrid* tstacked_widget::layer(int at) const 
+{ 
+	return dynamic_cast<tgrid*>(grid2_->child(at).widget_); 
+}
+
 namespace {
 
 /**

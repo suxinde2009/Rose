@@ -37,6 +37,7 @@
 
 #include <boost/foreach.hpp>
 
+
 namespace gui2 {
 
 class tblend_none_lock
@@ -885,6 +886,8 @@ timage::timage(const config& cfg)
 	}
 }
 
+const std::string share_image_name = "share";
+
 void timage::draw(surface& canvas
 		, const game_logic::map_formula_callable& variables)
 {
@@ -902,11 +905,12 @@ void timage::draw(surface& canvas
 		return;
 	}
 
+	bool from_share = false;
 	/*
 	 * The locator might return a different surface for every call so we can't
 	 * cache the output, also not if no formula is used.
 	 */
-	if (!share_canvas_image || share_canvas_image->null()) {
+	if (name != share_image_name || !share_canvas_image || share_canvas_image->null()) {
 		surface tmp(image::get_image(image::locator(name)));
 		if (!tmp) {
 			ERR_GUI_D << "Image: '" << name << "' not found and won't be drawn.\n";
@@ -914,6 +918,7 @@ void timage::draw(surface& canvas
 		}
 		image_.assign(make_neutral_surface(tmp));
 	} else {
+		from_share = true;
 		// to share image, must set width/height to original size. so cannot change share_canvas_image.
 		image_ = *share_canvas_image;
 	}
@@ -937,6 +942,8 @@ void timage::draw(surface& canvas
 			, _("Image doesn't fit on canvas.")
 			, (formatter() << "Image '" << name
 				<< "', h = " << static_cast<int>(h) << ".").str());
+
+	VALIDATE(!from_share || (image_->w == w && image_->h == h), "share image's width and height must be original size!");
 
 	if ((!w && w_.has_formula()) || (!h && h_.has_formula())) { 
 		return;
@@ -1113,7 +1120,7 @@ ttext::ttext(const config& cfg)
 	, y_(cfg["y"])
 	, w_(cfg["w"])
 	, h_(cfg["h"])
-	, font_size_(cfg["font_size"])
+	, font_size_(cfg["font_size"].to_int())
 	, font_style_(decode_font_style(cfg["font_style"]))
 	, text_alignment_(cfg["text_alignment"])
 	, color_(decode_color(cfg["color"]))
@@ -1170,24 +1177,27 @@ ttext::ttext(const config& cfg)
 
 	VALIDATE(font_size_, _("Text has a font size of 0."));
 
+	if (twidget::hdpi) {
+		font_size_ *= twidget::hdpi_ratio;
+	}
+
 	const std::string& debug = (cfg["debug"]);
 	if(!debug.empty()) {
 		DBG_GUI_P << "Text: found debug message '" << debug << "'.\n";
 	}
 }
 
-void ttext::draw(surface& canvas
-		, const game_logic::map_formula_callable& variables)
+void ttext::draw(surface& canvas, const game_logic::map_formula_callable& variables)
 {
-	assert(variables.has_key("text"));
+	VALIDATE(variables.has_key("text"), null_str);
 
 	// We first need to determine the size of the text which need the rendered
 	// text. So resolve and render the text first and then start to resolve
 	// the other formulas.
-	const t_string text = text_(variables);
+	const std::string text = text_(variables);
 
-	if(text.empty()) {
-		DBG_GUI_D << "Text: no text to render, leave.\n";
+	if (text.empty()) {
+		// Text: no text to render, leave.
 		return;
 	}
 
@@ -1200,22 +1210,15 @@ void ttext::draw(surface& canvas
 	}
 
 	if (surf->w == 0) {
-		DBG_GUI_D  << "Text: Rendering '"
-				<< text << "' resulted in an empty canvas, leave.\n";
+		// Text: Rendering, resulted in an empty canvas, leave.
 		return;
 	}
 
 	game_logic::map_formula_callable local_variables(variables);
 	local_variables.add("text_width", variant(surf->w));
 	local_variables.add("text_height", variant(surf->h));
-/*
-	std::cerr << "Text: drawing text '" << text
-		<< " maximum width " << maximum_width_(variables)
-		<< " maximum height " << maximum_height_(variables)
-		<< " text width " << surf->w
-		<< " text height " << surf->h;
-*/
-	///@todo formulas are now recalculated every draw cycle which is a
+
+	// @todo formulas are now recalculated every draw cycle which is a
 	// bit silly unless there has been a resize. So to optimize we should
 	// use an extra flag or do the calculation in a separate routine.
 
@@ -1227,11 +1230,6 @@ void ttext::draw(surface& canvas
 	if (share_canvas_integrate) {
 		share_canvas_integrate->set_layout_offset(x, y);
 	}
-
-	DBG_GUI_D << "Text: drawing text '" << text
-			<< "' drawn from " << x << ',' << y
-			<< " width " << w << " height " << h
-			<< " canvas size " << canvas->w << ',' << canvas->h << ".\n";
 
 	VALIDATE(static_cast<int>(x) < canvas->w && static_cast<int>(y) < canvas->h
 			, _("Text doesn't start on canvas."));

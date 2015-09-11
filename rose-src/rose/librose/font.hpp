@@ -57,20 +57,19 @@ extern const SDL_Color NORMAL_COLOR, GRAY_COLOR, LOBBY_COLOR, GOOD_COLOR, BAD_CO
                        PETRIFIED_COLOR, TITLE_COLOR, DISABLED_COLOR, LABEL_COLOR, BLUE_COLOR;
 
 // font sizes, to be made theme parameters
-const int SIZE_NORMAL = 16;
-inline int relative_size(int size)
-{
-	return (SIZE_NORMAL * size / 16);
-}
+const int SIZE_XTINY_MDPI = 10;
+const int SIZE_TINY_MDPI = 12;
+const int SIZE_SMALL_MDPI = 14;
+const int SIZE_NORMAL_MDPI = 16;
+const int SIZE_LARGE_MDPI = 18;
+const int SIZE_XLARGE_MDPI = 24;
 
-// automatic computation of other font sizes, to be made a default for theme-provided values
-const int
-	SIZE_TINY       = relative_size(12),
-	SIZE_SMALL      = relative_size(14),
-
-	SIZE_LARGE      = relative_size(18),
-	SIZE_XLARGE     = relative_size(24)
-  ;
+extern int SIZE_XTINY;
+extern int SIZE_TINY;
+extern int SIZE_SMALL;
+extern int SIZE_NORMAL;
+extern int SIZE_LARGE;
+extern int SIZE_XLARGE;
 
 // using tintegrate
 surface get_rendered_text2(const std::string& text, int maximum_width = -1, int font_size = SIZE_NORMAL, const SDL_Color& color = NORMAL_COLOR, bool editable = false);

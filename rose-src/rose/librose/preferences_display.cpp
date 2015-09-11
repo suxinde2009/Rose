@@ -179,6 +179,8 @@ bool show_video_mode_dialog(display& disp)
 		resolutions.push_back(std::make_pair(568, 320));
 		resolutions.push_back(std::make_pair(800, 480));
 		resolutions.push_back(std::make_pair(854, 480));
+		resolutions.push_back(std::make_pair(960, 640));
+		resolutions.push_back(std::make_pair(1136, 640));
 		resolutions.push_back(std::make_pair(1280, 720));
 		resolutions.push_back(std::make_pair(1280, 800));
 	}

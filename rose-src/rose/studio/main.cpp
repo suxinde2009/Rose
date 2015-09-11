@@ -61,36 +61,6 @@ game_instance::game_instance(int argc, char** argv)
 void game_instance::fill_anim_tags(std::map<const std::string, int>& tags)
 {
 	// although don't use below animation, but pass program verify, define them still.
-	int at = anim2::MIN_APP_ANIM;
-	tags.insert(std::make_pair("reinforce", at ++));
-	tags.insert(std::make_pair("individuality", at ++));
-	tags.insert(std::make_pair("tactic", at ++));
-	tags.insert(std::make_pair("formation_attack", at ++));
-	tags.insert(std::make_pair("perfect", at ++));
-	tags.insert(std::make_pair("stratagem_up", at ++));
-	tags.insert(std::make_pair("stratagem_down", at ++));
-	tags.insert(std::make_pair("load_scenario", at ++));
-	tags.insert(std::make_pair("flags", at ++));
-	tags.insert(std::make_pair("text", at ++));
-	tags.insert(std::make_pair("place", at ++));
-	tags.insert(std::make_pair("upgrade", at ++));
-	tags.insert(std::make_pair("card", at ++));
-	tags.insert(std::make_pair("pass_scenario", at ++));
-
-	tags.insert(std::make_pair("blade", at ++));
-	tags.insert(std::make_pair("pierce", at ++));
-	tags.insert(std::make_pair("impact", at ++));
-	tags.insert(std::make_pair("archery", at ++));
-	tags.insert(std::make_pair("collapse", at ++));
-	tags.insert(std::make_pair("arcane", at ++));
-	tags.insert(std::make_pair("fire", at ++));
-	tags.insert(std::make_pair("cold", at ++));
-	tags.insert(std::make_pair("strike", at ++));
-	tags.insert(std::make_pair("magic", at ++));
-	tags.insert(std::make_pair("heal", at ++));
-	tags.insert(std::make_pair("destruct", at ++));
-	tags.insert(std::make_pair("formation_defend", at ++));
-	tags.insert(std::make_pair("income", at ++));
 }
 
 void game_instance::start_mkwin(bool theme)
@@ -98,6 +68,7 @@ void game_instance::start_mkwin(bool theme)
 	display_lock lock(disp());
 	hotkey::scope_changer changer(game_config(), "hotkey_mkwin");
 
+	display::initial_zoom = 64 * gui2::twidget::hdpi_ratio;
 	mkwin_controller mkwin(game_config(), video_, theme);
 	mkwin.main_loop();
 }
@@ -107,7 +78,7 @@ class tlobby_manager
 public:
 	tlobby_manager()
 	{
-		lobby = new tlobby();
+		lobby = new tlobby(new tlobby::tchat_sock(), new tlobby::thttp_sock(), new tlobby::ttransit_sock());
 	}
 	~tlobby_manager()
 	{
@@ -134,7 +105,7 @@ static int do_gameloop(int argc, char** argv)
 #endif
 
 	// modify some game_config variable
-	game_config::init("studio", "Rose", "#rose", true);
+	game_config::init("studio", "Rose", "#rose", true, false);
 	game_config::wesnoth_program_dir = directory_name(argv[0]);
 	game_config::version = game_config::rose_version;
 	game_config::wesnoth_version = version_info(game_config::version);
@@ -146,7 +117,7 @@ static int do_gameloop(int argc, char** argv)
 	// always connect to lobby server.
 	tlobby_manager lobby_manager;
 	const network::manager net_manager(1, 1);
-	lobby->chat.set_host("chat.freenode.net", 6665);
+	lobby->chat->set_host("chat.freenode.net", 6665);
 	lobby->join();
 	lobby->set_nick2(group.leader().name());
 

@@ -26,6 +26,14 @@
 
 class display;
 
+namespace anim_field_tag {
+enum tfield {NONE, X, Y, OFFSET_X, OFFSET_Y, IMAGE, IMAGE_MOD, TEXT, ALPHA};
+
+bool is_progressive_field(tfield field);
+tfield find(const std::string& tag);
+const std::string& rfind(tfield tag);
+}
+
 namespace anim2 {
 enum ttype {NONE, LOCATION, HSCROLL_TEXT, TITLE_SCREEN, 
 	OPERATING, MIN_APP_ANIM};

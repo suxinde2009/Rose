@@ -70,6 +70,8 @@ void loadscreen::global_loadscreen_manager::reset()
 	}
 }
 
+static surface scaled_logo_surface;
+
 loadscreen::loadscreen(CVideo &screen, const int &percent):
 	screen_(screen),
 	textarea_(),
@@ -121,6 +123,17 @@ void loadscreen::draw_screen(const std::string &text)
 				logo_drawn_ = false;
 			}
 		}
+	}
+
+	if (game_config::app == "sleep") {
+		// Update the rectangle.
+		if (!scaled_logo_surface) {
+			scaled_logo_surface = scale_surface(logo_surface_, gdis->w, gdis->h);
+		}
+		area.x = area.y = 0;
+		sdl_blit(scaled_logo_surface, 0, gdis, &area);
+		screen_.flip();
+		return;
 	}
 
 	// Draw logo if it was successfully loaded.
@@ -186,6 +199,7 @@ void loadscreen::draw_screen(const std::string &text)
 		textarea_ = font::draw_text(&screen_,textarea_,font::SIZE_NORMAL,font::NORMAL_COLOR,text,textarea_.x,textarea_.y);
 		SDL_Rect refresh = union_rects(oldarea, textarea_);
 	}
+
 	// Update the rectangle.
 	screen_.flip();
 }

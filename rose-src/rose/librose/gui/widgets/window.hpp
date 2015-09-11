@@ -45,6 +45,31 @@ namespace event {
 	class tdistributor;
 } // namespace event
 
+class ttransition
+{
+public:
+	enum { fade_none, fade_left = 0x1, fade_right = 0x2, fade_up = 0x4, fade_down = 0x8};
+
+	static const int normal_duration;
+	ttransition()
+		: transition_start_time_(twidget::npos)
+		, transition_fade_(fade_none)
+		, transition_duration_(0)
+		// , transition_last_offset_(twidget::npos)
+	{}
+
+	void set_transition_fade(int val) { transition_fade_ = val; }
+	void set_transition(surface& surf, int start, int duration = normal_duration);
+
+protected:
+	surface transition_surf_;
+	surface transition_frame_buffer_;
+	int transition_fade_;
+	int transition_start_time_;
+	int transition_duration_;
+	// int transition_last_offset_;
+};
+
 /**
  * base class of top level items, the only item
  * which needs to store the final canvases to draw on
@@ -52,6 +77,7 @@ namespace event {
 class twindow
 	: public tpanel
 	, public cursor::setter
+	, public ttransition
 {
 	friend class tdebug_layout_graph;
 	friend twindow *build(CVideo &, const twindow_builder::tresolution *);
@@ -92,6 +118,8 @@ public:
 		const twindow_builder::tresolution::ttip& helptip);
 
 	~twindow();
+
+	static surface last_frame_buffer;
 
 	/**
 	 * Update the size of the screen variables in settings.
@@ -413,9 +441,6 @@ public:
 	}
 	const game_logic::map_formula_callable& variables() const { return variables_; }
 
-	void radio_page_swap_uh(const tradio_page::tpage& page, twidget* holder, bool first);
-	void radio_page_swap_bh(const tradio_page::tpage& page, twidget* holder);
-
 	std::vector<tdirty_list>& dirty_list();
 	void set_keep_rect(int x, int y = -1, int w = -1, int h = -1);
 	const SDL_Rect& keep_rect() const { return keep_rect_; }
@@ -432,6 +457,21 @@ public:
 
 	/** Inherited from twidget. */
 	tpoint calculate_best_size() const;
+
+	/** Inherited from tcontrol. */
+	void impl_draw_background(
+			  surface& frame_buffer
+			, int x_offset
+			, int y_offset);
+
+	/** Inherited from tcontrol. */
+	void impl_draw_foreground(
+			  surface& frame_buffer
+			, int x_offset
+			, int y_offset);
+
+	/** Inherited from twidget. */
+	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 	/**
 	 * Layouts the window.
@@ -615,14 +655,6 @@ private:
 
 	/** Inherited from tcontrol. */
 	const std::string& get_control_type() const;
-
-	/**
-	 * Inherited from tpanel.
-	 *
-	 * Don't call this function it's only asserts.
-	 */
-	void draw(surface& surface, const bool force = false,
-			const bool invalidate_background = false);
 
 	/**
 	 * The list with dirty items in the window.

@@ -42,7 +42,6 @@ controller_base::controller_base(int ticks, const config& game_config, CVideo& /
 	, scrolling_(false)
 	, finger_motion_scroll_(false)
 	, finger_motion_direction_(UP)
-	, motions_(false)
 {
 	if (theme_reserved_wml.empty()) {
 		theme_reserved_wml.insert("screen");
@@ -100,7 +99,7 @@ bool controller_base::handle_scroll_wheel(int dx, int dy, int hit_threshold, int
 	return true;
 }
 
-bool controller_base::coordinate_valid(int x, int y) const
+bool controller_base::finger_coordinate_valid(int x, int y) const
 {
 	const display& disp = get_display();
 
@@ -113,6 +112,13 @@ bool controller_base::coordinate_valid(int x, int y) const
 	return true;
 }
 
+bool controller_base::mouse_wheel_coordinate_valid(int x, int y) const
+{
+	const display& disp = get_display();
+
+	return point_in_rect(x, y, disp.map_outside_area());
+}
+
 void controller_base::handle_swipe(int x, int y, int dx, int dy)
 {
 	handle_scroll_wheel(dx, dy, FINGER_HIT_THRESHOLD, FINGER_MOTION_THRESHOLD);
@@ -123,15 +129,69 @@ void controller_base::handle_pinch(int x, int y, bool out)
 	pinch_event(out);
 }
 
+void controller_base::handle_mouse_down(const SDL_MouseButtonEvent& button)
+{
+	display& disp = get_display();
+	if (disp.point_in_volatiles(button.x, button.y)) {
+		return;
+	}
+
+	// user maybe want to click at mini-map. so allow click out of main-map.
+	get_mouse_handler_base().mouse_press(button, multi_gestures() || mouse_motions_, browse_);
+	post_mouse_press(button);
+	if (get_mouse_handler_base().get_show_menu()){
+		get_display().goto_main_context_menu();
+	}
+}
+
+void controller_base::handle_mouse_up(const SDL_MouseButtonEvent& button)
+{
+	display& disp = get_display();
+	// user maybe want to click at mini-map. so allow click out of main-map.
+
+	get_mouse_handler_base().mouse_press(button, multi_gestures() || mouse_motions_, browse_);
+	post_mouse_press(button);
+	if (get_mouse_handler_base().get_show_menu()){
+		get_display().goto_main_context_menu();
+	}
+}
+
+void controller_base::handle_mouse_motion(const SDL_MouseMotionEvent& motion)
+{
+	display& disp = get_display();
+
+	if (multi_gestures()) {
+		return;
+	}
+	// (x, y) on volatile control myabe in map, don't check in volatiles.
+/*
+	if (disp.point_in_volatiles(motion.x, motion.y)) {
+		return;
+	}
+*/
+	// user maybe want to motion at mini-map. so allow click out of main-map.
+	SDL_Event new_event;
+
+	// Ignore old mouse motion events in the event queue
+	if (SDL_PeepEvents(&new_event, 1, SDL_GETEVENT, SDL_MOUSEMOTIONMASK) > 0) {
+		while(SDL_PeepEvents(&new_event, 1, SDL_GETEVENT, SDL_MOUSEMOTIONMASK) > 0) {};
+		get_mouse_handler_base().mouse_motion_event(new_event.motion, browse_);
+	} else {
+		get_mouse_handler_base().mouse_motion_event(motion, browse_);
+	}
+}
+
+void controller_base::handle_mouse_wheel(const SDL_MouseWheelEvent& wheel, int x, int y, Uint8 mouse_flags)
+{
+	handle_scroll_wheel(wheel.x, wheel.y, MOUSE_HIT_THRESHOLD, MOUSE_MOTION_THRESHOLD);
+}
+
 void controller_base::handle_event(const SDL_Event& event)
 {
 	if (gui2::is_in_dialog()) {
 		return;
 	}
 
-	display& disp = get_display();
-
-	SDL_Event new_event;
 	int x, y;
 
 	switch(event.type) {
@@ -139,56 +199,11 @@ void controller_base::handle_event(const SDL_Event& event)
 	case SDL_FINGERMOTION:
 	case SDL_FINGERUP:
 	case SDL_MULTIGESTURE:
-		base_finger::process_event(event);
-		break;
-
-	case SDL_MOUSEWHEEL:
-		if (event.wheel.which == SDL_TOUCH_MOUSEID) {
-			break;
-		}
-		SDL_GetMouseState(&x, &y);
-		if (!point_in_rect(x, y, disp.map_outside_area())) {
-			break;
-		}
-		handle_scroll_wheel(event.wheel.x, event.wheel.y, MOUSE_HIT_THRESHOLD, MOUSE_MOTION_THRESHOLD);
-		break;
-
 	case SDL_MOUSEBUTTONDOWN:
-		motions_ = 0;
-		pinch_distance_ = gui2::twidget::npos;
 	case SDL_MOUSEBUTTONUP:
-		if (event.type == SDL_MOUSEBUTTONUP) {
-			fingers_.clear();
-		}
-		if (disp.point_in_volatiles(event.button.x, event.button.y)) {
-			break;
-		}
-		// user maybe want to click at mini-map. so allow click out of main-map.
-
-		get_mouse_handler_base().mouse_press(event.button, multi_gestures() || motions_, browse_);
-		post_mouse_press(event);
-		if (get_mouse_handler_base().get_show_menu()){
-			get_display().goto_main_context_menu();
-		}
-		break;
-
 	case SDL_MOUSEMOTION:
-		if (multi_gestures()) {
-			break;
-		}
-		if (disp.point_in_volatiles(event.button.x, event.button.y)) {
-			break;
-		}
-		// user maybe want to motion at mini-map. so allow click out of main-map.
-
-		motions_ ++;
-		// Ignore old mouse motion events in the event queue
-		if (SDL_PeepEvents(&new_event,1,SDL_GETEVENT, SDL_MOUSEMOTIONMASK) > 0) {
-			while(SDL_PeepEvents(&new_event,1,SDL_GETEVENT, SDL_MOUSEMOTIONMASK) > 0) {};
-			get_mouse_handler_base().mouse_motion_event(new_event.motion, browse_);
-		} else {
-			get_mouse_handler_base().mouse_motion_event(event.motion, browse_);
-		}
+	case SDL_MOUSEWHEEL:
+		base_finger::process_event(event);
 		break;
 
 	case SDL_KEYDOWN:
@@ -220,8 +235,8 @@ void controller_base::handle_event(const SDL_Event& event)
 					e.button.button = SDL_BUTTON_LEFT;
 					e.button.x = x;
 					e.button.y = y;
-					get_mouse_handler_base().mouse_press(event.button, multi_gestures() || motions_ > 0, browse_);
-					post_mouse_press(event);
+					get_mouse_handler_base().mouse_press(e.button, multi_gestures() || mouse_motions_ > 0, browse_);
+					post_mouse_press(e.button);
 				}
 			}
 		}
@@ -249,7 +264,7 @@ void controller_base::process_keyup_event(const SDL_Event& /*event*/) {
 	//no action by default
 }
 
-void controller_base::post_mouse_press(const SDL_Event& /*event*/) {
+void controller_base::post_mouse_press(const SDL_MouseButtonEvent& /*button*/) {
 	//no action by default
 }
 
@@ -266,26 +281,17 @@ bool controller_base::handle_scroll(CKey& key, int mousex, int mousey, int mouse
 	bool keyboard_focus = have_keyboard_focus();
 	int scroll_speed = preferences::scroll_speed();
 	int dx = 0, dy = 0;
-	int scroll_threshold = (preferences::mouse_scroll_enabled())
-		? preferences::mouse_scroll_threshold() : 0;
-	if ((key[SDLK_UP] && keyboard_focus) ||
-	    (mousey < scroll_threshold && mouse_in_window))
-	{
+	int scroll_threshold = (preferences::mouse_scroll_enabled())? preferences::mouse_scroll_threshold() : 0;
+	if ((key[SDLK_UP] && keyboard_focus) || (mousey < scroll_threshold && mouse_in_window)) {
 		dy -= scroll_speed;
 	}
-	if ((key[SDLK_DOWN] && keyboard_focus) ||
-	    (mousey > get_display().h() - scroll_threshold && mouse_in_window))
-	{
+	if ((key[SDLK_DOWN] && keyboard_focus) || (mousey > get_display().h() - scroll_threshold && mouse_in_window)) {
 		dy += scroll_speed;
 	}
-	if ((key[SDLK_LEFT] && keyboard_focus) ||
-	    (mousex < scroll_threshold && mouse_in_window))
-	{
+	if ((key[SDLK_LEFT] && keyboard_focus) || (mousex < scroll_threshold && mouse_in_window)) {
 		dx -= scroll_speed;
 	}
-	if ((key[SDLK_RIGHT] && keyboard_focus) ||
-	    (mousex > get_display().w() - scroll_threshold && mouse_in_window))
-	{
+	if ((key[SDLK_RIGHT] && keyboard_focus) || (mousex > get_display().w() - scroll_threshold && mouse_in_window)) {
 		dx += scroll_speed;
 	}
 	if ((mouse_flags & SDL_BUTTON_MMASK) != 0 && preferences::middle_click_scrolls()) {
@@ -327,7 +333,10 @@ bool controller_base::handle_scroll(CKey& key, int mousex, int mousey, int mouse
 		} 
 		finger_motion_scroll_ = false;
 	}
-	return get_display().scroll(dx, dy);
+	if (dx || dy) {
+		return get_display().scroll(dx, dy);
+	}
+	return false;
 }
 
 void controller_base::play_slice(bool is_delay_enabled)

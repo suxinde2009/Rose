@@ -197,6 +197,7 @@ public:
 
 	/** Inherited from twidget. */
 	void impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
+	void broadcast_frame_buffer(surface& frame_buffer);
 
 	tpoint request_reduce_width(const unsigned maximum_width);
 	int column_request_reduce_width(const unsigned column, const unsigned maximum_width);

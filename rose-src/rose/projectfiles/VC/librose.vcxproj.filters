@@ -756,6 +756,30 @@
     <ClCompile Include="..\..\librose\gui\widgets\window.cpp">
       <Filter>gui\widgets</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\librose\gui\dialogs\network_transmission.cpp">
+      <Filter>gui\dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\auxiliary\widget_definition\track.cpp">
+      <Filter>gui\auxiliary\widget_definition</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\auxiliary\window_builder\track.cpp">
+      <Filter>gui\auxiliary\window_builder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\widgets\track.cpp">
+      <Filter>gui\widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\dialogs\message2.cpp">
+      <Filter>gui\dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\dialogs\combo_box2.cpp">
+      <Filter>gui\dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\dialogs\guide.cpp">
+      <Filter>gui\dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\SDL_rotate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\external\boost\libs\regex\src\internals.hpp">
@@ -1474,6 +1498,30 @@
     </ClInclude>
     <ClInclude Include="..\..\librose\utils\reference_counter.hpp">
       <Filter>utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\gui\dialogs\network_transmission.hpp">
+      <Filter>gui\dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\gui\auxiliary\widget_definition\track.hpp">
+      <Filter>gui\auxiliary\widget_definition</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\gui\auxiliary\window_builder\track.hpp">
+      <Filter>gui\auxiliary\window_builder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\gui\widgets\track.hpp">
+      <Filter>gui\widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\gui\dialogs\message2.hpp">
+      <Filter>gui\dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\gui\dialogs\combo_box2.hpp">
+      <Filter>gui\dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\gui\dialogs\guide.hpp">
+      <Filter>gui\dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\librose\SDL_rotate.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

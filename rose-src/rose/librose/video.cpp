@@ -54,6 +54,9 @@ static unsigned int get_flags(unsigned int flags)
 	}
 #endif
 
+	if (gui2::twidget::hdpi) {
+		flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+	}
 	return flags;
 }
 
@@ -168,7 +171,7 @@ int CVideo::modePossible(int w, int h, int bits_per_pixel, int flags )
 	return 32;
 }
 
-int CVideo::setMode(int x, int y, int bits_per_pixel, int flags)
+int CVideo::setMode(int w, int h, int bits_per_pixel, int flags)
 {
 	bool reset_zoom = frameBuffer? false: true;
 
@@ -190,20 +193,31 @@ int CVideo::setMode(int x, int y, int bits_per_pixel, int flags)
 	if (renderer) {
 		SDL_DestroyRenderer(renderer);
 	}
-	
-	window = SDL_CreateWindow(_(game_config::app_msgid.c_str()),
-                          SDL_WINDOWPOS_UNDEFINED,
-                          SDL_WINDOWPOS_UNDEFINED,
-                          x, y,
-                          flags | SDL_WINDOW_ALLOW_HIGHDPI);
+
+	int x = SDL_WINDOWPOS_UNDEFINED;
+	int y = SDL_WINDOWPOS_UNDEFINED;
+#if (defined(__APPLE__) && TARGET_OS_IPHONE)
+	if (gui2::twidget::hdpi) {
+		x = y = 0;
+	}
+#endif
+	window = SDL_CreateWindow(_(game_config::app_msgid.c_str()), x, y, w, h, flags);
 
 	int ret_w, ret_h;
 	SDL_GetWindowSize(window, &ret_w, &ret_h);
 
 	renderer = SDL_CreateRenderer(window, -1, 0);
-	frameBuffer = SDL_CreateRGBSurface(0, x, y, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+
+#if (defined(__APPLE__) && TARGET_OS_IPHONE)
+	if (gui2::twidget::hdpi) {
+		// Fix Bug!
+		SDL_SetWindowSize(window, w, h);
+	}
+#endif
+
+	frameBuffer = SDL_CreateRGBSurface(0, w, h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 	SDL_SetSurfaceBlendMode(frameBuffer, SDL_BLENDMODE_NONE);
-	frameTexture = SDL_CreateTexture(renderer, current_format, SDL_TEXTUREACCESS_STREAMING, x, y);
+	frameTexture = SDL_CreateTexture(renderer, current_format, SDL_TEXTUREACCESS_STREAMING, w, h);
 
 	// frameBuffer's refcount should be 1. If not, check SDL_SetVideoMode!
 	// 1 is holded by frameBuffer.
@@ -213,11 +227,8 @@ int CVideo::setMode(int x, int y, int bits_per_pixel, int flags)
 	
 	if (frameBuffer != NULL) {
 		image::set_pixel_format(frameBuffer->format);
-		if (frameBuffer->w < 800 || frameBuffer->h < 600) {
-			game_config::tiny_gui = true;
-		} else {
-			game_config::tiny_gui = false;
-		}
+		int hdpi_ratio = gui2::twidget::hdpi? gui2::twidget::hdpi_ratio: 1;
+		game_config::tiny_gui = frameBuffer->w < 800 * hdpi_ratio || frameBuffer->h < 600 * hdpi_ratio;
 		if (reset_zoom) {
 			int zoom = preferences::zoom();
 			display::initial_zoom = zoom;

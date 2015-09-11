@@ -57,6 +57,8 @@ bool twidget::is_tpl_widget_id(const std::string& id)
 	return id.find(tpl_widget_id_prefix) == 0;
 }
 
+bool twidget::hdpi = false;
+int twidget::hdpi_ratio = 1;
 bool twidget::current_landscape = true;
 
 bool twidget::landscape_from_orientation(torientation orientation, bool def)
@@ -69,7 +71,7 @@ bool twidget::landscape_from_orientation(torientation orientation, bool def)
 
 bool twidget::orientation_effect_resolution(const int width, const int height)
 {
-	const int min_uneffectable_height = 480;
+	const int min_uneffectable_height = hdpi_ratio * 540;
 	return width < min_uneffectable_height || height < min_uneffectable_height;
 }
 

@@ -2,6 +2,12 @@ Rose<br>
 ---
 Rose is a corss-platform C++ SDK. It is based on [SDL](http://www.libsdl.org), and provide higher level interface to application. For more information on Rose please browse our [site](http://www.freeors.com).<br> 
 
+V0.0.9<br>
+----
+* SDK
+	* Add widget: track. Use it you can 1)draw yourself surface. 2)action by tracking mouse path.
+	* Support HDPI.
+	
 V0.0.8<br>
 ----
 * SDK

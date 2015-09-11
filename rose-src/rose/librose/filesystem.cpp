@@ -1517,6 +1517,34 @@ std::string format_time_ymd(time_t t)
 	return time_buf;
 }
 
+std::string format_time_hms(time_t t)
+{
+	char time_buf[256] = {0};
+	tm* tm_l = localtime(&t);
+	if (tm_l) {
+		const size_t res = strftime(time_buf, sizeof(time_buf), _("%H:%M:%S"), tm_l);
+		if (res == 0) {
+			time_buf[0] = 0;
+		}
+	}
+
+	return time_buf;
+}
+
+std::string format_time_hm(time_t t)
+{
+	char time_buf[256] = {0};
+	tm* tm_l = localtime(&t);
+	if (tm_l) {
+		const size_t res = strftime(time_buf, sizeof(time_buf), _("%H:%M"), tm_l);
+		if (res == 0) {
+			time_buf[0] = 0;
+		}
+	}
+
+	return time_buf;
+}
+
 std::string format_time_date(time_t t)
 {
 	time_t curtime = time(NULL);
@@ -1578,7 +1606,7 @@ std::string format_time_local(time_t t)
 	return time_buf;
 }
 
-std::string format_time_elapse(time_t elapse)
+std::string format_elapse(time_t elapse, bool align)
 {
 	if (elapse < 0) {
 		elapse = 0;
@@ -1599,6 +1627,26 @@ std::string format_time_elapse(time_t elapse)
 	strstr << std::setfill('0') << std::setw(2) << sec;
 	
 	return strstr.str();
+}
+
+std::string format_elapse_hm(time_t elapse, bool align)
+{
+	if (elapse < 0) {
+		elapse = 0;
+	}
+	int sec = elapse % 60;
+	int min = (elapse / 60) % 60;
+	int hour = (elapse / 3600) % 24;
+	int day = elapse / (3600 * 24);
+
+	std::stringstream ss;
+	if (align) {
+		ss << std::setfill('0') << std::setw(2);
+	}
+	ss << hour << "h";
+	ss << std::setfill('0') << std::setw(2) << min << "m";
+	
+	return ss.str();
 }
 
 //

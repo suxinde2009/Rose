@@ -30,6 +30,7 @@
 #include "gui/widgets/settings.hpp"
 #include "preferences.hpp"
 #include "wml_exception.hpp"
+#include "posix.h"
 
 #include <boost/foreach.hpp>
 
@@ -169,6 +170,10 @@ public:
 private:
 	// override base_finger
 	void handle_swipe(int x, int y, int dx, int dy);
+	void handle_mouse_down(const SDL_MouseButtonEvent& button);
+	void handle_mouse_up(const SDL_MouseButtonEvent& button);
+	void handle_mouse_motion(const SDL_MouseMotionEvent& motion);
+	void handle_mouse_wheel(const SDL_MouseWheelEvent& wheel, int x, int y, Uint8 mouse_flags);
 
 	/**
 	 * Reinitializes the state of all dispatchers.
@@ -353,6 +358,56 @@ void thandler::handle_swipe(int x, int y, int dx, int dy)
 	}
 }
 
+void thandler::handle_mouse_down(const SDL_MouseButtonEvent& button)
+{
+	mouse_button_down(tpoint(button.x, button.y), button.button);
+}
+
+void thandler::handle_mouse_up(const SDL_MouseButtonEvent& button)
+{
+	if (!multi_gestures()) {
+		mouse_button_up(tpoint(button.x, button.y), button.button);
+	} else {
+		mouse_button_up(tpoint(twidget::npos, twidget::npos), button.button);
+	}
+}
+
+void thandler::handle_mouse_motion(const SDL_MouseMotionEvent& motion)
+{
+	if (!multi_gestures()) {
+		mouse(SDL_MOUSE_MOTION, tpoint(motion.x, motion.y));
+	} else {
+		mouse(SDL_MOUSE_MOTION, tpoint(twidget::npos, twidget::npos));
+	}
+}
+
+void thandler::handle_mouse_wheel(const SDL_MouseWheelEvent& wheel, int x, int y, Uint8 mouse_flags)
+{
+	int abs_dx, abs_dy;
+
+	abs_dx = abs(wheel.x);
+	abs_dy = abs(wheel.y);
+	if (abs_dx <= MOUSE_HIT_THRESHOLD && abs_dy <= MOUSE_HIT_THRESHOLD) {
+		return;
+	}
+	mouse(SDL_MOUSE_MOTION, tpoint(x, y));
+	if (abs_dx >= abs_dy && abs_dx >= MOUSE_MOTION_THRESHOLD) {
+		// x axis
+		if (wheel.x > 0) {
+			mouse(SDL_WHEEL_LEFT, tpoint(x, y));
+		} else {
+			mouse(SDL_WHEEL_RIGHT, tpoint(x, y));
+		}
+	} else if (abs_dx < abs_dy && abs_dy >= MOUSE_MOTION_THRESHOLD) {
+		// y axis
+		if (wheel.y > 0) {
+			mouse(SDL_WHEEL_UP, tpoint(x, y));
+		} else {
+			mouse(SDL_WHEEL_DOWN, tpoint(x, y));
+		}
+	}
+}
+
 void thandler::handle_event(const SDL_Event& event)
 {
 	/** No dispatchers drop the event. */
@@ -360,66 +415,18 @@ void thandler::handle_event(const SDL_Event& event)
 		return;
 	}
 
-	int abs_dx, abs_dy, x = 0, y = 0;
+	int x = 0, y = 0;
 
 	switch(event.type) {
 	case SDL_FINGERDOWN:
 	case SDL_FINGERMOTION:
 	case SDL_FINGERUP:
 	case SDL_MULTIGESTURE:
-		base_finger::process_event(event);
-		break;
-
-	case SDL_MOUSEWHEEL:
-		if (event.wheel.which == SDL_TOUCH_MOUSEID) {
-			break;
-		}
-		abs_dx = abs(event.wheel.x);
-		abs_dy = abs(event.wheel.y);
-		if (abs_dx <= MOUSE_HIT_THRESHOLD && abs_dy <= MOUSE_HIT_THRESHOLD) {
-			break;
-		}
-		SDL_GetMouseState(&x, &y);
-		mouse(SDL_MOUSE_MOTION, tpoint(x, y));
-		if (abs_dx >= abs_dy && abs_dx >= MOUSE_MOTION_THRESHOLD) {
-			// x axis
-			if (event.wheel.x > 0) {
-				mouse(SDL_WHEEL_LEFT, tpoint(x, y));
-			} else {
-				mouse(SDL_WHEEL_RIGHT, tpoint(x, y));
-			}
-		} else if (abs_dx < abs_dy && abs_dy >= MOUSE_MOTION_THRESHOLD) {
-			// y axis
-			if (event.wheel.y > 0) {
-				mouse(SDL_WHEEL_UP, tpoint(x, y));
-			} else {
-				mouse(SDL_WHEEL_DOWN, tpoint(x, y));
-			}
-		}
-		break;
-
-	case SDL_MOUSEMOTION:
-		if (!multi_gestures()) {
-			mouse(SDL_MOUSE_MOTION, tpoint(event.motion.x, event.motion.y));
-		} else {
-			mouse(SDL_MOUSE_MOTION, tpoint(twidget::npos, twidget::npos));
-		}
-		break;
-
 	case SDL_MOUSEBUTTONDOWN:
-		pinch_distance_ = gui2::twidget::npos;
-
-		mouse_button_down(tpoint(event.button.x, event.button.y), event.button.button);
-		break;
-
 	case SDL_MOUSEBUTTONUP:
-		if (!multi_gestures()) {
-			fingers_.clear();
-			mouse_button_up(tpoint(event.button.x, event.button.y), event.button.button);
-		} else {
-			fingers_.clear();
-			mouse_button_up(tpoint(twidget::npos, twidget::npos), event.button.button);
-		}
+	case SDL_MOUSEMOTION:
+	case SDL_MOUSEWHEEL:
+		base_finger::process_event(event);
 		break;
 
 	case SHOW_HELPTIP_EVENT:

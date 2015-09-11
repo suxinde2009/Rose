@@ -74,9 +74,8 @@ mkwin_display::mkwin_display(mkwin_controller& controller, unit_map& units, CVid
 	// must use grid.
 	set_grid(controller.theme());
 
-	SDL_Rect screen = screen_area();
 	std::string patch = get_theme_patch();
-	theme_current_cfg_ = theme::set_resolution(theme_cfg, screen, patch, theme_cfg_);
+	theme_current_cfg_ = theme::set_resolution(theme_cfg, w(), h(), patch, theme_cfg_);
 	create_theme();
 	
 	const gui2::tgui_definition::tcontrol_definition_map& controls = gui2::current_gui->second.control_definition;
@@ -134,10 +133,6 @@ void mkwin_display::post_change_resolution(const std::map<const std::string, boo
 	controller_.post_change_resolution();
 }
 
-void mkwin_display::pre_draw()
-{
-}
-
 void mkwin_display::draw_hex(const map_location& loc)
 {
 	display::draw_hex(loc);
@@ -191,6 +186,7 @@ void mkwin_display::reload_widget_palette()
 		exclude.insert("vertical_scrollbar");
 		// exclude.insert("slider");
 	}
+
 	std::stringstream ss;
 	surface default_surf(image::get_image(unit::widget_prefix + "bg.png"));
 	SDL_Rect dst_rect = create_rect(0, 0, 0, 0);

@@ -62,11 +62,11 @@ public:
 	void clear_haloes();
 	virtual bool invalidate(const surface& screen, frame_parameters& value);
 	bool invalidate(const surface& screen);
-	void replace_image_name(const std::string& src, const std::string& dst);
-	void replace_image_mod(const std::string& src, const std::string& dst);
-	void replace_progressive(const std::string& name, const std::string& src, const std::string& dst);
-	void replace_static_text(const std::string& src, const std::string& dst);
-	void replace_int(const std::string& name, int src, int dst);
+	void replace_image_name(const std::string& part, const std::string& src, const std::string& dst);
+	void replace_image_mod(const std::string& part, const std::string& src, const std::string& dst);
+	void replace_progressive(const std::string& part, const std::string& name, const std::string& src, const std::string& dst);
+	void replace_static_text(const std::string& part, const std::string& src, const std::string& dst);
+	void replace_int(const std::string& part, const std::string& name, int src, int dst);
 	int layer() const { return layer_; }
 	bool cycles() const { return cycles_; }
 	bool started() const { return started_; }

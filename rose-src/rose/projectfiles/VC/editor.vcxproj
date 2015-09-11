@@ -219,6 +219,7 @@ copy $(SolutionDir)\..\..\..\gettext\gettext-framework\dll\intl.dll $(OutDir)int
     <ClInclude Include="..\..\src\editor2\rectangle.hpp" />
     <ClInclude Include="..\..\src\editor2\resource.h" />
     <ClInclude Include="..\..\src\editor2\struct.h" />
+    <ClInclude Include="..\..\src\unit_types.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="librose.vcxproj">

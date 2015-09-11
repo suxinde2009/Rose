@@ -26,7 +26,6 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
-#include "posix.h"
 
 #define LOG_SCOPE_HEADER get_control_type() + " [" + id() + "] " + __func__
 #define LOG_HEADER LOG_SCOPE_HEADER + ':'
@@ -499,6 +498,13 @@ void tscrollbar_container::impl_draw_children(
 	tcontainer_::impl_draw_children(frame_buffer, x_offset, y_offset);
 
 	content_grid_->draw_children(frame_buffer, x_offset, y_offset);
+}
+
+void tscrollbar_container::broadcast_frame_buffer(surface& frame_buffer)
+{
+	tcontainer_::broadcast_frame_buffer(frame_buffer);
+
+	content_grid_->broadcast_frame_buffer(frame_buffer);
 }
 
 void tscrollbar_container::layout_children()

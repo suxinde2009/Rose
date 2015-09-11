@@ -231,7 +231,7 @@ bool mouse_handler_base::left_click(int x, int y, const bool /*browse*/)
 	if (loc.valid()) {
 		minimap_scrolling_ = true;
 		last_hex_ = loc;
-		disp.scroll_to_tile(loc,display::WARP, false);
+		disp.scroll_to_tile(loc, display::WARP, false);
 		return true;
 	}
 	// clicked on a hex on the mainmap?
@@ -243,7 +243,7 @@ bool mouse_handler_base::left_click(int x, int y, const bool /*browse*/)
 
 void mouse_handler_base::left_drag_end(int x, int y, const bool browse)
 {
-	left_click(x, y, browse);
+	// left_click(x, y, browse);
 }
 
 void mouse_handler_base::left_mouse_up(int /*x*/, int /*y*/, bool /*motions*/, const bool /*browse*/)

@@ -129,7 +129,7 @@ protected:
 	 * Called after processing a mouse button up or down event
 	 * Overridden in derived classes
 	 */
-	virtual void post_mouse_press(const SDL_Event& event);
+	virtual void post_mouse_press(const SDL_MouseButtonEvent& button);
 
 	virtual void pinch_event(bool out) {};
 
@@ -137,9 +137,14 @@ protected:
 	const config &get_theme(const config& game_config, std::string theme_name);
 
 	// override base_finger
-	bool coordinate_valid(int x, int y) const;
+	bool finger_coordinate_valid(int x, int y) const;
+	bool mouse_wheel_coordinate_valid(int x, int y) const;
 	void handle_swipe(int x, int y, int dx, int dy);
 	void handle_pinch(int x, int y, bool out);
+	void handle_mouse_down(const SDL_MouseButtonEvent& button);
+	void handle_mouse_up(const SDL_MouseButtonEvent& button);
+	void handle_mouse_motion(const SDL_MouseMotionEvent& motion);
+	void handle_mouse_wheel(const SDL_MouseWheelEvent& wheel, int x, int y, Uint8 mouse_flags);
 
 protected:
 	const config& game_config_;
@@ -151,9 +156,6 @@ protected:
 	// finger motion result to scroll
 	bool finger_motion_scroll_;
 	int finger_motion_direction_;
-
-	// generate mouse motion whether or not.
-	int motions_;
 };
 
 

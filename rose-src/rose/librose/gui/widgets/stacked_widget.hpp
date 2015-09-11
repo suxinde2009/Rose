@@ -79,6 +79,8 @@ public:
 
 	std::string generate_layout_str(const int level) const;
 
+	tgrid* layer(int at) const;
+
 private:
 
 	/**

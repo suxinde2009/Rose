@@ -399,8 +399,8 @@ void tgrid::replacement_children(int unit_w, int unit_h, int gap, bool extendabl
 
 		col ++;
 		if (extendable) {
-			if (origin.x > multiline_max_width) {
-				multiline_max_width = origin.x;
+			if (origin.x - x_ > multiline_max_width) {
+				multiline_max_width = origin.x - x_;
 			}
 			if (col == max_cols) {
 				origin.x = x_;
@@ -1320,6 +1320,16 @@ void tgrid::impl_draw_children(
 		widget->draw_children(frame_buffer, x_offset, y_offset);
 		widget->draw_foreground(frame_buffer, x_offset, y_offset);
 		widget->set_dirty(false);
+	}
+}
+
+void tgrid::broadcast_frame_buffer(surface& frame_buffer)
+{
+	for (int n = 0; n < children_vsize_; n ++) {
+		tchild& child = children_[n];
+
+		twidget* widget = child.widget_;
+		widget->broadcast_frame_buffer(frame_buffer);
 	}
 }
 

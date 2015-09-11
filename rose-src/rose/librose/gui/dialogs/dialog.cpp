@@ -64,6 +64,8 @@ bool tdialog::show(CVideo& video, const unsigned auto_close_time)
 
 			pre_show(video, *window);
 
+			window->set_transition(video.getSurface(), SDL_GetTicks());
+
 			retval_ = window->show(restore_, auto_close_time);
 
 			events::discard(DRAW_EVENT, DRAW_EVENT);
@@ -99,6 +101,7 @@ void tdialog::asyn_show(CVideo& video, const SDL_Rect& map_area)
 
 	pre_show(video, *window);
 
+	// window->set_transition(twindow::last_frame_buffer, SDL_GetTicks());
 	retval_ = window->asyn_show();
 
 	window->layout();

@@ -221,6 +221,8 @@ public:
 	tgrid* left_drag_grid() const { return left_drag_grid_; }
 	void cancel_drag();
 
+	void set_row_align(bool val) { row_align_ = val; }
+
 protected:
 
 	/** Inherited from tcontainer_. */
@@ -278,9 +280,9 @@ private:
 	void list_impl_draw_children(surface& frame_buffer, int x_offset, int y_offset);
 
 	ttoggle_panel* next_selectable_row(int start, bool invert) const;
-	void callback_control_drag_detect(tcontrol* control, bool start, const tdrag_direction type);
+	bool callback_control_drag_detect(tcontrol* control, bool start, const tdrag_direction type);
 	void callback_pre_impl_draw_children(tcontrol* control, surface& frame_buffer, int x_offset, int y_offset);
-	void callback_set_drag_coordinate(tcontrol* control, const tpoint& first, const tpoint& last);
+	bool callback_set_drag_coordinate(tcontrol* control, const tpoint& first, const tpoint& last);
 
 	/**
 	 * Contains a pointer to the generator.
@@ -297,6 +299,7 @@ private:
 	bool dynamic_;
 	int cursel_;
 	int drag_at_;
+	bool row_align_;
 
 	tgrid* left_drag_grid_;
 	tpoint left_drag_grid_size_;

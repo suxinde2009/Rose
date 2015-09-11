@@ -25,6 +25,7 @@
 #include "wesconfig.h"
 #include "serialization/string_utils.hpp"
 #include "gui/widgets/widget.hpp"
+#include "font.hpp"
 
 #include <boost/foreach.hpp>
 #ifdef HAVE_REVISION
@@ -60,7 +61,7 @@ namespace game_config
 	unsigned lobby_network_timer = 100;
 	unsigned lobby_refresh = 4000;
 	const int gold_carryover_percentage = 80;
-	const std::string rose_version = "0.0.8";
+	const std::string rose_version = "0.0.9";
 	std::string version = "1.0.31";
 	version_info wesnoth_version(version);
 	int reside_troop_increase_loyalty = 50;
@@ -320,12 +321,25 @@ namespace game_config
 	std::vector<server_info> server_list;
 	bbs_server_info bbs_server;
 
-	void init(const std::string& _app, const std::string& msgid, const std::string& channel, bool landscape)
+	void init(const std::string& _app, const std::string& msgid, const std::string& channel, bool landscape, bool hdpi)
 	{
 		app = _app;
 		app_msgid = msgid;
 		app_channel = channel;
 		gui2::twidget::current_landscape = landscape;
+		gui2::twidget::hdpi = hdpi;
+		if (hdpi) {
+			gui2::twidget::hdpi_ratio = (int)reinterpret_cast<long>(SDL_SetWindowData(NULL, "scale", NULL));
+		}
+
+		if (hdpi) {
+			font::SIZE_XTINY = font::SIZE_XTINY_MDPI * gui2::twidget::hdpi_ratio;
+			font::SIZE_TINY = font::SIZE_TINY_MDPI * gui2::twidget::hdpi_ratio;
+			font::SIZE_SMALL = font::SIZE_SMALL_MDPI * gui2::twidget::hdpi_ratio;
+			font::SIZE_NORMAL = font::SIZE_NORMAL_MDPI * gui2::twidget::hdpi_ratio;
+			font::SIZE_LARGE = font::SIZE_LARGE_MDPI * gui2::twidget::hdpi_ratio;
+			font::SIZE_XLARGE = font::SIZE_XLARGE_MDPI * gui2::twidget::hdpi_ratio;
+		}
 
 		app_dir = std::string("app-") + app;
 	}

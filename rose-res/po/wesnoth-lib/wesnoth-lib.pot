@@ -5112,6 +5112,9 @@ msgid "Invalid access! Please check your $server login information. "
 "To set up: Press $account in \"Player profile\" Setting."
 msgstr ""
 
+msgid "$nick is invalid nick when chat! To set up: Press $account in \"Player profile\" Setting, and set valid nick when chat."
+msgstr ""
+
 msgid "Invalid access! pre_kingdom_version table on $server isn't ready."
 msgstr ""
 
@@ -5704,7 +5707,7 @@ msgstr ""
 msgid "$year|.$month"
 msgstr ""
 
-msgid "Sesame Sleep"
+msgid "Sesame Health"
 msgstr ""
 
 msgid "There is no score tonight, let Sesame to accompany you to sleep!"
@@ -5725,5 +5728,98 @@ msgstr ""
 msgid "Total capture time"
 msgstr ""
 
+msgid "The rest time of entering sleep"
+msgstr ""
+
 msgid "The rest time of wake up"
+msgstr ""
+
+msgid "Click to login/register"
+msgstr ""
+
+msgid "About i-Sleep"
+msgstr ""
+
+msgid "Sleep Analysis"
+msgstr ""
+
+msgid "Snore data"
+msgstr ""
+
+msgid "Motion data"
+msgstr ""
+
+msgid "Click to view the details"
+msgstr ""
+
+msgid "Sober"
+msgstr ""
+
+msgid "Shallow sleep"
+msgstr ""
+
+msgid "Deep sleep"
+msgstr ""
+
+msgid "Sleep quality"
+msgstr ""
+
+msgid "Sleep duration"
+msgstr ""
+
+msgid "Start time"
+msgstr ""
+
+msgid "Shallow duration"
+msgstr ""
+
+msgid "Deep duration"
+msgstr ""
+
+msgid "Snore duration"
+msgstr ""
+
+msgid "Apnea"
+msgstr ""
+
+msgid "Sound usage"
+msgstr ""
+
+msgid "Deleted"
+msgstr ""
+
+msgid "Return to today"
+msgstr ""
+
+msgid "Snore"
+msgstr ""
+
+msgid "Done"
+msgstr ""
+
+msgid "Delay sleep time"
+msgstr ""
+
+msgid "Select delay sleep time"
+msgstr ""
+
+msgid "Select wake up music"
+msgstr ""
+
+msgid "Enable snore"
+msgstr ""
+
+msgid "Motion"
+msgstr ""
+
+msgid "$val minutes"
+msgstr ""
+
+msgid "Immediately start"
+msgstr ""
+
+msgid "Capture time"
+msgstr ""
+
+msgid "Duration"
 msgstr ""

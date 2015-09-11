@@ -106,6 +106,31 @@
     <ClCompile Include="..\..\librose\game_config.cpp" />
     <ClCompile Include="..\..\librose\generic_event.cpp" />
     <ClCompile Include="..\..\librose\gettext.cpp" />
+    <ClCompile Include="..\..\librose\gui\auxiliary\widget_definition\track.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gui\auxiliary\widget_definition\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)gui\auxiliary\widget_definition\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\auxiliary\window_builder\track.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gui\auxiliary\window_builder\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)gui\auxiliary\window_builder\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\dialogs\combo_box2.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gui\dialogs\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)gui\dialogs\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\dialogs\guide.cpp" />
+    <ClCompile Include="..\..\librose\gui\dialogs\message2.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gui\dialogs\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)gui\dialogs\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\dialogs\network_transmission.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gui\dialogs\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)gui\dialogs\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\librose\gui\widgets\track.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gui\widgets\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)gui\widgets\</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\..\librose\halo.cpp" />
     <ClCompile Include="..\..\librose\help.cpp" />
     <ClCompile Include="..\..\librose\hero_i.cpp" />
@@ -134,6 +159,7 @@
     <ClCompile Include="..\..\librose\race.cpp" />
     <ClCompile Include="..\..\librose\random.cpp" />
     <ClCompile Include="..\..\librose\saes.cpp" />
+    <ClCompile Include="..\..\librose\SDL_rotate.cpp" />
     <ClCompile Include="..\..\librose\sdl_utils.cpp" />
     <ClCompile Include="..\..\librose\sha1.cpp" />
     <ClCompile Include="..\..\librose\sound.cpp" />
@@ -818,6 +844,13 @@
     <ClInclude Include="..\..\librose\generic_event.hpp" />
     <ClInclude Include="..\..\librose\gettext.hpp" />
     <ClInclude Include="..\..\librose\global.hpp" />
+    <ClInclude Include="..\..\librose\gui\auxiliary\widget_definition\track.hpp" />
+    <ClInclude Include="..\..\librose\gui\auxiliary\window_builder\track.hpp" />
+    <ClInclude Include="..\..\librose\gui\dialogs\combo_box2.hpp" />
+    <ClInclude Include="..\..\librose\gui\dialogs\guide.hpp" />
+    <ClInclude Include="..\..\librose\gui\dialogs\message2.hpp" />
+    <ClInclude Include="..\..\librose\gui\dialogs\network_transmission.hpp" />
+    <ClInclude Include="..\..\librose\gui\widgets\track.hpp" />
     <ClInclude Include="..\..\librose\halo.hpp" />
     <ClInclude Include="..\..\librose\help.hpp" />
     <ClInclude Include="..\..\librose\hero.hpp" />
@@ -855,6 +888,7 @@
     <ClInclude Include="..\..\librose\reports.hpp" />
     <ClInclude Include="..\..\librose\rng.hpp" />
     <ClInclude Include="..\..\librose\saes.hpp" />
+    <ClInclude Include="..\..\librose\SDL_rotate.h" />
     <ClInclude Include="..\..\librose\sdl_utils.hpp" />
     <ClInclude Include="..\..\librose\sha1.hpp" />
     <ClInclude Include="..\..\librose\sound.hpp" />

@@ -127,10 +127,15 @@ void load_widget_definitions(
 {
 	std::vector<tcontrol_definition_ptr> definitions;
 
-	BOOST_FOREACH(const config& definition
-			, cfg.child_range(key ? key : definition_type + "_definition")) {
-
+	BOOST_FOREACH(const config& definition, cfg.child_range(key ? key : definition_type + "_definition")) {
 		definitions.push_back(new T(definition));
+	}
+
+	const std::string dpi_wml = twidget::hdpi? "widget_hdpi": "widget_mdpi";
+	if (const config& widget_dpi = cfg.child(dpi_wml)) {
+		BOOST_FOREACH(const config& definition, widget_dpi.child_range(key ? key : definition_type + "_definition")) {
+			definitions.push_back(new T(definition));
+		}
 	}
 
 	load_widget_definitions(gui_definition, definition_type, definitions);

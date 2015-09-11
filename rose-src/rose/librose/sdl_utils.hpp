@@ -24,6 +24,7 @@
 
 #include "SDL.h"
 #include "sdl_compat.h"
+#include "sdl_rotate.h"
 
 #include <cstdlib>
 #include <iosfwd>
@@ -195,6 +196,7 @@ surface scale_surface(const surface &surf, int w, int h, bool optimize=true);
 
 surface scale_surface_blended(const surface &surf, int w, int h, bool optimize=true);
 surface adjust_surface_color(const surface &surf, int r, int g, int b, bool optimize=true);
+void adjust_surface_color2(surface &surf, int red, int green, int blue);
 surface greyscale_image(const surface &surf, bool optimize=true);
 /** create an heavy shadow of the image, by blurring, increasing alpha and darkening */
 surface shadow_image(const surface &surf, bool optimize=true);
@@ -265,7 +267,7 @@ surface blur_surface(const surface &surf, int depth = 1, bool optimize=true);
  * @param rect                    The part of the surface to blur.
  * @param depth                   The depth of the blurring.
  */
-void blur_surface(surface& surf, SDL_Rect rect, unsigned depth = 1);
+void blur_surface(surface& surf, SDL_Rect rect, int depth = 1);
 
 /**
  * Cross-fades a surface with alpha channel.
@@ -280,6 +282,7 @@ surface cut_surface(const surface &surf, SDL_Rect const &r);
 surface blend_surface(const surface &surf, double amount, Uint32 color, bool optimize=true);
 surface flip_surface(const surface &surf, bool optimize=true);
 surface flop_surface(const surface &surf, bool optimize=true);
+surface rotate_surface(const surface& surf, double angle);
 surface create_compatible_surface(const surface &surf, int width = -1, int height = -1);
 
 /**
@@ -357,10 +360,10 @@ void put_pixel(
 void draw_line(
 		  surface& canvas
 		, Uint32 color
-		, unsigned x1
-		, unsigned y1
-		, const unsigned x2
-		, unsigned y2
+		, int x1
+		, int y1
+		, int x2
+		, int y2
 		, bool require_map);
 
 /**
@@ -468,6 +471,14 @@ void blit_integer_surface(int integer, surface& to, int x, int y);
 surface generate_pip_surface(surface& bg, surface& fg);
 surface generate_pip_surface(int width, int height, const std::string& bg, const std::string& fg);
 surface generate_surface(int width, int height, const std::string& img, int integer, bool greyscale);
+
+struct tarc_pixel {
+	unsigned short x;
+	unsigned short y;
+	unsigned short degree;
+};
+tarc_pixel* circle_calculate_pixels(surface& surf, int* valid_pixels);
+void circle_draw_arc(surface& surf, tarc_pixel* circle_pixels, const int valid_pixels, int start, int stop, Uint32 erase_col);
 
 std::ostream& operator<<(std::ostream& s, const SDL_Rect& rect);
 

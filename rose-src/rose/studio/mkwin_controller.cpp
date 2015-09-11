@@ -714,14 +714,20 @@ void mkwin_controller::rect_changed(unit* u)
 
 	std::vector<unit*> top_units = form_top_units();
 	config theme_cfg = generate_theme_cfg(top_units);
-	SDL_Rect screen = create_rect(0, 0, theme::XDim, theme::YDim);
+/*
+	int screen_w = theme::XDim * gui2::twidget::hdpi_ratio;
+	int screen_h = theme::YDim * gui2::twidget::hdpi_ratio;
+*/
+	int screen_w = theme::XDim;
+	int screen_h = theme::YDim;
+
 	std::string patch = gui_->get_theme_patch();
 	config theme_cfg2;
-	const config* theme_current_cfg = theme::set_resolution(theme_cfg.child("theme"), screen, patch, theme_cfg2);
+	const config* theme_current_cfg = theme::set_resolution(theme_cfg.child("theme"), screen_w, screen_h, patch, theme_cfg2);
 
 	std::vector<const unit*> mistaken_ids;
 	double factor = gui_->get_zoom_factor();
-	int zoom = gui_->hex_size();
+	int zoom = gui_->zoom();
 
 	// set_rect maybe result sort
 	int index = 0;
@@ -733,7 +739,7 @@ void mkwin_controller::rect_changed(unit* u)
 		}
 
 		unit* u = top_units[index ++];
-		SDL_Rect rect = theme::calculate_relative_loc(v.cfg, theme::XDim, theme::YDim);
+		SDL_Rect rect = theme::calculate_relative_loc(v.cfg, screen_w, screen_h);
 		if (!rect.w || !rect.h) {
 			mistaken_ids.push_back(u);
 			break;
@@ -1401,11 +1407,16 @@ void mkwin_controller::load_window()
 		}
 
 		reset_modes();
+/*
+		int screen_w = theme::XDim * gui2::twidget::hdpi_ratio;
+		int screen_h = theme::YDim * gui2::twidget::hdpi_ratio;
+*/
+		int screen_w = theme::XDim;
+		int screen_h = theme::YDim;
 
-		SDL_Rect screen = create_rect(0, 0, theme::XDim, theme::YDim);
 		std::string patch = gui_->get_theme_patch();
 		config theme_cfg2;
-		const config* theme_current_cfg = theme::set_resolution(window_cfg, screen, patch, theme_cfg2);
+		const config* theme_current_cfg = theme::set_resolution(window_cfg, screen_w, screen_h, patch, theme_cfg2);
 
 		reload_map(top_.cols.size() + 1, top_.rows.size() + 1, true);
 		units_.restore_map_from(top_, 0, 0, true);
@@ -1843,7 +1854,7 @@ bool mkwin_controller::left_click(int x, int y, const bool browse)
 				valid = true;
 			}
 
-		} else if (gui_->selected_widget() != gui_->spacer && u->is_spacer()) {
+		} else if (u && gui_->selected_widget() != gui_->spacer && u->is_spacer()) {
 			unit::tparent parent = u->parent();
 			units_.erase(selected_hex_);
 

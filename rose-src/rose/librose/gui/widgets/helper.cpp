@@ -119,12 +119,12 @@ t_string missing_widget(const std::string& id)
 
 void get_screen_size_variables(game_logic::map_formula_callable& variable)
 {
+	int hdpi_ratio = twidget::hdpi? twidget::hdpi_ratio: 1;
 	variable.add("screen_width", variant(settings::screen_width));
 	variable.add("screen_height", variant(settings::screen_height));
-	// variable.add("gamemap_width", variant(settings::gamemap_width));
-	// variable.add("gamemap_height", variant(settings::gamemap_height));
+	variable.add("hdpi_ratio", variant(hdpi_ratio));
 	variable.add("default_gui", variant(!game_config::tiny_gui));
-	variable.add("vga", variant((settings::screen_width >= 640 && settings::screen_height >= 480)? true: false));
+	variable.add("vga", variant(settings::screen_width >= 640 * hdpi_ratio && settings::screen_height >= 480 * hdpi_ratio));
 }
 
 game_logic::map_formula_callable get_screen_size_variables()
